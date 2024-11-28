@@ -9,7 +9,7 @@ import baseRoutes from "./features/appRoute";
 import setupSwagger from "./swagger/swagger";
 
 const app = express();
-const PORT = 3000;
+const port = process.env.PORT;
 
 // Middleware
 app.use(bodyParser.json());
@@ -42,8 +42,8 @@ app.use("/api/v1", rootRouter);
 setupSwagger(app);
 
 // Server Listener
-app.listen(PORT, () => {
-  console.log(`🚀 Server is firing on port ${PORT}`);
+app.listen(port, () => {
+  console.log(`🚀 Server is firing on port ${port}`);
 });
 
 export default app;
