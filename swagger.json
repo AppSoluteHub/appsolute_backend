@@ -1,246 +1,1108 @@
 {
-    "swagger": "1.0",
-    "info": {
-      "title": "AppSolute's API",
-      "version": "1.0.0"
-    },
-    "tags": [
-      
-      {
-        "name": "user",
-        "description": "User related endpoints"
+  "swagger": "2.0",
+  "info": {
+    "title": "AppSolute's API",
+    "version": "1.0.0"
+  },
+  "tags": [
+    { "name": "user", "description": "User related endpoints" },
+    { "name": "auth", "description": "Authentication related endpoints" },
+    { "name": "role", "description": "Role related endpoints" },
+    { "name": "project", "description": "Project related endpoints" },
+    { "name": "task", "description": "Task related endpoints" },
+    { "name": "client", "description": "Client related endpoints" },
+    { "name": "contract", "description": "Contract related endpoints" },
+    { "name": "sla", "description": "SLA related endpoints" },
+    { "name": "resource", "description": "Resource related endpoints" },
+    { "name": "report", "description": "Report related endpoints" },
+    { "name": "activity", "description": "Activity log related endpoints" }
+  ],
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Enter your bearer token in the format **Bearer <token>**"
+    }
+  },
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "Get all users",
+        "tags": ["user"],
+        "description": "Retrieve a list of users",
+        "responses": {
+          "200": { "description": "List of users" }
+        }
       },
-      {
-        "name": "auth",
-        "description": "Authentication related endpoints"
-      }
-     
-    ],
-    "securityDefinitions": {
-      "BearerAuth": {
-        "type": "apiKey",
-        "name": "Authorization",
-        "in": "header",
-        "description": "Enter your bearer token in the format **Bearer &lt;token>**"
-      }
-    },
-    "paths": {
-      "/auth/register": {
-        "post": {
-          "summary": "Register a new user",
-          "tags": [
-            "auth"
-          ],
-          "description": "Register a new user with email and name",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "userData",
-              "in": "body",
-              "description": "User data including email and name",
-              "required": true,
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "example": "john@example.com"
-                  },
-                  "name": {
-                    "type": "string",
-                    "example": "John Doe"
-                  },
-                  "dateOfBirth": {
-                    "type": "string",
-                    "example": "21-10-2000"
-                  },
-                  "password": {
-                    "type": "string",
-                    "example": "password123"
-                  }
-                },
-                "required": [
-                  "email",
-                  "name",
-                  "password"
-                ]
+      "post": {
+        "summary": "Create a new user",
+        "tags": ["user"],
+        "description": "Create a new user with the provided details",
+        "parameters": [
+          {
+            "name": "userData",
+            "in": "body",
+            "description": "User data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": { "type": "string" },
+                "password": { "type": "string" },
+                "role": { "type": "string" }
+              },
+              "required": ["email", "password", "role"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "User created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a user",
+        "tags": ["user"],
+        "description": "Update an existing user's information",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "ID of the user to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "userData",
+            "in": "body",
+            "description": "Updated user data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": { "type": "string" },
+                "role": { "type": "string" }
               }
             }
-          ],
-          "responses": {
-            "200": {
-              "description": "User registered successfully"
-            },
-            "400": {
-              "description": "Invalid input"
-            }
           }
+        ],
+        "responses": {
+          "200": { "description": "User updated successfully" },
+          "404": { "description": "User not found" }
         }
       },
-      "/auth/login": {
-        "post": {
-          "summary": "Login a user",
-          "tags": [
-            "auth"
-          ],
-          "description": "Login a user with email and password",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "userData",
-              "in": "body",
-              "description": "User data including email and password",
-              "required": true,
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "example": "John@example.com"
-                  },
-                  "password": {
-                    "type": "string",
-                    "example": "password123"
-                  }
+      "delete": {
+        "summary": "Delete a user",
+        "tags": ["user"],
+        "description": "Delete an existing user by ID",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "ID of the user to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "User deleted successfully" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "auth"
+        ],
+        "description": "Register a new user with email and name",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "userData",
+            "in": "body",
+            "description": "User data including email and name",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john@example.com"
                 },
-                "required": [
-                  "email",
-                  "password"
-                ]
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "User logged in successfully"
-            },
-            "400": {
-              "description": "Invalid input"
-            }
-          }
-        }
-      },
-      "/auth/logout": {
-        "post": {
-          "summary": "Logout a user",
-          "tags": [
-            "auth"
-          ],
-          "description": "Logout a user from the system",
-          "security": [
-            {
-              "BearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "User logged out successfully"
+                "name": {
+                  "type": "string",
+                  "example": "John Doe"
+                },
+                "dateOfBirth": {
+                  "type": "string",
+                  "example": "21-10-2000"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "password123"
+                }
+              },
+              "required": [
+                "email",
+                "name",
+                "password"
+              ]
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "User registered successfully"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
         }
-      },
-      "/auth/forgot-password": {
-        "post": {
-          "summary": "Forgot password",
-          "tags": [
-            "auth"
-          ],
-          "description": "Send a password reset link to the user's email",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "email",
-              "in": "body",
-              "description": "Email address of the user",
-              "required": true,
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "example": "john@example.com",
-                    "required": true,
-                    "description": "Email address of the user"
-                  }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login a user",
+        "tags": [
+          "auth"
+        ],
+        "description": "Login a user with email and password",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "userData",
+            "in": "body",
+            "description": "User data including email and password",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "John@example.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "password123"
+                }
+              },
+              "required": [
+                "email",
+                "password"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User logged in successfully"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "Logout a user",
+        "tags": [
+          "auth"
+        ],
+        "description": "Logout a user from the system",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User logged out successfully"
+          }
+        }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "summary": "Forgot password",
+        "tags": [
+          "auth"
+        ],
+        "description": "Send a password reset link to the user's email",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "email",
+            "in": "body",
+            "description": "Email address of the user",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "john@example.com",
+                  "required": true,
+                  "description": "Email address of the user"
                 }
               }
             }
-          ],
-          "security": [
-            {
-              "BearerAuth": []
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Password reset link sent successfully"
-            },
-            "400": {
-              "description": "Invalid input"
-            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset link sent successfully"
+          },
+          "400": {
+            "description": "Invalid input"
           }
         }
-      },
-      "/auth/reset-password": {
-        "post": {
-          "summary": "Reset password",
-          "tags": [
-            "auth"
-          ],
-          "description": "Reset the user's password with a new one",
-          "consumes": [
-            "application/json"
-          ],
-          "produces": [
-            "application/json"
-          ],
-          "parameters": [
-            {
-              "name": "resetData",
-              "in": "body",
-              "description": "Reset data including email, token and new password",
-              "required": true,
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "password": {
-                    "type": "string",
-                    "example": "password123"
-                  }
-                },
-                "required": [
-                  "password"
-                ]
-              }
-            }
-          ],
-          "responses": {
-            "200": {
-              "description": "Password reset successful"
-            },
-            "400": {
-              "description": "Invalid input"
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "summary": "Reset password",
+        "tags": [
+          "auth"
+        ],
+        "description": "Reset the user's password with a new one",
+        "consumes": [
+          "application/json"
+        ],
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "resetData",
+            "in": "body",
+            "description": "Reset data including email, token and new password",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "password": {
+                  "type": "string",
+                  "example": "password123"
+                }
+              },
+              "required": [
+                "password"
+              ]
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password reset successful"
+          },
+          "400": {
+            "description": "Invalid input"
+          }
+        }
+      }
+    },
+    "/roles": {
+      "get": {
+        "summary": "Get all roles",
+        "tags": ["role"],
+        "description": "Retrieve a list of roles",
+        "responses": {
+          "200": { "description": "List of roles" }
+        }
+      },
+      "post": {
+        "summary": "Create a new role",
+        "tags": ["role"],
+        "description": "Create a new role",
+        "parameters": [
+          {
+            "name": "roleData",
+            "in": "body",
+            "description": "Role data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "permissions": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["name"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Role created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a role",
+        "tags": ["role"],
+        "description": "Update an existing role's details",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "ID of the role to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "roleData",
+            "in": "body",
+            "description": "Updated role data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "permissions": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Role updated successfully" },
+          "404": { "description": "Role not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a role",
+        "tags": ["role"],
+        "description": "Delete a role by ID",
+        "parameters": [
+          {
+            "name": "roleId",
+            "in": "path",
+            "description": "ID of the role to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Role deleted successfully" },
+          "404": { "description": "Role not found" }
+        }
+      }
+    },
+    "/projects": {
+      "get": {
+        "summary": "Get all projects",
+        "tags": ["project"],
+        "description": "Retrieve a list of projects",
+        "responses": {
+          "200": { "description": "List of projects" }
+        }
+      },
+      "post": {
+        "summary": "Create a new project",
+        "tags": ["project"],
+        "description": "Create a new project",
+        "parameters": [
+          {
+            "name": "projectData",
+            "in": "body",
+            "description": "Project data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" }
+              },
+              "required": ["name", "description"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Project created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a project",
+        "tags": ["project"],
+        "description": "Update an existing project",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "ID of the project to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "projectData",
+            "in": "body",
+            "description": "Updated project data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "description": { "type": "string" },
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Project updated successfully" },
+          "404": { "description": "Project not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a project",
+        "tags": ["project"],
+        "description": "Delete a project by ID",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "description": "ID of the project to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Project deleted successfully" },
+          "404": { "description": "Project not found" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "Get all tasks",
+        "tags": ["task"],
+        "description": "Retrieve a list of tasks",
+        "responses": {
+          "200": { "description": "List of tasks" }
+        }
+      },
+      "post": {
+        "summary": "Create a new task",
+        "tags": ["task"],
+        "description": "Create a new task",
+        "parameters": [
+          {
+            "name": "taskData",
+            "in": "body",
+            "description": "Task data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "assignedTo": { "type": "string" },
+                "dueDate": { "type": "string", "format": "date-time" }
+              },
+              "required": ["name", "assignedTo"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Task created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a task",
+        "tags": ["task"],
+        "description": "Update an existing task",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "description": "ID of the task to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "taskData",
+            "in": "body",
+            "description": "Updated task data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "assignedTo": { "type": "string" },
+                "dueDate": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Task updated successfully" },
+          "404": { "description": "Task not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a task",
+        "tags": ["task"],
+        "description": "Delete a task by ID",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "description": "ID of the task to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Task deleted successfully" },
+          "404": { "description": "Task not found" }
+        }
+      }
+    },
+    "/clients": {
+      "get": {
+        "summary": "Get all clients",
+        "tags": ["client"],
+        "description": "Retrieve a list of clients",
+        "responses": {
+          "200": { "description": "List of clients" }
+        }
+      },
+      "post": {
+        "summary": "Create a new client",
+        "tags": ["client"],
+        "description": "Create a new client",
+        "parameters": [
+          {
+            "name": "clientData",
+            "in": "body",
+            "description": "Client data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "contactInfo": { "type": "string" },
+                "company": { "type": "string" }
+              },
+              "required": ["name"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Client created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a client",
+        "tags": ["client"],
+        "description": "Update an existing client",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "description": "ID of the client to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "clientData",
+            "in": "body",
+            "description": "Updated client data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "contactInfo": { "type": "string" },
+                "company": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Client updated successfully" },
+          "404": { "description": "Client not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a client",
+        "tags": ["client"],
+        "description": "Delete a client by ID",
+        "parameters": [
+          {
+            "name": "clientId",
+            "in": "path",
+            "description": "ID of the client to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Client deleted successfully" },
+          "404": { "description": "Client not found" }
+        }
+      }
+    },
+    "/contracts": {
+      "get": {
+        "summary": "Get all contracts",
+        "tags": ["contract"],
+        "description": "Retrieve a list of contracts",
+        "responses": {
+          "200": { "description": "List of contracts" }
+        }
+      },
+      "post": {
+        "summary": "Create a new contract",
+        "tags": ["contract"],
+        "description": "Create a new contract",
+        "parameters": [
+          {
+            "name": "contractData",
+            "in": "body",
+            "description": "Contract data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "client": { "type": "string" },
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" },
+                "terms": { "type": "string" }
+              },
+              "required": ["client", "startDate", "endDate"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Contract created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a contract",
+        "tags": ["contract"],
+        "description": "Update an existing contract",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "description": "ID of the contract to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "contractData",
+            "in": "body",
+            "description": "Updated contract data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "client": { "type": "string" },
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" },
+                "terms": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Contract updated successfully" },
+          "404": { "description": "Contract not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a contract",
+        "tags": ["contract"],
+        "description": "Delete a contract by ID",
+        "parameters": [
+          {
+            "name": "contractId",
+            "in": "path",
+            "description": "ID of the contract to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Contract deleted successfully" },
+          "404": { "description": "Contract not found" }
+        }
+      }
+    },
+    "/slas": {
+      "get": {
+        "summary": "Get all SLAs",
+        "tags": ["sla"],
+        "description": "Retrieve a list of SLAs",
+        "responses": {
+          "200": { "description": "List of SLAs" }
+        }
+      },
+      "post": {
+        "summary": "Create a new SLA",
+        "tags": ["sla"],
+        "description": "Create a new SLA",
+        "parameters": [
+          {
+            "name": "slaData",
+            "in": "body",
+            "description": "SLA data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "serviceName": { "type": "string" },
+                "slaTerms": { "type": "string" },
+                "responseTime": { "type": "string" }
+              },
+              "required": ["serviceName", "slaTerms"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "SLA created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update an SLA",
+        "tags": ["sla"],
+        "description": "Update an existing SLA",
+        "parameters": [
+          {
+            "name": "slaId",
+            "in": "path",
+            "description": "ID of the SLA to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "slaData",
+            "in": "body",
+            "description": "Updated SLA data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "serviceName": { "type": "string" },
+                "slaTerms": { "type": "string" },
+                "responseTime": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "SLA updated successfully" },
+          "404": { "description": "SLA not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete an SLA",
+        "tags": ["sla"],
+        "description": "Delete an SLA by ID",
+        "parameters": [
+          {
+            "name": "slaId",
+            "in": "path",
+            "description": "ID of the SLA to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "SLA deleted successfully" },
+          "404": { "description": "SLA not found" }
+        }
+      }
+    },
+    "/resources": {
+      "get": {
+        "summary": "Get all resources",
+        "tags": ["resource"],
+        "description": "Retrieve a list of resources",
+        "responses": {
+          "200": { "description": "List of resources" }
+        }
+      },
+      "post": {
+        "summary": "Create a new resource",
+        "tags": ["resource"],
+        "description": "Create a new resource",
+        "parameters": [
+          {
+            "name": "resourceData",
+            "in": "body",
+            "description": "Resource data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "resourceType": { "type": "string" },
+                "allocatedTo": { "type": "string" }
+              },
+              "required": ["name"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Resource created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a resource",
+        "tags": ["resource"],
+        "description": "Update an existing resource",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "ID of the resource to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "resourceData",
+            "in": "body",
+            "description": "Updated resource data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "resourceType": { "type": "string" },
+                "allocatedTo": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Resource updated successfully" },
+          "404": { "description": "Resource not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a resource",
+        "tags": ["resource"],
+        "description": "Delete a resource by ID",
+        "parameters": [
+          {
+            "name": "resourceId",
+            "in": "path",
+            "description": "ID of the resource to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Resource deleted successfully" },
+          "404": { "description": "Resource not found" }
+        }
+      }
+    },
+    "/reports": {
+      "get": {
+        "summary": "Get all reports",
+        "tags": ["report"],
+        "description": "Retrieve a list of reports",
+        "responses": {
+          "200": { "description": "List of reports" }
+        }
+      },
+      "post": {
+        "summary": "Create a new report",
+        "tags": ["report"],
+        "description": "Create a new report",
+        "parameters": [
+          {
+            "name": "reportData",
+            "in": "body",
+            "description": "Report data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reportName": { "type": "string" },
+                "description": { "type": "string" },
+                "generatedDate": { "type": "string", "format": "date-time" }
+              },
+              "required": ["reportName"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Report created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update a report",
+        "tags": ["report"],
+        "description": "Update an existing report",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "ID of the report to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "reportData",
+            "in": "body",
+            "description": "Updated report data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reportName": { "type": "string" },
+                "description": { "type": "string" },
+                "generatedDate": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Report updated successfully" },
+          "404": { "description": "Report not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a report",
+        "tags": ["report"],
+        "description": "Delete a report by ID",
+        "parameters": [
+          {
+            "name": "reportId",
+            "in": "path",
+            "description": "ID of the report to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Report deleted successfully" },
+          "404": { "description": "Report not found" }
+        }
+      }
+    },
+    "/activities": {
+      "get": {
+        "summary": "Get all activities",
+        "tags": ["activity"],
+        "description": "Retrieve a list of activities",
+        "responses": {
+          "200": { "description": "List of activities" }
+        }
+      },
+      "post": {
+        "summary": "Create a new activity",
+        "tags": ["activity"],
+        "description": "Create a new activity",
+        "parameters": [
+          {
+            "name": "activityData",
+            "in": "body",
+            "description": "Activity data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "activityName": { "type": "string" },
+                "activityDate": { "type": "string", "format": "date-time" },
+                "assignedTo": { "type": "string" }
+              },
+              "required": ["activityName"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Activity created successfully" },
+          "400": { "description": "Invalid input" }
+        }
+      },
+      "put": {
+        "summary": "Update an activity",
+        "tags": ["activity"],
+        "description": "Update an existing activity",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "description": "ID of the activity to update",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "activityData",
+            "in": "body",
+            "description": "Updated activity data",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "activityName": { "type": "string" },
+                "activityDate": { "type": "string", "format": "date-time" },
+                "assignedTo": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Activity updated successfully" },
+          "404": { "description": "Activity not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete an activity",
+        "tags": ["activity"],
+        "description": "Delete an activity by ID",
+        "parameters": [
+          {
+            "name": "activityId",
+            "in": "path",
+            "description": "ID of the activity to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Activity deleted successfully" },
+          "404": { "description": "Activity not found" }
         }
       }
     }
   }
+}

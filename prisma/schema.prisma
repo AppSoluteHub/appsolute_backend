@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GUEST
+}
+
+enum PostCategory {
+  AI
+  TECHNOLOGY
+  MARKETING
+  DESIGN
+  SOFTWARE
+}
+
+model User {
+  id           String       @id @default(uuid())
+  fullName     String
+  email        String       @unique
+  password     String
+  profileImage String?
+  role         Role         @default(GUEST)
+  posts        Post[]       @relation("UserPosts")
+  subscribers  Subscriber[] @relation("UserSubscribers")
+  followers    Subscriber[] @relation("FollowerSubscriber")  
+  leaderboard  Leaderboard[]
+}
+
+model Post {
+  id          String       @id @default(uuid())
+  title       String
+  imageUrl       String
+  description String
+  authorId    String
+  author      User         @relation("UserPosts", fields: [authorId], references: [id])
+  category    PostCategory @default(TECHNOLOGY)
+   isPublished Boolean      @default(false)
+}
+
+model Content {
+  id          String @id @default(uuid())
+  body        String
+  description String
+  
+}
+
+model Subscriber {
+  id         String @id @default(uuid())
+  userId     String
+  user       User   @relation("UserSubscribers", fields: [userId], references: [id])
+  followerId String
+  follower   User   @relation("FollowerSubscriber", fields: [followerId], references: [id])
+}
+
+model Leaderboard {
+  id        String   @id @default(uuid())
+  rank      Int
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  score     Int
+  answered  Int      @default(0)
+  joined    DateTime @default(now())
+}
