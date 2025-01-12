@@ -1,160 +1,171 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "../../../utils/email";
-import { generateToken } from "../../../utils/jwt";
+import {
+  BadRequestError,
+  DuplicateError,
+  InternalServerError,
+  InvalidError,
+  NotFoundError,
+} from "../../../lib/appError";
+import { RegisterInput, EmailData } from "../../../interfaces/auth.interfaces";
 
 const prisma = new PrismaClient();
 
 class AuthService {
-  /**
-   * Register a new user
-   */
-  static async register({ fullName,profileImage, email, password }: { fullName: string;profileImage:string, email: string; password: string; }) {
+  static async register({
+    fullName,
+    profileImage,
+    email,
+    password,
+  }: RegisterInput) {
     try {
-      if (!fullName || !email || !password) {
-        throw { statusCode: 400, message: "All fields are required" };
-      }
+      if (!fullName || !email || !password)
+        throw new BadRequestError("All fields are required");
 
-      // Check for existing user
       const existingUser = await prisma.user.findUnique({ where: { email } });
-      if (existingUser) {
-        throw { statusCode: 409, message: "Email already exists" };
-      }
+      if (existingUser) throw new DuplicateError("Email already exists");
 
-      // Hash the password and create the user
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
-        data: { fullName, email, password: hashedPassword ,profileImage},
+        data: { fullName, email, password: hashedPassword, profileImage },
       });
 
       return user;
     } catch (error: any) {
-      throw AuthService.formatError(error);
+      throw new InternalServerError("Something went wrong");
     }
   }
 
-  /**
-   * User login
-   */
   static async login(email: string, password: string) {
     try {
-      if (!email || !password) {
-        throw { statusCode: 400, message: "Email and password are required" };
-      }
+      if (!email || !password)
+        throw new BadRequestError("Email and password are required");
 
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || !(await bcrypt.compare(password, user.password))) {
-        throw { statusCode: 401, message: "Invalid credentials" };
-      }
-
-
-      return {  user };
+      if (!user || !(await bcrypt.compare(password, user.password)))
+        throw new InvalidError("Invalid Credentials");
+         return { user };
     } catch (error: any) {
-      throw AuthService.formatError(error);
+      console.error(error);
+      throw new InternalServerError("Something went wrong");
     }
   }
 
-  /**
-   * Forgot password
-   */
+  
+
   static async forgotPassword(email: string) {
-    try {
-      if (!email) {
-        throw { statusCode: 400, message: "Email is required" };
-      }
-
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
-        throw { statusCode: 404, message: "User not found" };
-      }
-      const token = [...Array(6)].map(() => Math.floor(Math.random() * 10)).join('');
-      const resetToken = generateToken(user.id);
-      const resetLink = `TOKEN=${token}`;
-      const emailData = {
-        email: user.email,
-        subject: "Reset your AppSolute password",
-        html: `
-          <html>
-            <body>
-              <p>Hello ${user.email},</p>
-              <p>To reset your password, use the token below:</p>
-              <p>${resetLink}</p>
-              <p>This token is valid for 1 hour.</p>
-            </body>
-          </html>
-        `,
-      };
-      await sendEmail(emailData);
-
-      return "Password reset link sent";
-    } catch (error: any) {
-      throw AuthService.formatError(error);
+    if (!email) {
+      throw new BadRequestError("Email is required");
     }
-  }
-
-  /**
-   * Reset password
-   */
-  static async resetPassword(token: string, password: string) {
-    try {
-      if (!token || !password) {
-        throw { statusCode: 400, message: "Token and password are required" };
-      }
-
-      const { id }: any = jwt.verify(token, process.env.JWT_SECRET!);
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      await prisma.user.update({ where: { id }, data: { password: hashedPassword } });
-
-      return "Password reset successful";
-    } catch (error: any) {
-      console.log(error);
-      if (error.name === "JsonWebTokenError") {
-        throw { statusCode: 401, message: "Invalid or expired token" };
-      }
-      throw AuthService.formatError(error);
+  
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new NotFoundError("User not found");
     }
-  }
+  
+    
+    const otp = [...Array(6)].map(() => Math.floor(Math.random() * 10)).join("");
+    const expiresIn = new Date();
+    expiresIn.setMinutes(expiresIn.getMinutes() + 15); 
+  
+   
+    await prisma.user.update({
+      where: { email },
+      data: {
+        resetToken: otp,
+        resetTokenExpires: expiresIn,
+      },
+    });
 
-  /**
-   * Logout
-   */
+    const emailTemplate = `
+    <html>
+      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <div style="background: #37459C; padding: 20px; text-align: center; color: white;">
+            <h1 style="margin: 0;">AppSolute</h1>
+            <p style="margin: 5px 0; font-size: 16px;">Secure Your Account</p>
+          </div>
+          <div style="padding: 20px;">
+            <p style="font-size: 16px; color: #333;">Hello <strong style="color: #37459C;">${user.fullName}</strong>,</p>
+            <p style="font-size: 14px; color: #555;">You recently requested to reset your password for your AppSolute account. Please use the OTP below to reset your password:</p>
+            <div style="text-align: center; margin: 20px 0;">
+              <span style="display: inline-block; background: #f9f9f9; border: 1px dashed #37459C; padding: 10px 20px; font-size: 24px; font-weight: bold; color: #333;">${otp}</span>
+            </div>
+            <p style="font-size: 14px; color: #555; margin-top: 20px;">This OTP is valid for <strong>15 minutes</strong>. If you did not request this reset, you can safely ignore this email.</p>
+            <div style="margin-top: 30px; text-align: center;">
+              <a href="https://appsolute.com/support" style="text-decoration: none; background: #37459C; color: white; padding: 10px 20px; border-radius: 5px; font-size: 14px;">Contact Support</a>
+            </div>
+          </div>
+          <div style="background: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #888;">
+            <p style="margin: 0;">If you have any questions, please contact us at <a href="mailto:support@appsolute.com" style="color: #4caf50;">support@appsolute.com</a>.</p>
+            <p style="margin: 0;">&copy; ${new Date().getFullYear()} AppSolute. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  
+   
+    const emailData: EmailData = {
+      email: user.email,
+      subject: "Reset your AppSolute password",
+      html: emailTemplate
+      
+    };
+  
+    await sendEmail(emailData);
+  
+    return "OTP sent to your email";
+  }
+  
+  static async resetPassword(otp: string, password: string) {
+   
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: otp,
+        resetTokenExpires: { gte: new Date() }, 
+      },
+    });
+  
+    if (!user) 
+      throw new InvalidError("Invalid or expired OTP");
+    
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+  
+    // Update the user's password and clear the OTP fields
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpires: null,
+      },
+    });
+  
+    return "Password reset successful";
+  }
+  
+
   static async logout(token: string) {
     try {
-      if (!token) {
-        throw { statusCode: 400, message: "Token is required for logout" };
-      }
-
-      // Add token invalidation logic (e.g., store in blacklist)
+      if (!token) throw new BadRequestError("Token is required for logout");
       return "Logout successful";
     } catch (error: any) {
-      throw AuthService.formatError(error);
+      console.error(error);
+      throw new InternalServerError("Something went wrong");
     }
   }
 
- static async findById(id: string) {
+  static async findById(id: string) {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id }, 
-      });
+      const user = await prisma.user.findUnique({ where: { id } });
       return user;
     } catch (error) {
       console.error("Error fetching user by ID:", error);
       throw new Error("Unable to fetch user");
     }
-  }
-
-  /**
-   * Format and normalize errors
-   */
-  private static formatError(error: any) {
-    if (error.statusCode && error.message) {
-      return error;
-    }
-
-    console.error("Unexpected error:", error); 
-    return { statusCode: 500, message: "An unexpected error occurred" };
   }
 }
 

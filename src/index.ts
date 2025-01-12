@@ -11,19 +11,15 @@ import setupSwagger from "./swagger/swagger";
 const app = express();
 const port = process.env.PORT;
 
-// Middleware
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
 
-
-// Multer Configuration
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
 
-// Session Configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET as string,
@@ -33,17 +29,12 @@ app.use(
   })
 );
 
-// Routes
 const router = Router();
 const rootRouter = baseRoutes(router);
 app.use("/api/v1", rootRouter);
 
-// Swagger Documentation
 setupSwagger(app);
 
-// Server Listener
-app.listen(port, () => {
-  console.log(`🚀 Server is firing on port ${port}`);
-});
+app.listen(port, () => console.log(`🚀 Server is firing on port ${port}`));
 
 export default app;

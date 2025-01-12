@@ -3,9 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 class ContentService {
-  /**
-   * Create new content
-   */
+ 
   async createContent(body: string, description: string) {
     try {
       if (!body || !description) {
@@ -22,9 +20,7 @@ class ContentService {
     }
   }
 
-  /**
-   * Get all content
-   */
+ 
   async getAllContent() {
     try {
       const contents = await prisma.content.findMany();
@@ -34,9 +30,7 @@ class ContentService {
     }
   }
 
-  /**
-   * Get a single content by ID
-   */
+ 
   async getContentById(id: string) {
     try {
       const content = await prisma.content.findUnique({
@@ -53,9 +47,7 @@ class ContentService {
     }
   }
 
-  /**
-   * Update content by ID
-   */
+ 
   async updateContent(id: string, body: string, description: string) {
     try {
       if (!body || !description) {
@@ -73,9 +65,7 @@ class ContentService {
     }
   }
 
-  /**
-   * Delete content by ID
-   */
+ 
   async deleteContent(id: string) {
     try {
       const deletedContent = await prisma.content.delete({
@@ -88,9 +78,7 @@ class ContentService {
     }
   }
 
-  /**
-   * Format and normalize errors
-   */
+  
   private static formatError(error: any) {
     if (error.statusCode && error.message) {
       return error;

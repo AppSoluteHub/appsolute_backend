@@ -1,22 +1,24 @@
 import { Request, Response } from "express";
 import PostService from "../services/blog.service";
 import cloudinary from "../../../config/cloudinary";
+import fs from 'fs';
+import path from 'path';
+
 class PostController {
  
 
   static async createPost(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user as string;
-      const { title,  description, category, isPublished } = req.body;
-  
-     
+      const { title,  description, category,contributors, isPublished } = req.body;
+
       if (!userId) {
         res.status(401).json({ success: false, message: 'Unauthorized' });
         return;
       }
   
-      //Validation for required fields
-      if (!title ||  !description || !category) {
+
+      if (!title ||  !description || !category ) {
         res.status(400).json({
           success: false,
           message: 'Title, category , and description are required',
@@ -26,11 +28,10 @@ class PostController {
   
       let imageUrl: string = "" 
   
-      // Handle image upload if an image is provided
       if (req.file) {
-        // Narrow the type to ensure req.file is defined
+
+
         const file = req.file as Express.Multer.File;
-        console.log(file);
         // Upload image to Cloudinary
         imageUrl = await new Promise<string>((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
@@ -53,10 +54,11 @@ class PostController {
         description,
         category,
         isPublished,
+        contributors,
         imageUrl, 
       });
   
-      // Return success response
+    
       res.status(201).json({
         success: true,
         message: 'Post created successfully',
@@ -70,6 +72,7 @@ class PostController {
       });
     }
   }
+
 
 
   static async getAllPosts(req: Request, res: Response) {
@@ -108,9 +111,7 @@ class PostController {
     }
   }
 
-  /**
-   * Update a post
-   */
+  
   static async updatePost(req: Request, res: Response) {
     try {
       const userId = req.user as string
@@ -136,12 +137,10 @@ class PostController {
     }
   }
 
-  /**
-   * Delete a post
-   */
+
   static async deletePost(req: Request, res: Response) {
     try {
-      const userId = req.user?.id; // Assume the authenticated user ID is attached to req.user
+      const userId = req.user?.id;
       const { id } = req.params;
 
       if (!userId) {

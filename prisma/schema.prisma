@@ -21,34 +21,39 @@ enum PostCategory {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  fullName     String
-  email        String       @unique
-  password     String
-  profileImage String?
-  role         Role         @default(GUEST)
-  posts        Post[]       @relation("UserPosts")
-  subscribers  Subscriber[] @relation("UserSubscribers")
-  followers    Subscriber[] @relation("FollowerSubscriber")  
-  leaderboard  Leaderboard[]
+  id               String       @id @default(uuid())
+  fullName         String
+  email            String       @unique
+  password         String
+  profileImage     String?
+  role             Role         @default(GUEST)
+  posts            Post[]       @relation("UserPosts")
+  subscribers      Subscriber[] @relation("UserSubscribers")
+  followers        Subscriber[] @relation("FollowerSubscriber")  
+  leaderboard      Leaderboard[]
+  behavioralData   UserBehavior[]
+  resetToken        String?      
+  resetTokenExpires DateTime?
 }
 
 model Post {
   id          String       @id @default(uuid())
   title       String
-  imageUrl       String
+  imageUrl    String?
   description String
   authorId    String
+  contributors String?
   author      User         @relation("UserPosts", fields: [authorId], references: [id])
   category    PostCategory @default(TECHNOLOGY)
-   isPublished Boolean      @default(false)
+  isPublished Boolean      @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model Content {
   id          String @id @default(uuid())
   body        String
   description String
-  
 }
 
 model Subscriber {
@@ -67,4 +72,21 @@ model Leaderboard {
   score     Int
   answered  Int      @default(0)
   joined    DateTime @default(now())
+}
+
+model UserBehavior {
+  id           String       @id @default(uuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  postCategory PostCategory
+  interaction  InteractionType
+  timestamp    DateTime      @default(now())
+}
+
+enum InteractionType {
+  VIEW
+  CLICK
+  LIKE
+  SHARE
+  COMMENT
 }

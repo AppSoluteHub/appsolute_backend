@@ -80,7 +80,7 @@
         }
       }
     },
-    "/auth/register": {
+    "/register": {
       "post": {
         "summary": "Register a new user",
         "tags": [
@@ -138,55 +138,109 @@
         }
       }
     },
-    "/auth/login": {
-      "post": {
-        "summary": "Login a user",
-        "tags": [
-          "auth"
-        ],
-        "description": "Login a user with email and password",
-        "consumes": [
-          "application/json"
-        ],
-        "produces": [
-          "application/json"
-        ],
-        "parameters": [
-          {
-            "name": "userData",
-            "in": "body",
-            "description": "User data including email and password",
-            "required": true,
+   "/users/login": {
+  "post": {
+    "summary": "Login a user",
+    "tags": ["auth"],
+    "description": "Authenticate a user using their email and password.",
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "parameters": [
+      {
+        "name": "userData",
+        "in": "body",
+        "description": "User credentials including email and password",
+        "required": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "email": {
+              "type": "string",
+              "format": "email",
+              "example": "john@example.com"
+            },
+            "password": {
+              "type": "string",
+              "example": "password123"
+            }
+          },
+          "required": ["email", "password"]
+        }
+      }
+    ],
+    "responses": {
+      "200": {
+        "description": "User logged in successfully",
+        "content": {
+          "application/json": {
             "schema": {
               "type": "object",
               "properties": {
-                "email": {
+                "token": {
                   "type": "string",
-                  "format": "email",
-                  "example": "John@example.com"
+                  "description": "JWT access token",
+                  "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                 },
-                "password": {
-                  "type": "string",
-                  "example": "password123"
+                "user": {
+                  "type": "object",
+                  "description": "Authenticated user details",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "example": "12345"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email",
+                      "example": "john@example.com"
+                    },
+                    "name": {
+                      "type": "string",
+                      "example": "John Doe"
+                    }
+                  }
                 }
-              },
-              "required": [
-                "email",
-                "password"
-              ]
+              }
             }
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "User logged in successfully"
-          },
-          "400": {
-            "description": "Invalid input"
+        }
+      },
+      "400": {
+        "description": "Invalid input provided",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Invalid email or password"
+                }
+              }
+            }
+          }
+        }
+      },
+      "401": {
+        "description": "Unauthorized - Incorrect email or password",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "Unauthorized access"
+                }
+              }
+            }
           }
         }
       }
-    },
+    }
+  }
+}
+,
     "/auth/logout": {
       "post": {
         "summary": "Logout a user",

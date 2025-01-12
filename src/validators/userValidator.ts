@@ -47,7 +47,8 @@ export const validateForgotPassword = (req: Request, res: Response, next: NextFu
 export const validateResetPassword = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({
     password: Joi.string().min(8).required(),
-    confirmPassword: Joi.string().valid(Joi.ref("password")).required(),
+    otp: Joi.string().min(6).required(),
+    confirmPassword: Joi.string().valid(Joi.ref("password")).optional(),
   });
 
   const { error } = schema.validate(req.body);
