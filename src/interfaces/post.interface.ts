@@ -15,5 +15,6 @@ export interface UpdatePostData {
   imageUrl?: string;
   description?: string;
   isPublished?: boolean;
+
 }
 

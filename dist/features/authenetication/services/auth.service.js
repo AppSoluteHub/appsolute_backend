@@ -116,10 +116,8 @@ class AuthService {
                     resetTokenExpires: { gte: new Date() },
                 },
             });
-            if (!user) {
+            if (!user)
                 throw new appError_1.InvalidError("Invalid or expired OTP");
-            }
-            console.log(password);
             // Hash the new password
             const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
             // Update the user's password and clear the OTP fields

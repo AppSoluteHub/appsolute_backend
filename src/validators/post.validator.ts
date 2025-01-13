@@ -6,8 +6,9 @@ import Joi from 'joi';
 const createPostSchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),
+  contributors: Joi.string().required(),
   isPublished: Joi.boolean().optional(),
-  imageUrl: Joi.string().required(),
+  imageUrl: Joi.string().optional(),
   category: Joi.string()
     .valid('AI', 'TECHNOLOGY', 'MARKETING', 'DESIGN', 'SOFTWARE')
     .optional(),

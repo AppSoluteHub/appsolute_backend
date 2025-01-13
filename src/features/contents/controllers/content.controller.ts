@@ -2,9 +2,7 @@ import { Request, Response } from "express";
 import ContentService from "../services/content.service";
 
 class ContentController {
-  /**
-   * Create new content
-   */
+
   async createContent(req: Request, res: Response) {
     try {
       const { body, description } = req.body;
@@ -20,9 +18,6 @@ class ContentController {
     }
   }
 
-  /**
-   * Get all content
-   */
   async getAllContent(req: Request, res: Response) {
     try {
       const contents = await ContentService.getAllContent();
@@ -32,9 +27,6 @@ class ContentController {
     }
   }
 
-  /**
-   * Get content by ID
-   */
   async getContentById(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -50,9 +42,7 @@ class ContentController {
     }
   }
 
-  /**
-   * Update content by ID
-   */
+ 
   async updateContent(req: Request, res: Response) {
     try {
       const { id } = req.params;
@@ -69,9 +59,7 @@ class ContentController {
     }
   }
 
-  /**
-   * Delete content by ID
-   */
+ 
   async deleteContent(req: Request, res: Response) {
     try {
       const { id } = req.params;

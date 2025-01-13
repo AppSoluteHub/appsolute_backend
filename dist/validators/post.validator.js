@@ -9,8 +9,9 @@ const joi_1 = __importDefault(require("joi"));
 const createPostSchema = joi_1.default.object({
     title: joi_1.default.string().required(),
     description: joi_1.default.string().required(),
+    contributors: joi_1.default.string().required(),
     isPublished: joi_1.default.boolean().optional(),
-    imageUrl: joi_1.default.string().required(),
+    imageUrl: joi_1.default.string().optional(),
     category: joi_1.default.string()
         .valid('AI', 'TECHNOLOGY', 'MARKETING', 'DESIGN', 'SOFTWARE')
         .optional(),

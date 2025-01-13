@@ -14,7 +14,8 @@ const prisma = new client_1.PrismaClient();
 class PostService {
     static createPost(userId, postData) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { title, imageUrl, description, category, isPublished } = postData;
+            const { title, imageUrl, description, category, contributors, isPublished } = postData;
+            console.log(postData);
             const validCategory = category && Object.values(client_1.PostCategory).includes(category)
                 ? category
                 : client_1.PostCategory.TECHNOLOGY;
@@ -26,6 +27,7 @@ class PostService {
                         category: validCategory,
                         authorId: userId,
                         imageUrl,
+                        contributors,
                         isPublished,
                     },
                 });

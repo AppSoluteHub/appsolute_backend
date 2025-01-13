@@ -76,7 +76,6 @@ class AuthController {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 const { password, otp } = req.body;
-                console.log("controller passwprd");
                 if (!otp || !password)
                     throw new appError_1.BadRequestError("Otp and password are required");
                 const result = yield auth_service_1.default.resetPassword(otp, password);
@@ -92,11 +91,12 @@ class AuthController {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                const token = (_a = req.headers.authorization) === null || _a === void 0 ? void 0 : _a.split(" ")[1];
+                const token = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.token;
                 if (!token) {
                     throw new Error("Token not provided");
                 }
                 const result = yield auth_service_1.default.logout(token);
+                res.clearCookie("token");
                 res.send((0, appResponse_1.default)("Message:", result));
             }
             catch (error) {

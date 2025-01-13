@@ -86,24 +86,6 @@ class AuthController {
   }
 
 
-
-  // static async logout(
-  //   req: Request,
-  //   res: Response,
-  //   next: NextFunction
-  // ): Promise<void> {
-  //   try {
-  //     const token = req.headers.authorization?.split(" ")[1];
-  //     if (!token) {
-  //       throw new Error("Token not provided");
-  //     }
-  //     const result = await AuthService.logout(token);
-  //     res.send(appResponse("Message:", result));
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // }
-
   static async logout(
     req: Request,
     res: Response,

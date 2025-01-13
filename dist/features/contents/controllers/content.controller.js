@@ -14,9 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const content_service_1 = __importDefault(require("../services/content.service"));
 class ContentController {
-    /**
-     * Create new content
-     */
     createContent(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -32,9 +29,6 @@ class ContentController {
             }
         });
     }
-    /**
-     * Get all content
-     */
     getAllContent(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -46,9 +40,6 @@ class ContentController {
             }
         });
     }
-    /**
-     * Get content by ID
-     */
     getContentById(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -64,9 +55,6 @@ class ContentController {
             }
         });
     }
-    /**
-     * Update content by ID
-     */
     updateContent(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -83,9 +71,6 @@ class ContentController {
             }
         });
     }
-    /**
-     * Delete content by ID
-     */
     deleteContent(req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             try {

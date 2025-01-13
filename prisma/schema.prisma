@@ -1,25 +1,3 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-enum Role {
-  ADMIN
-  GUEST
-}
-
-enum PostCategory {
-  AI
-  TECHNOLOGY
-  MARKETING
-  DESIGN
-  SOFTWARE
-}
-
 model User {
   id               String       @id @default(uuid())
   fullName         String
@@ -28,26 +6,51 @@ model User {
   profileImage     String?
   role             Role         @default(GUEST)
   posts            Post[]       @relation("UserPosts")
+  comments         Comment[]    @relation("UserComments")
+  likes            Like[]       @relation("UserLikes")
   subscribers      Subscriber[] @relation("UserSubscribers")
   followers        Subscriber[] @relation("FollowerSubscriber")  
   leaderboard      Leaderboard[]
   behavioralData   UserBehavior[]
-  resetToken        String?      
+  resetToken       String?      
   resetTokenExpires DateTime?
 }
 
 model Post {
-  id          String       @id @default(uuid())
-  title       String
-  imageUrl    String?
-  description String
-  authorId    String
-  contributors String?
-  author      User         @relation("UserPosts", fields: [authorId], references: [id])
-  category    PostCategory @default(TECHNOLOGY)
-  isPublished Boolean      @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String       @id @default(uuid())
+  title        String
+  imageUrl     String?
+  description  String
+  authorId     String
+  contributors String
+  author       User         @relation("UserPosts", fields: [authorId], references: [id])
+  category     PostCategory @default(TECHNOLOGY)
+  isPublished  Boolean      @default(false)
+  comments     Comment[]    @relation("PostComments")
+  likes        Like[]       @relation("PostLikes")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+
+
+model Comment {
+  id        String   @id @default(uuid())
+  body      String
+  authorId  String
+  postId    String
+  author    User     @relation("UserComments", fields: [authorId], references: [id])
+  post      Post     @relation("PostComments", fields: [postId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  user      User     @relation("UserLikes", fields: [userId], references: [id])
+  post      Post     @relation("PostLikes", fields: [postId], references: [id])
+  createdAt DateTime @default(now())
 }
 
 model Content {
@@ -81,6 +84,19 @@ model UserBehavior {
   postCategory PostCategory
   interaction  InteractionType
   timestamp    DateTime      @default(now())
+}
+
+enum Role {
+  ADMIN
+  GUEST
+}
+
+enum PostCategory {
+  AI
+  TECHNOLOGY
+  MARKETING
+  DESIGN
+  SOFTWARE
 }
 
 enum InteractionType {
