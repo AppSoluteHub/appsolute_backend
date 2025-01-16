@@ -5,7 +5,7 @@ import leaderboardRoute from './leaderBoard/routes/leaderBoard.route';
 import contactRoute from './subscribers/routes/subscriber.route'
 
 export default (appRouter :any) => {
-  appRouter.use("/user",userRoute);
+  appRouter.use("/users",userRoute);
   appRouter.use("/posts",blogRoute);
   appRouter.use("/contents",contentRoute);
   appRouter.use("/leaderborad",leaderboardRoute);

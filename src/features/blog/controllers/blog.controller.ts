@@ -3,6 +3,7 @@ import PostService from "../services/blog.service";
 import cloudinary from "../../../config/cloudinary";
 import fs from "fs";
 import path from "path";
+import { BadRequestError } from "../../../lib/appError";
 
 class PostController {
   static async createPost(req: Request, res: Response): Promise<void> {
@@ -69,9 +70,9 @@ class PostController {
 
   static async getAllPosts(req: Request, res: Response) {
     try {
+     
       const { publishedOnly } = req.query;
       const posts = await PostService.getAllPosts(publishedOnly === "true");
-
       res.status(200).json({
         success: true,
         data: posts,
