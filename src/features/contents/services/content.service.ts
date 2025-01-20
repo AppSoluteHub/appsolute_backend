@@ -1,10 +1,11 @@
 import axios from "axios";
+import { BadRequestError, InternalServerError } from "../../../lib/appError";
 
 const API_KEY = process.env.YOUTUBE_API_KEY;
 const CHANNEL_ID = process.env.CHANNEL_ID;
 
 if (!API_KEY || !CHANNEL_ID) {
-  throw new Error("Missing API_KEY or CHANNEL_ID in environment variables.");
+  throw new BadRequestError("Missing API_KEY or CHANNEL_ID in environment variables.");
 }
 
 export const fetchYouTubeVideos = async () => {
@@ -32,6 +33,6 @@ export const fetchYouTubeVideos = async () => {
     }));
   } catch (error) {
     console.error("Error fetching videos:", error);
-    throw error;
+    throw new InternalServerError("Something went wrong fetching youtube channel contents");
   }
 };
