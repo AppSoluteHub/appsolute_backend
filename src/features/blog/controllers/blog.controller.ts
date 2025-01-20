@@ -8,7 +8,7 @@ import { BadRequestError } from "../../../lib/appError";
 class PostController {
   static async createPost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user as string;
+      const userId = req.user?.id  as string; 
       const { title, description, category, contributors, isPublished } =
         req.body;
 
@@ -107,11 +107,11 @@ class PostController {
 
   static async updatePost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user as string; // Type-cast to string for clarity
+      const userId = req.user?.id as string; 
       const { id } = req.params;
       const { title, description, imageUrl, isPublished,  } = req.body;
 
-      // Check if user is authorized
+     
       if (!userId) {
          res.status(401).json({ success: false, message: "Unauthorized" });
       }
@@ -148,7 +148,7 @@ class PostController {
 
   static async deletePost(req: Request, res: Response):Promise<void> {
     try {
-      const userId = req.user as string;
+      const userId = req.user?.id as string;
       const { id } = req.params;
 console.log(userId);
       if (!userId) {

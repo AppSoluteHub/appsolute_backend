@@ -21,9 +21,10 @@ export const fetchYouTubeVideos = async () => {
         },
       }
     );
-
+   
     return response.data.items.map((item: any) => ({
       id: item.id.videoId,
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
       title: item.snippet.title,
       description: item.snippet.description,
       thumbnail: item.snippet.thumbnails.high.url,

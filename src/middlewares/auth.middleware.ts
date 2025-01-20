@@ -1,19 +1,31 @@
 import { NextFunction, Request, Response } from "express";
 import { verifyToken } from "../utils/jwt";
+import { PrismaClient, User as PrismaUser } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+
+import * as express from 'express';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: string;
+        email: string;
+        role: 'ADMIN' | 'GUEST' | 'SUPERADMIN'; 
+      };
     }
   }
 }
 
-export default function authenticate(
+
+
+export default async function authenticate(
   req: Request,
   res: Response,
   next: NextFunction
-): void {
+): Promise<void> {
   const token = req.cookies?.token;
 
   if (!token) {
@@ -23,7 +35,15 @@ export default function authenticate(
 
   try {
     const decoded = verifyToken(token);
-    req.user = decoded.userId;
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+
+    if (!user) {
+      res.status(401).json({ success: false, message: "Invalid user." });
+      return;
+    }
+
+    
+    req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (err) {
     res

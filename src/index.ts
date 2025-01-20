@@ -7,6 +7,8 @@ import cookieParser from "cookie-parser";
 import multer from "multer";
 import baseRoutes from "./features/appRoute";
 import setupSwagger from "./swagger/swagger";
+// import googleAuthMiddleware from "./middlewares/authorize.middleware";
+
 
 const app = express();
 const port = process.env.PORT;
@@ -16,6 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(cookieParser());
 app.use(express.json());
+
 
 const storage = multer.memoryStorage();
 export const upload = multer({ storage });
@@ -28,7 +31,7 @@ app.use(
     cookie: { secure: false },
   })
 );
-
+// googleAuthMiddleware(app)
 const router = Router();
 const rootRouter = baseRoutes(router);
 app.use("/api/v1", rootRouter);

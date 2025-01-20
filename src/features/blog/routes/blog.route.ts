@@ -20,13 +20,13 @@ router.get("/:id", PostController.getPostById);
 router.delete("/:id", authenticate, PostController.deletePost);
 router.put("/:id", authenticate, PostController.updatePost);
 
-router.post("/comments",authenticate, commentController.createComment);
-router.get("/coments/:postId",authenticate, commentController.getCommentsByPostId);
-router.put("/comments/:id",authenticate, commentController.updateComment);
-router.delete("/comments/:id",authenticate, commentController.deleteComment);
+router.post("/:postId/comment",authenticate, commentController.createComment);
+router.get("/:postId/comment",authenticate, commentController.getCommentsByPostId);
+router.put("/:postId/comment",authenticate, commentController.updateComment);
+router.delete("/:postId/comment",authenticate, commentController.deleteComment);
 
-router.post("/likes/:postId/like", likeController.like);
-router.delete("/likes/:postId/like", likeController.unlike);
+router.post("/:postId/like",authenticate, likeController.like);
+router.delete("/:postId/unlike", authenticate,likeController.unlike);
 
 
 
