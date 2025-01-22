@@ -1,12 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const router = (0, express_1.Router)();
-// // Public routes (no authentication required)
-// router.get("/content", ContentController.getAllContent); 
-// router.get("/content/:id", ContentController.getContentById); 
-// // Protected routes (authentication required)
-// router.post("/content", ContentController.createContent); 
-// router.put("/content/:id", ContentController.updateContent); 
-// router.delete("/content/:id",  ContentController.deleteContent); 
+const express_1 = __importDefault(require("express"));
+const content_controller_1 = require("../controllers/content.controller");
+const router = express_1.default.Router();
+router.get("/videos", content_controller_1.getYouTubeVideos);
 exports.default = router;

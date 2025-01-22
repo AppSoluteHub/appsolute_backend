@@ -37,9 +37,9 @@ Ensure you have the following installed on your system:
 
 
 ## Install dependencies:
-  npm install
+  `npm install`
   or
-  yarn
+ ` yarn`
 
 
 ## Environment Variables
@@ -50,7 +50,7 @@ CHANNEL_ID=your-channel-id
 PORT=your-server-port (default: 3000)
 
 
-npm run dev
+`npm run dev`
 This uses ts-node to start the application in development mode.
 
 Build:
@@ -68,6 +68,6 @@ Runs the built application from the dist folder.
 
 or 
 
-npm run build
-npm start
+`npm run build`
+`npm start`
 

@@ -1,96 +1,39 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
-class ContentService {
-    createContent(body, description) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!body || !description) {
-                    throw { statusCode: 400, message: "Body and description are required" };
-                }
-                const content = yield prisma.content.create({
-                    data: { body, description },
-                });
-                return content;
-            }
-            catch (error) {
-                throw ContentService.formatError(error);
-            }
-        });
-    }
-    getAllContent() {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const contents = yield prisma.content.findMany();
-                return contents;
-            }
-            catch (error) {
-                throw ContentService.formatError(error);
-            }
-        });
-    }
-    getContentById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const content = yield prisma.content.findUnique({
-                    where: { id },
-                });
-                if (!content) {
-                    throw { statusCode: 404, message: "Content not found" };
-                }
-                return content;
-            }
-            catch (error) {
-                throw ContentService.formatError(error);
-            }
-        });
-    }
-    updateContent(id, body, description) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!body || !description) {
-                    throw { statusCode: 400, message: "Body and description are required" };
-                }
-                const updatedContent = yield prisma.content.update({
-                    where: { id },
-                    data: { body, description },
-                });
-                return updatedContent;
-            }
-            catch (error) {
-                throw ContentService.formatError(error);
-            }
-        });
-    }
-    deleteContent(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const deletedContent = yield prisma.content.delete({
-                    where: { id },
-                });
-                return deletedContent;
-            }
-            catch (error) {
-                throw ContentService.formatError(error);
-            }
-        });
-    }
-    static formatError(error) {
-        if (error.statusCode && error.message) {
-            return error;
-        }
-        console.error("Unexpected error:", error);
-        return { statusCode: 500, message: "An unexpected error occurred" };
-    }
+exports.fetchYouTubeVideos = void 0;
+const axios_1 = __importDefault(require("axios"));
+const appError_1 = require("../../../lib/appError");
+const API_KEY = process.env.YOUTUBE_API_KEY;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+if (!API_KEY || !CHANNEL_ID) {
+    throw new appError_1.BadRequestError("Missing API_KEY or CHANNEL_ID in environment variables.");
 }
-exports.default = new ContentService();
+const fetchYouTubeVideos = async () => {
+    try {
+        const response = await axios_1.default.get("https://www.googleapis.com/youtube/v3/search", {
+            params: {
+                part: "snippet",
+                channelId: CHANNEL_ID,
+                maxResults: 10,
+                order: "date",
+                key: API_KEY,
+            },
+        });
+        return response.data.items.map((item) => ({
+            id: item.id.videoId,
+            url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+            title: item.snippet.title,
+            description: item.snippet.description,
+            thumbnail: item.snippet.thumbnails.high.url,
+            publishedAt: item.snippet.publishedAt,
+        }));
+    }
+    catch (error) {
+        console.error("Error fetching videos:", error);
+        throw new appError_1.InternalServerError("Something went wrong fetching youtube channel contents");
+    }
+};
+exports.fetchYouTubeVideos = fetchYouTubeVideos;

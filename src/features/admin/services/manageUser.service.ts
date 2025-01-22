@@ -4,6 +4,7 @@ import { BadRequestError, DuplicateError, InternalServerError, NotFoundError } f
 const prisma = new PrismaClient();
 
 export class AdminService {
+  
   static async addAdmin(email: string): Promise<User | null> {
     try {
       const user = await prisma.user.findUnique({ where: { email } });

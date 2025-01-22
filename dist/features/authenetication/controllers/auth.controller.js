@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -17,92 +8,101 @@ const jwt_1 = require("../../../utils/jwt");
 const appResponse_1 = __importDefault(require("../../../lib/appResponse"));
 const appError_1 = require("../../../lib/appError");
 class AuthController {
-    static register(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { fullName, email, password, profileImage } = req.body;
-                const newUser = yield auth_service_1.default.register({
-                    fullName,
-                    email,
-                    profileImage,
-                    password,
-                });
-                res.send((0, appResponse_1.default)("User registered successfully", newUser));
-            }
-            catch (error) {
-                next(error);
-                console.log(error);
-            }
-        });
+    static async register(req, res, next) {
+        try {
+            const { fullName, email, password, profileImage } = req.body;
+            const newUser = await auth_service_1.default.register({
+                fullName,
+                email,
+                profileImage,
+                password,
+            });
+            res.send((0, appResponse_1.default)("User registered successfully", newUser));
+        }
+        catch (error) {
+            next(error);
+            console.log(error);
+        }
     }
-    static login(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { email, password } = req.body;
-                const { user } = yield auth_service_1.default.login(email, password);
-                const token = (0, jwt_1.generateToken)(user.id);
-                const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
-                res.cookie("token", token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    sameSite: "strict",
-                });
-                res.cookie("refreshToken", refreshToken, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    sameSite: "strict",
-                });
-                res.status(200).json({ message: "Login successful", token, user });
-            }
-            catch (error) {
-                console.log(error);
-                next(error);
-            }
-        });
+    static async login(req, res, next) {
+        try {
+            const { email, password } = req.body;
+            const { user } = await auth_service_1.default.login(email, password);
+            const token = (0, jwt_1.generateToken)(user.id);
+            const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+            });
+            res.cookie("refreshToken", refreshToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+            });
+            res.status(200).json({ message: "Login successful", token, user });
+        }
+        catch (error) {
+            console.log(error);
+            next(error);
+        }
     }
-    static forgotPassword(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { email } = req.body;
-                const result = yield auth_service_1.default.forgotPassword(email);
-                res.send((0, appResponse_1.default)("Message:", result));
-            }
-            catch (error) {
-                next(error);
-            }
-        });
+    static async forgotPassword(req, res, next) {
+        try {
+            const { email } = req.body;
+            const result = await auth_service_1.default.forgotPassword(email);
+            res.send((0, appResponse_1.default)("Message:", result));
+        }
+        catch (error) {
+            next(error);
+        }
     }
-    static resetPassword(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const { password, otp } = req.body;
-                if (!otp || !password)
-                    throw new appError_1.BadRequestError("Otp and password are required");
-                const result = yield auth_service_1.default.resetPassword(otp, password);
-                res.send((0, appResponse_1.default)("message:", result));
+    // static async resetPassword(
+    //   req: Request,
+    //   res: Response,
+    //   next: NextFunction
+    // ): Promise<void> {
+    //   try {
+    //     const { password, otp } = req.body;
+    //     if(!otp || !password) throw new BadRequestError("Otp and password are required");
+    //     const result = await AuthService.resetPassword(otp, password);
+    //     res.send(appResponse("message:", result));
+    //   } catch (error) {
+    //     console.log(error);
+    //     next(error);
+    //   }
+    // }
+    static async resetPassword(req, res, next) {
+        try {
+            const { password, confirmPassword, otp } = req.body;
+            if (!otp || !password || !confirmPassword)
+                throw new appError_1.BadRequestError("OTP, password, and confirm password are required");
+            if (password !== confirmPassword)
+                throw new appError_1.BadRequestError("Password and confirm password do not match");
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!passwordRegex.test(password)) {
+                throw new appError_1.BadRequestError("Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character");
             }
-            catch (error) {
-                console.log(error);
-                next(error);
-            }
-        });
+            const result = await auth_service_1.default.resetPassword(otp, password);
+            res.send((0, appResponse_1.default)("Password reset successful", result));
+        }
+        catch (error) {
+            console.error("Reset password error:", error);
+            next(error);
+        }
     }
-    static logout(req, res, next) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            try {
-                const token = (_a = req.cookies) === null || _a === void 0 ? void 0 : _a.token;
-                if (!token) {
-                    throw new Error("Token not provided");
-                }
-                const result = yield auth_service_1.default.logout(token);
-                res.clearCookie("token");
-                res.send((0, appResponse_1.default)("Message:", result));
-            }
-            catch (error) {
-                next(error);
-            }
-        });
+    static async logout(req, res, next) {
+        try {
+            const token = req.cookies?.token;
+            if (!token)
+                throw new Error("Token not provided");
+            const result = await auth_service_1.default.logout(token);
+            res.clearCookie("token", { httpOnly: true, secure: true });
+            res.send((0, appResponse_1.default)("Message:", result));
+        }
+        catch (error) {
+            next(error);
+        }
     }
 }
 exports.default = AuthController;
