@@ -7,7 +7,6 @@ const prisma = new PrismaClient();
 class PostService {
   static async createPost(userId: string, postData: PostData) {
     const { title, imageUrl, description, category,contributors, isPublished } = postData;
-    console.log(postData)
     const validCategory: PostCategory =
       category && Object.values(PostCategory).includes(category as PostCategory)
         ? (category as PostCategory)

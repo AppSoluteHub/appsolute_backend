@@ -3,6 +3,7 @@ export interface RegisterInput {
     profileImage: string;
     email: string;
     password: string;
+   
   }
   
   export interface EmailData {

@@ -18,7 +18,7 @@ router.post("/", authenticate, upload.single("file"), validatePost, PostControll
 router.get("/", PostController.getAllPosts);
 router.get("/:id", PostController.getPostById);
 router.delete("/:id", authenticate, PostController.deletePost);
-router.put("/:id", authenticate, PostController.updatePost);
+router.patch("/:id", authenticate, PostController.updatePost);
 
 router.post("/:postId/comment",authenticate, commentController.createComment);
 router.get("/:postId/comment",authenticate, commentController.getCommentsByPostId);

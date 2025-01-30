@@ -43,7 +43,7 @@ app.use("/", googleRoute )
 // googleAuthMiddleware(app)
 const router = Router();
 const rootRouter = baseRoutes(router);
-app.use("/", rootRouter);
+app.use("/api/v1", rootRouter);
 
 
 setupSwagger(app);

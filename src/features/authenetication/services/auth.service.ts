@@ -22,7 +22,6 @@ class AuthService {
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) throw new DuplicateError("Email already exists");
-
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: { fullName, email, password: hashedPassword, profileImage },

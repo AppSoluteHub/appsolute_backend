@@ -16,6 +16,7 @@ class AuthController {
         email,
         profileImage,
         password,
+      
       });
       res.send(appResponse("User registered successfully", newUser));
     } catch (error) {
