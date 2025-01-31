@@ -14,7 +14,7 @@ export const sendEmail = async (data :any) => {
     });
 
     const mailOptions = {
-      from: `ApSolute <${env.node_mailer_user}>`,
+      from: `AppSolute <${env.node_mailer_user}>`,
       to: data.email,
       subject: data.subject,
       html: data.html,

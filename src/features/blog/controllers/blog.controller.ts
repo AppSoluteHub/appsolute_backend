@@ -3,11 +3,12 @@ import PostService from "../services/blog.service";
 import cloudinary from "../../../config/cloudinary";
 import fs from "fs";
 import path from "path";
+import { BadRequestError } from "../../../lib/appError";
 
 class PostController {
   static async createPost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user as string;
+      const userId = req.user?.id  as string; 
       const { title, description, category, contributors, isPublished } =
         req.body;
 
@@ -31,7 +32,7 @@ class PostController {
 
         imageUrl = await new Promise<string>((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "posts" },
+            { folder: "AppSoluteBlogPosts" },
             (error, result) => {
               if (error) {
                 reject(new Error("Failed to upload image to Cloudinary"));
@@ -69,9 +70,9 @@ class PostController {
 
   static async getAllPosts(req: Request, res: Response) {
     try {
+     
       const { publishedOnly } = req.query;
       const posts = await PostService.getAllPosts(publishedOnly === "true");
-
       res.status(200).json({
         success: true,
         data: posts,
@@ -106,11 +107,11 @@ class PostController {
 
   static async updatePost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user as string; // Type-cast to string for clarity
+      const userId = req.user?.id as string; 
       const { id } = req.params;
       const { title, description, imageUrl, isPublished,  } = req.body;
 
-      // Check if user is authorized
+     
       if (!userId) {
          res.status(401).json({ success: false, message: "Unauthorized" });
       }
@@ -147,7 +148,7 @@ class PostController {
 
   static async deletePost(req: Request, res: Response):Promise<void> {
     try {
-      const userId = req.user as string;
+      const userId = req.user?.id as string;
       const { id } = req.params;
 console.log(userId);
       if (!userId) {

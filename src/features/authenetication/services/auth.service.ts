@@ -20,17 +20,12 @@ class AuthService {
     password,
   }: RegisterInput) {
     try {
-      if (!fullName || !email || !password)
-        throw new BadRequestError("All fields are required");
-
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) throw new DuplicateError("Email already exists");
-
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
         data: { fullName, email, password: hashedPassword, profileImage },
       });
-
       return user;
     } catch (error: any) {
       throw new InternalServerError("Something went wrong");
@@ -39,37 +34,23 @@ class AuthService {
 
   static async login(email: string, password: string) {
     try {
-      if (!email || !password)
-        throw new BadRequestError("Email and password are required");
-
       const user = await prisma.user.findUnique({ where: { email } });
       if (!user || !(await bcrypt.compare(password, user.password)))
         throw new InvalidError("Invalid Credentials");
-         return { user };
+         return {user} ;
     } catch (error: any) {
       console.error(error);
       throw new InternalServerError("Something went wrong");
     }
   }
 
-  
-
   static async forgotPassword(email: string) {
-    if (!email) {
-      throw new BadRequestError("Email is required");
-    }
-  
+    if (!email)  throw new BadRequestError("Email is required");
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-  
-    
+    if (!user) throw new NotFoundError("User not found")
     const otp = [...Array(6)].map(() => Math.floor(Math.random() * 10)).join("");
     const expiresIn = new Date();
     expiresIn.setMinutes(expiresIn.getMinutes() + 15); 
-  
-   
     await prisma.user.update({
       where: { email },
       data: {
@@ -106,21 +87,17 @@ class AuthService {
     </html>
   `;
   
-   
+  
     const emailData: EmailData = {
       email: user.email,
       subject: "Reset your AppSolute password",
       html: emailTemplate
-      
     };
-  
     await sendEmail(emailData);
-  
     return "OTP sent to your email";
   }
   
   static async resetPassword(otp: string, password: string) {
-   
     const user = await prisma.user.findFirst({
       where: {
         resetToken: otp,
@@ -128,14 +105,9 @@ class AuthService {
       },
     });
   
-    if (!user) 
-      throw new InvalidError("Invalid or expired OTP");
-    
-    // Hash the new password
+    if (!user) throw new InvalidError("Invalid or expired OTP");
     const hashedPassword = await bcrypt.hash(password, 10);
-  
-    // Update the user's password and clear the OTP fields
-    await prisma.user.update({
+     await prisma.user.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,
@@ -143,14 +115,13 @@ class AuthService {
         resetTokenExpires: null,
       },
     });
-  
+
     return "Password reset successful";
   }
   
-
   static async logout(token: string) {
     try {
-      if (!token) throw new BadRequestError("Token is required for logout");
+      if (!token) throw new BadRequestError("Authentication token is missing");
       return "Logout successful";
     } catch (error: any) {
       console.error(error);

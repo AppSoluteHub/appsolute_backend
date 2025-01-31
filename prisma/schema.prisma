@@ -1,3 +1,12 @@
+
+datasource db {
+  provider = "postgresql" // 
+  url      = env("DATABASE_URL") 
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
 model User {
   id               String       @id @default(uuid())
   fullName         String
@@ -20,9 +29,9 @@ model Post {
   id           String       @id @default(uuid())
   title        String
   imageUrl     String?
-  description  String
+  description  String?
   authorId     String
-  contributors String
+  contributors String?
   author       User         @relation("UserPosts", fields: [authorId], references: [id])
   category     PostCategory @default(TECHNOLOGY)
   isPublished  Boolean      @default(false)
@@ -51,12 +60,14 @@ model Like {
   user      User     @relation("UserLikes", fields: [userId], references: [id])
   post      Post     @relation("PostLikes", fields: [postId], references: [id])
   createdAt DateTime @default(now())
+  @@unique([userId, postId]) 
 }
 
 model Content {
   id          String @id @default(uuid())
-  body        String
-  description String
+  contentUrl        String
+  description  String
+  category   String 
 }
 
 model Subscriber {
@@ -89,6 +100,7 @@ model UserBehavior {
 enum Role {
   ADMIN
   GUEST
+  SUPERADMIN
 }
 
 enum PostCategory {

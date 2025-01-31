@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -18,61 +9,50 @@ const email_1 = require("../../../utils/email");
 const appError_1 = require("../../../lib/appError");
 const prisma = new client_1.PrismaClient();
 class AuthService {
-    static register(_a) {
-        return __awaiter(this, arguments, void 0, function* ({ fullName, profileImage, email, password, }) {
-            try {
-                if (!fullName || !email || !password)
-                    throw new appError_1.BadRequestError("All fields are required");
-                const existingUser = yield prisma.user.findUnique({ where: { email } });
-                if (existingUser)
-                    throw new appError_1.DuplicateError("Email already exists");
-                const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
-                const user = yield prisma.user.create({
-                    data: { fullName, email, password: hashedPassword, profileImage },
-                });
-                return user;
-            }
-            catch (error) {
-                throw new appError_1.InternalServerError("Something went wrong");
-            }
-        });
-    }
-    static login(email, password) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!email || !password)
-                    throw new appError_1.BadRequestError("Email and password are required");
-                const user = yield prisma.user.findUnique({ where: { email } });
-                if (!user || !(yield bcryptjs_1.default.compare(password, user.password)))
-                    throw new appError_1.InvalidError("Invalid Credentials");
-                return { user };
-            }
-            catch (error) {
-                console.error(error);
-                throw new appError_1.InternalServerError("Something went wrong");
-            }
-        });
-    }
-    static forgotPassword(email) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!email) {
-                throw new appError_1.BadRequestError("Email is required");
-            }
-            const user = yield prisma.user.findUnique({ where: { email } });
-            if (!user) {
-                throw new appError_1.NotFoundError("User not found");
-            }
-            const otp = [...Array(6)].map(() => Math.floor(Math.random() * 10)).join("");
-            const expiresIn = new Date();
-            expiresIn.setMinutes(expiresIn.getMinutes() + 15);
-            yield prisma.user.update({
-                where: { email },
-                data: {
-                    resetToken: otp,
-                    resetTokenExpires: expiresIn,
-                },
+    static async register({ fullName, profileImage, email, password, }) {
+        try {
+            const existingUser = await prisma.user.findUnique({ where: { email } });
+            if (existingUser)
+                throw new appError_1.DuplicateError("Email already exists");
+            const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+            const user = await prisma.user.create({
+                data: { fullName, email, password: hashedPassword, profileImage },
             });
-            const emailTemplate = `
+            return user;
+        }
+        catch (error) {
+            throw new appError_1.InternalServerError("Something went wrong");
+        }
+    }
+    static async login(email, password) {
+        try {
+            const user = await prisma.user.findUnique({ where: { email } });
+            if (!user || !(await bcryptjs_1.default.compare(password, user.password)))
+                throw new appError_1.InvalidError("Invalid Credentials");
+            return { user };
+        }
+        catch (error) {
+            console.error(error);
+            throw new appError_1.InternalServerError("Something went wrong");
+        }
+    }
+    static async forgotPassword(email) {
+        if (!email)
+            throw new appError_1.BadRequestError("Email is required");
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user)
+            throw new appError_1.NotFoundError("User not found");
+        const otp = [...Array(6)].map(() => Math.floor(Math.random() * 10)).join("");
+        const expiresIn = new Date();
+        expiresIn.setMinutes(expiresIn.getMinutes() + 15);
+        await prisma.user.update({
+            where: { email },
+            data: {
+                resetToken: otp,
+                resetTokenExpires: expiresIn,
+            },
+        });
+        const emailTemplate = `
     <html>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
@@ -99,63 +79,54 @@ class AuthService {
       </body>
     </html>
   `;
-            const emailData = {
-                email: user.email,
-                subject: "Reset your AppSolute password",
-                html: emailTemplate
-            };
-            yield (0, email_1.sendEmail)(emailData);
-            return "OTP sent to your email";
-        });
+        const emailData = {
+            email: user.email,
+            subject: "Reset your AppSolute password",
+            html: emailTemplate
+        };
+        await (0, email_1.sendEmail)(emailData);
+        return "OTP sent to your email";
     }
-    static resetPassword(otp, password) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const user = yield prisma.user.findFirst({
-                where: {
-                    resetToken: otp,
-                    resetTokenExpires: { gte: new Date() },
-                },
-            });
-            if (!user)
-                throw new appError_1.InvalidError("Invalid or expired OTP");
-            // Hash the new password
-            const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
-            // Update the user's password and clear the OTP fields
-            yield prisma.user.update({
-                where: { id: user.id },
-                data: {
-                    password: hashedPassword,
-                    resetToken: null,
-                    resetTokenExpires: null,
-                },
-            });
-            return "Password reset successful";
+    static async resetPassword(otp, password) {
+        const user = await prisma.user.findFirst({
+            where: {
+                resetToken: otp,
+                resetTokenExpires: { gte: new Date() },
+            },
         });
+        if (!user)
+            throw new appError_1.InvalidError("Invalid or expired OTP");
+        const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                resetToken: null,
+                resetTokenExpires: null,
+            },
+        });
+        return "Password reset successful";
     }
-    static logout(token) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                if (!token)
-                    throw new appError_1.BadRequestError("Token is required for logout");
-                return "Logout successful";
-            }
-            catch (error) {
-                console.error(error);
-                throw new appError_1.InternalServerError("Something went wrong");
-            }
-        });
+    static async logout(token) {
+        try {
+            if (!token)
+                throw new appError_1.BadRequestError("Authentication token is missing");
+            return "Logout successful";
+        }
+        catch (error) {
+            console.error(error);
+            throw new appError_1.InternalServerError("Something went wrong");
+        }
     }
-    static findById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            try {
-                const user = yield prisma.user.findUnique({ where: { id } });
-                return user;
-            }
-            catch (error) {
-                console.error("Error fetching user by ID:", error);
-                throw new Error("Unable to fetch user");
-            }
-        });
+    static async findById(id) {
+        try {
+            const user = await prisma.user.findUnique({ where: { id } });
+            return user;
+        }
+        catch (error) {
+            console.error("Error fetching user by ID:", error);
+            throw new Error("Unable to fetch user");
+        }
     }
 }
 exports.default = AuthService;
