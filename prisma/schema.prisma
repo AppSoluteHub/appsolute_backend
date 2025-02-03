@@ -7,6 +7,7 @@ datasource db {
 generator client {
   provider = "prisma-client-js"
 }
+
 model User {
   id               String       @id @default(uuid())
   fullName         String
@@ -110,6 +111,7 @@ enum PostCategory {
   DESIGN
   SOFTWARE
 }
+
 
 enum InteractionType {
   VIEW
