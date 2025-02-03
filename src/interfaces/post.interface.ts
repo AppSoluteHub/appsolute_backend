@@ -5,7 +5,7 @@ export interface PostData {
   title: string;
   imageUrl: string;
   description: string;
-  category?: string;
+  category?: PostCategory;
   isPublished?: boolean;
   contributors?: string;
 }

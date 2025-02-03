@@ -1,23 +1,26 @@
 
 import { PostCategory, PrismaClient } from "@prisma/client";
 import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
+import { BadRequestError } from "../../../lib/appError";
 
 const prisma = new PrismaClient();
 
 class PostService {
   static async createPost(userId: string, postData: PostData) {
     const { title, imageUrl, description, category,contributors, isPublished } = postData;
-    const validCategory: PostCategory =
-      category && Object.values(PostCategory).includes(category as PostCategory)
-        ? (category as PostCategory)
-        : PostCategory.TECHNOLOGY;
 
+
+
+const validCategories = Object.values(PostCategory);
+ if(category && !validCategories.includes(category)){
+  throw new BadRequestError("Invalid category")
+ }
     try {
       const post = await prisma.post.create({
         data: {
           title,
           description,
-          category: validCategory,
+          category: category || PostCategory.TECHNOLOGY,
           authorId: userId,
           imageUrl,
           contributors,

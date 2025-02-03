@@ -4,6 +4,7 @@ import cloudinary from "../../../config/cloudinary";
 import fs from "fs";
 import path from "path";
 import { BadRequestError } from "../../../lib/appError";
+import { PostCategory } from "@prisma/client";
 
 class PostController {
   static async createPost(req: Request, res: Response): Promise<void> {
@@ -44,11 +45,12 @@ class PostController {
           uploadStream.end(file.buffer);
         });
       }
+      const postCat = category as PostCategory
 
       const post = await PostService.createPost(userId, {
         title,
         description,
-        category,
+        category : postCat ,
         isPublished,
         contributors,
         imageUrl,

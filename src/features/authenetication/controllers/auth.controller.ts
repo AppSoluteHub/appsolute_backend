@@ -4,26 +4,25 @@ import { generateRefreshToken, generateToken } from "../../../utils/jwt";
 import appResponse from "../../../lib/appResponse";
 import { BadRequestError } from "../../../lib/appError";
 class AuthController {
-  static async register(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+
+  static async register(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { fullName, email, password, profileImage } = req.body;
+  
       const newUser = await AuthService.register({
         fullName,
         email,
         profileImage,
         password,
-      
       });
-      res.send(appResponse("User registered successfully", newUser));
+  
+      res.status(201).json(appResponse("User registered successfully", newUser));
     } catch (error) {
+      console.error("Error in register controller:", error);
       next(error);
-      console.log(error);
     }
   }
+  
 
   static async login(
     req: Request,

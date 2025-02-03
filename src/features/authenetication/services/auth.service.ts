@@ -22,15 +22,25 @@ class AuthService {
     try {
       const existingUser = await prisma.user.findUnique({ where: { email } });
       if (existingUser) throw new DuplicateError("Email already exists");
+  
       const hashedPassword = await bcrypt.hash(password, 10);
+  
       const user = await prisma.user.create({
-        data: { fullName, email, password: hashedPassword, profileImage },
+        data: { 
+          fullName, 
+          email, 
+          password: hashedPassword, 
+          profileImage: profileImage || ""  
+        }
       });
+  
       return user;
     } catch (error: any) {
-      throw new InternalServerError("Something went wrong");
+      console.error("Error in AuthService.register:", error);
+      throw new InternalServerError(error.message || "Something went wrong");
     }
   }
+  
 
   static async login(email: string, password: string) {
     try {

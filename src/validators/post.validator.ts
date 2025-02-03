@@ -1,4 +1,5 @@
 // src/postValidation.ts
+import { PostCategory } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 
@@ -10,11 +11,10 @@ const createPostSchema = Joi.object({
   isPublished: Joi.boolean().optional(),
   imageUrl: Joi.string().optional(),
   category: Joi.string()
-    .valid('AI', 'TECHNOLOGY', 'MARKETING', 'DESIGN', 'SOFTWARE')
-    .optional(),
+  .valid(...Object.values(PostCategory)) 
+  .optional(),
 });
 
-// Validation middleware
 const validatePost = (req: Request, res: Response, next: NextFunction): void => {
   const { error } = createPostSchema.validate(req.body, { abortEarly: false });
 
