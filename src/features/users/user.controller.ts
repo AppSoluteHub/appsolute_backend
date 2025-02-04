@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "./user.service";
+import { BadRequestError } from "../../lib/appError";
 
 export class UserController {
   static async getUsers(req: Request, res: Response) {
@@ -53,8 +54,8 @@ export class UserController {
   static async updateUser(req: Request, res: Response) {
     try {
       const { userId } = req.params;
-      const updates = req.body;
-
+      const updates = req.body
+     
       const updatedUser = await UserService.updateUser(userId, updates);
 
       res.status(200).json({
