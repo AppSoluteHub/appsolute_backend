@@ -1,8 +1,7 @@
 import express from "express";
 import AuthController from "../controllers/auth.controller";
 import { validateRegister,validateLogin,validateForgotPassword,validateResetPassword } from "../../../validators/userValidator";
-import { UserController } from "../../users/user.controller";
-import authenticate from "../../../middlewares/auth.middleware";
+
 // import googleAuth from "../controllers/auth.google"
 const router = express.Router();
 
@@ -14,11 +13,6 @@ router.post("/forgot-password",validateForgotPassword, AuthController.forgotPass
 router.post("/reset-password",validateResetPassword, AuthController.resetPassword);
 router.post("/logout", AuthController.logout);
 
-
-router.get("/",authenticate, UserController.getUsers);
-router.get("/:userId",authenticate, UserController.getUserById);
-router.delete("/:userId",authenticate, UserController.deleteUser);
-router.patch("/:userId", authenticate,UserController.updateUser);
 
 
 export default router;
