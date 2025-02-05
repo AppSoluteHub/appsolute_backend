@@ -1,4 +1,3 @@
-
 import { PostCategory, PrismaClient } from "@prisma/client";
 import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
 import { BadRequestError } from "../../../lib/appError";
@@ -7,20 +6,31 @@ const prisma = new PrismaClient();
 
 class PostService {
   static async createPost(userId: string, postData: PostData) {
-    const { title, imageUrl, description, category,contributors, isPublished } = postData;
+    const {
+      title,
+      imageUrl,
+      description,
+      category,
+      contributors,
+      isPublished,
+    } = postData;
 
+    console.log("Category before saving:", category);
 
+    // Define valid category values
+    const validCategories: PostCategory[] = ["AI", "TECHNOLOGY", "MARKETING", "DESIGN", "SOFTWARE"];
 
-const validCategories = Object.values(PostCategory);
- if(category && !validCategories.includes(category)){
-  throw new BadRequestError("Invalid category")
- }
+    // Ensure category is a valid enum value, default to "TECHNOLOGY" if undefined
+    const postCategory: PostCategory = validCategories.includes(category as PostCategory)
+      ? (category as PostCategory)
+      : "TECHNOLOGY"; 
+
     try {
       const post = await prisma.post.create({
         data: {
           title,
           description,
-          category: category || PostCategory.TECHNOLOGY,
+          category: postCategory, 
           authorId: userId,
           imageUrl,
           contributors,
@@ -32,6 +42,8 @@ const validCategories = Object.values(PostCategory);
       throw PostService.formatError(error);
     }
   }
+
+
 
   static async getAllPosts(publishedOnly: boolean = true) {
     try {
@@ -63,12 +75,20 @@ const validCategories = Object.values(PostCategory);
     }
   }
 
-  static async updatePost(postId: string, userId: string, updateData: UpdatePostData) {
+  static async updatePost(
+    postId: string,
+    userId: string,
+    updateData: UpdatePostData
+  ) {
     try {
       const post = await prisma.post.findUnique({ where: { id: postId } });
 
       if (!post) throw { statusCode: 404, message: "Post not found" };
-      if (post.authorId !== userId) throw { statusCode: 403, message: "Not authorized to update this post" };
+      if (post.authorId !== userId)
+        throw {
+          statusCode: 403,
+          message: "Not authorized to update this post",
+        };
 
       return await prisma.post.update({
         where: { id: postId },
@@ -84,7 +104,11 @@ const validCategories = Object.values(PostCategory);
       const post = await prisma.post.findUnique({ where: { id: postId } });
 
       if (!post) throw { statusCode: 404, message: "Post not found" };
-      if (post.authorId !== userId) throw { statusCode: 403, message: "Not authorized to delete this post" };
+      if (post.authorId !== userId)
+        throw {
+          statusCode: 403,
+          message: "Not authorized to delete this post",
+        };
 
       await prisma.post.delete({ where: { id: postId } });
       return { message: "Post deleted successfully" };
@@ -100,4 +124,3 @@ const validCategories = Object.values(PostCategory);
 }
 
 export default PostService;
-

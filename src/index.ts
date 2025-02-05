@@ -9,6 +9,9 @@ import setupSwagger from "./swagger/swagger";
 import session from "express-session";
 import passport from "passport";
 import googleRoute from "./middlewares/auth.google.middleware";
+import dotenv from "dotenv";
+dotenv.config();
+
 // import googleRouter from "./google.route";
 const app = express();
 const port = process.env.PORT;
@@ -16,7 +19,15 @@ const port = process.env.PORT;
 // Setup express-session for storing session data (if you're using sessions)
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+const corsOptions = {
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+
 app.use(cookieParser());
 app.use(express.json());
 
