@@ -1,6 +1,11 @@
 import { PostCategory, PrismaClient } from "@prisma/client";
 import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
-import { BadRequestError } from "../../../lib/appError";
+import {
+  BadRequestError,
+  InternalServerError,
+  NotFoundError,
+  UnAuthorizedError,
+} from "../../../lib/appError";
 
 const prisma = new PrismaClient();
 
@@ -15,9 +20,8 @@ class PostService {
       isPublished,
     } = postData;
 
-    if (!title || !description || !imageUrl) {
+    if (!title || !description || !imageUrl)
       throw new BadRequestError("Title, description and imageUrl are required");
-    }
 
     const validCategories: PostCategory[] = [
       "AI",
@@ -49,7 +53,7 @@ class PostService {
       });
       return post;
     } catch (error) {
-      throw PostService.formatError(error);
+      throw new InternalServerError("Unable to create post");
     }
   }
 
@@ -62,7 +66,7 @@ class PostService {
         },
       });
     } catch (error) {
-      throw PostService.formatError(error);
+      throw new InternalServerError("Unable to fetch posts");
     }
   }
 
@@ -75,11 +79,11 @@ class PostService {
         },
       });
 
-      if (!post) throw { statusCode: 404, message: "Post not found" };
+      if (!post) throw new NotFoundError("Post not found");
 
       return post;
     } catch (error) {
-      throw PostService.formatError(error);
+      throw new InternalServerError("Unable to fetch post");
     }
   }
 
@@ -91,19 +95,16 @@ class PostService {
     try {
       const post = await prisma.post.findUnique({ where: { id: postId } });
 
-      if (!post) throw { statusCode: 404, message: "Post not found" };
+      if (!post) throw new NotFoundError("Post not found");
       if (post.authorId !== userId)
-        throw {
-          statusCode: 403,
-          message: "Not authorized to update this post",
-        };
+        throw new UnAuthorizedError("Not authorized");
 
       return await prisma.post.update({
         where: { id: postId },
         data: updateData,
       });
     } catch (error) {
-      throw PostService.formatError(error);
+      throw new InternalServerError("Unable to update post");
     }
   }
 
@@ -126,17 +127,14 @@ class PostService {
         where: { postId: postId },
       });
       await prisma.post.delete({ where: { id: postId } });
+      
       return { message: "Post deleted successfully" };
     } catch (error) {
       console.log(error);
-      throw PostService.formatError(error);
+      throw new InternalServerError("Unable to delete post");
     }
   }
 
-  private static formatError(error: any) {
-    if (error.statusCode && error.message) return error;
-    return { statusCode: 500, message: "An unexpected error occurred" };
-  }
 }
 
 export default PostService;

@@ -19,7 +19,7 @@ class AuthController {
       res.status(201).json(appResponse("User registered successfully", newUser));
     } catch (error) {
       console.error("Error in register controller:", error);
-      next(error);
+       next(error);
     }
   }
   
@@ -69,22 +69,6 @@ static async forgotPassword(
     }
   }
 
-  // static async resetPassword(
-  //   req: Request,
-  //   res: Response,
-  //   next: NextFunction
-  // ): Promise<void> {
-  //   try {
-  //     const { password, otp } = req.body;
-  //     if(!otp || !password) throw new BadRequestError("Otp and password are required");
-  //     const result = await AuthService.resetPassword(otp, password);
-  //     res.send(appResponse("message:", result));
-  //   } catch (error) {
-  //     console.log(error);
-  //     next(error);
-  //   }
-  // }
-
   static async resetPassword(
     req: Request,
     res: Response,
@@ -93,11 +77,9 @@ static async forgotPassword(
     try {
       const { password, confirmPassword, otp } = req.body;
   
-      if (!otp || !password || !confirmPassword) 
-        throw new BadRequestError("OTP, password, and confirm password are required");
+      if (!otp || !password || !confirmPassword)  throw new BadRequestError("OTP, password, and confirm password are required");
       
-      if (password !== confirmPassword) 
-        throw new BadRequestError("Password and confirm password do not match");
+      if (password !== confirmPassword)  throw new BadRequestError("Password and confirm password do not match");
     
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!passwordRegex.test(password)) {
@@ -109,12 +91,10 @@ static async forgotPassword(
       res.send(appResponse("Password reset successful", result));
     } catch (error) {
       console.error("Reset password error:", error);
-      next(error);
+      next(error);  
     }
   }
   
-
-
   static async logout(
     req: Request,
     res: Response,
@@ -127,7 +107,7 @@ static async forgotPassword(
       res.clearCookie("token", { httpOnly: true, secure: true });
       res.send(appResponse("Message:", result));
     } catch (error) {
-      next(error);
+      next(error);  
     }
   }
   

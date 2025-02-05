@@ -1,4 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
+import { NotFoundError, InternalServerError } from "../lib/appError";
 
 export const errorHandler = (
   err: any,
@@ -6,9 +8,19 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  const status = err.status || 500;
-  res.status(status).json({
-    message: err.message || 'Internal Server Error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+  let statusCode = err.statusCode || 500;
+  let message = err.message || "Internal server error";
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2003") {
+      statusCode = 400;
+      message = "Cannot delete post: It has associated comments.";
+    }
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
   });
 };

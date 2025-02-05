@@ -10,6 +10,7 @@ import session from "express-session";
 import passport from "passport";
 import googleRoute from "./middlewares/auth.google.middleware";
 import dotenv from "dotenv";
+import { errorHandler } from "./middlewares/error.middleware";
 dotenv.config();
 
 // import googleRouter from "./google.route";
@@ -47,7 +48,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use("/", googleRoute);
 
-// googleAuthMiddleware(app)
+app.use(errorHandler)
 const router = Router();
 const rootRouter = baseRoutes(router);
 app.use("/api/v1", rootRouter);
