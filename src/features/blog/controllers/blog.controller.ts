@@ -33,7 +33,7 @@ class PostController {
 
         imageUrl = await new Promise<string>((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "AppSoluteBlogPosts" },
+            { folder: "App" },
             (error, result) => {
               if (error) {
                 reject(new Error("Failed to upload image to Cloudinary"));
