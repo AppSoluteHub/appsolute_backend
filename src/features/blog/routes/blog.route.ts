@@ -29,8 +29,4 @@ router.post("/:postId/like",authenticate, likeController.like);
 router.delete("/:postId/unlike", authenticate,likeController.unlike);
 
 
-
-
-
-
 export default router;

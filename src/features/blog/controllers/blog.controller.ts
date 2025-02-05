@@ -9,7 +9,7 @@ import { PostCategory } from "@prisma/client";
 class PostController {
   static async createPost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id  as string; 
+      const userId = req.user?.id as string;
       const { title, description, category, contributors, isPublished } =
         req.body;
 
@@ -33,7 +33,7 @@ class PostController {
 
         imageUrl = await new Promise<string>((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "App" },
+            { folder: "AppSolute" },
             (error, result) => {
               if (error) {
                 reject(new Error("Failed to upload image to Cloudinary"));
@@ -45,12 +45,12 @@ class PostController {
           uploadStream.end(file.buffer);
         });
       }
-      const postCat = category as PostCategory
+      const postCat = category as PostCategory;
 
       const post = await PostService.createPost(userId, {
         title,
         description,
-        category : postCat ,
+        category: postCat,
         isPublished,
         contributors,
         imageUrl,
@@ -72,7 +72,6 @@ class PostController {
 
   static async getAllPosts(req: Request, res: Response) {
     try {
-     
       const { publishedOnly } = req.query;
       const posts = await PostService.getAllPosts(publishedOnly === "true");
       res.status(200).json({
@@ -105,42 +104,33 @@ class PostController {
     }
   }
 
-
-
   static async updatePost(req: Request, res: Response): Promise<void> {
     try {
-      const userId = req.user?.id as string; 
+      const userId = req.user?.id as string;
       const { id } = req.params;
-      const { title, description, imageUrl, isPublished,  } = req.body;
+      const { title, description, imageUrl, isPublished } = req.body;
 
-     
       if (!userId) {
-         res.status(401).json({ success: false, message: "Unauthorized" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
       }
 
-      // Update post
       const updatedPost = await PostService.updatePost(id, userId, {
         title,
         description,
         imageUrl,
         isPublished,
-        
       });
 
-      // Handle case if post wasn't found
       if (!updatedPost) {
         res.status(404).json({ success: false, message: "Post not found" });
       }
 
-      // Respond with success
       res.status(200).json({
         success: true,
         message: "Post updated successfully",
         data: updatedPost,
       });
     } catch (error: any) {
-      // Handle unexpected errors
-      console.error(error); // Log error for debugging
       res.status(error.statusCode || 500).json({
         success: false,
         message: error.message || "Internal server error",
@@ -148,16 +138,16 @@ class PostController {
     }
   }
 
-  static async deletePost(req: Request, res: Response):Promise<void> {
+  static async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id as string;
       const { id } = req.params;
-console.log(userId);
-      if (!userId) {
-         res.status(401).json({ message: "Unauthorized" });
-         return;
-      }
 
+      if (!userId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+      }
+      console.log("id", id);
       await PostService.deletePost(id, userId);
 
       res.status(200).json({
@@ -171,9 +161,6 @@ console.log(userId);
       });
     }
   }
-
-
-  
 }
 
 export default PostController;

@@ -15,22 +15,32 @@ class PostService {
       isPublished,
     } = postData;
 
-    console.log("Category before saving:", category);
+    if (!title || !description || !imageUrl) {
+      throw new BadRequestError("Title, description and imageUrl are required");
+    }
 
-    // Define valid category values
-    const validCategories: PostCategory[] = ["AI", "TECHNOLOGY", "MARKETING", "DESIGN", "SOFTWARE"];
+    const validCategories: PostCategory[] = [
+      "AI",
+      "TECHNOLOGY",
+      "MARKETING",
+      "DESIGN",
+      "SOFTWARE",
+    ];
 
-    // Ensure category is a valid enum value, default to "TECHNOLOGY" if undefined
-    const postCategory: PostCategory = validCategories.includes(category as PostCategory)
-      ? (category as PostCategory)
-      : "TECHNOLOGY"; 
+    const sanitizedCategory = category?.trim().toUpperCase() as PostCategory;
+
+    const postCategory: PostCategory = validCategories.includes(
+      sanitizedCategory
+    )
+      ? sanitizedCategory
+      : "TECHNOLOGY";
 
     try {
       const post = await prisma.post.create({
         data: {
           title,
           description,
-          category: postCategory, 
+          category: postCategory,
           authorId: userId,
           imageUrl,
           contributors,
@@ -42,8 +52,6 @@ class PostService {
       throw PostService.formatError(error);
     }
   }
-
-
 
   static async getAllPosts(publishedOnly: boolean = true) {
     try {
@@ -102,17 +110,25 @@ class PostService {
   static async deletePost(postId: string, userId: string) {
     try {
       const post = await prisma.post.findUnique({ where: { id: postId } });
-
       if (!post) throw { statusCode: 404, message: "Post not found" };
-      if (post.authorId !== userId)
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw { statusCode: 404, message: "User not found" };
+
+      if (user.role !== "ADMIN" && post.authorId !== userId) {
         throw {
           statusCode: 403,
           message: "Not authorized to delete this post",
         };
-
+      }
+      // First, delete all comments related to the post
+      await prisma.comment.deleteMany({
+        where: { postId: postId },
+      });
       await prisma.post.delete({ where: { id: postId } });
       return { message: "Post deleted successfully" };
     } catch (error) {
+      console.log(error);
       throw PostService.formatError(error);
     }
   }
