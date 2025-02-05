@@ -147,7 +147,7 @@ class PostController {
         res.status(401).json({ message: "Unauthorized" });
         return;
       }
-      console.log("id", id);
+    
       await PostService.deletePost(id, userId);
 
       res.status(200).json({

@@ -121,7 +121,7 @@ class PostService {
           message: "Not authorized to delete this post",
         };
       }
-      // First, delete all comments related to the post
+
       await prisma.comment.deleteMany({
         where: { postId: postId },
       });
