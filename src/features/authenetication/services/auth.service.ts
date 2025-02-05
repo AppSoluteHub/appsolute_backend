@@ -45,8 +45,7 @@ class AuthService {
   static async login(email: string, password: string) {
     try {
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user || !(await bcrypt.compare(password, user.password)))
-        throw new InvalidError("Invalid Credentials");
+      if (!user || !(await bcrypt.compare(password, user.password))) throw new BadRequestError("Invalid Credentials");
          return {user} ;
     } catch (error: any) {
       console.error(error);
