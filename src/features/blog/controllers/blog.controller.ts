@@ -1,12 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import PostService from "../services/blog.service";
 import cloudinary from "../../../config/cloudinary";
-import fs from "fs";
-import path from "path";
 import { BadRequestError, UnAuthorizedError } from "../../../lib/appError";
 import appResponse from "../../../lib/appResponse";
 import { PostCategory } from "@prisma/client";
-import app from "../../..";
 
 class PostController {
   static async createPost(
@@ -16,8 +13,7 @@ class PostController {
   ): Promise<void> {
     try {
       const userId = req.user?.id as string;
-      const { title, description, category, contributors, isPublished } =
-        req.body;
+      const { title, description, category, contributors, isPublished } = req.body;
 
       if (!userId) throw new UnAuthorizedError("Unauthorized");
       if (!title || !description || !category)

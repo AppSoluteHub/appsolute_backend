@@ -88,7 +88,7 @@ const isAuthenticated = (
 const router = express.Router();
 
 router.get(
-  "/auth/google22",
+  "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 

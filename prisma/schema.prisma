@@ -8,6 +8,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 model User {
   id               String       @id @default(uuid())
   fullName         String
@@ -20,10 +21,11 @@ model User {
   likes            Like[]       @relation("UserLikes")
   subscribers      Subscriber[] @relation("UserSubscribers")
   followers        Subscriber[] @relation("FollowerSubscriber")  
-  leaderboard      Leaderboard[]
+  leaderboard      Leaderboard?
   behavioralData   UserBehavior[]
   resetToken       String?      
   resetTokenExpires DateTime?
+ contributors   Contributor[] @relation("UserContributors")
 }
 
 model Post {
@@ -34,15 +36,23 @@ model Post {
   authorId     String
   contributors String?
   author       User         @relation("UserPosts", fields: [authorId], references: [id])
-  category     PostCategory @default(TECHNOLOGY)
+  category     String[]
   isPublished  Boolean      @default(false)
   comments     Comment[]    @relation("PostComments")
   likes        Like[]       @relation("PostLikes")
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+  contributorsList Contributor[] @relation("PostContributors")
+ 
 }
-
-
+model Contributor {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation("UserContributors", fields: [userId], references: [id])
+  postId    String
+  post      Post    @relation("PostContributors", fields: [postId], references: [id])
+  @@unique([postId, userId])
+}
 
 model Comment {
   id        String   @id @default(uuid())
@@ -66,10 +76,12 @@ model Like {
 
 model Content {
   id          String @id @default(uuid())
-  contentUrl        String
-  description  String
-  category   String 
+  contentUrl  String
+  description String
+  category    String
+  
 }
+
 
 model Subscriber {
   id         String @id @default(uuid())
@@ -77,6 +89,7 @@ model Subscriber {
   user       User   @relation("UserSubscribers", fields: [userId], references: [id])
   followerId String
   follower   User   @relation("FollowerSubscriber", fields: [followerId], references: [id])
+  @@unique([userId, followerId]) // Prevents duplicate subscriptions
 }
 
 model Leaderboard {
@@ -104,19 +117,20 @@ enum Role {
   SUPERADMIN
 }
 
-enum PostCategory {
-  AI
-  TECHNOLOGY
-  MARKETING
-  DESIGN
-  SOFTWARE
-}
-
-
 enum InteractionType {
   VIEW
   CLICK
   LIKE
   SHARE
   COMMENT
+}
+
+enum PostCategory {
+  TECHNOLOGY
+  EDUCATION
+  LIFESTYLE
+  ENTERTAINMENT
+  SOFTWARE
+  RESEARCH
+  DESIGN
 }
