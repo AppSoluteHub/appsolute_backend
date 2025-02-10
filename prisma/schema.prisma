@@ -34,7 +34,8 @@ model Post {
   imageUrl     String?
   description  String?
   authorId     String
-  contributors String?
+  contributors String[]
+  editorRole   String?
   author       User         @relation("UserPosts", fields: [authorId], references: [id])
   category     String[]
   isPublished  Boolean      @default(false)

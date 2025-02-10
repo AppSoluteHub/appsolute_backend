@@ -75,9 +75,9 @@ static async forgotPassword(
     next: NextFunction
   ): Promise<void> {
     try {
-      const { password, confirmPassword, otp } = req.body;
+      const { password, confirmPassword, token } = req.body;
   
-      if (!otp || !password || !confirmPassword)  throw new BadRequestError("OTP, password, and confirm password are required");
+      if (!token || !password || !confirmPassword)  throw new BadRequestError("OTP, password, and confirm password are required");
       
       if (password !== confirmPassword)  throw new BadRequestError("Password and confirm password do not match");
     
@@ -87,7 +87,7 @@ static async forgotPassword(
           "Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character"
         );
       }
-      const result = await AuthService.resetPassword(otp, password);
+      const result = await AuthService.resetPassword(token, password,confirmPassword);
       res.send(appResponse("Password reset successful", result));
     } catch (error) {
       console.error("Reset password error:", error);
