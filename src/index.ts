@@ -13,21 +13,28 @@ import dotenv from "dotenv";
 import { errorHandler } from "./middlewares/error.middleware";
 dotenv.config();
 
-// import googleRouter from "./google.route";
+
 const app = express();
 const port = process.env.PORT;
 
-// Setup express-session for storing session data (if you're using sessions)
+
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
-const corsOptions = {
-  origin: '*', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-};
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://localhost:3001",
+      "http://localhost:5173"
+    ], 
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true, 
+  })
+);
 
-app.use(cors(corsOptions));
+app.options("*", cors());
 
 app.use(cookieParser());
 app.use(express.json());
@@ -48,10 +55,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use("/", googleRoute);
 
-app.use(errorHandler)
 const router = Router();
 const rootRouter = baseRoutes(router);
 app.use("/api/v1", rootRouter);
+app.use(errorHandler)
+
 
 setupSwagger(app);
 
