@@ -41,9 +41,7 @@ static async register({
     return user;
   } catch (error: any) {
     console.error("Error in AuthService.register:", error);
-
     if (error instanceof AppError) throw error; 
-
     throw new InternalServerError(error.message || "Something went wrong");
   }
 }
@@ -160,6 +158,7 @@ static async register({
       return "Logout successful";
     } catch (error: any) {
       console.error(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Something went wrong");
     }
   }

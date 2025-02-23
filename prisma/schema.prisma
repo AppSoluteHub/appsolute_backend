@@ -12,6 +12,10 @@ generator client {
 model User {
   id               String       @id @default(uuid())
   fullName         String
+  nickName         String?
+  country          String?
+  phone            String?
+  gender           String?
   email            String       @unique
   password         String
   profileImage     String?
@@ -26,7 +30,39 @@ model User {
   resetToken       String?      
   resetTokenExpires DateTime?
  contributors   Contributor[] @relation("UserContributors")
+  totalScore  Int       @default(0)
+  userTasks   UserTask[]
+
+
 }
+
+
+model Task {
+  id          String    @id @default(uuid())
+  question    String
+  options     String[]      
+  correctAnswer String  
+  score       Int       @default(5)  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userTasks   UserTask[]
+}
+
+model UserTask {
+  id          String    @id @default(uuid())
+  userId      String    
+  taskId      String    
+  userAnswer  String    
+  isCorrect   Boolean   @default(false)
+  scoreEarned Int       @default(0)
+  answeredAt  DateTime  @default(now())
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, taskId]) 
+}
+
 
 model Post {
   id           String       @id @default(uuid())
