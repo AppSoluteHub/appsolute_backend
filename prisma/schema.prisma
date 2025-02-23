@@ -25,7 +25,6 @@ model User {
   likes            Like[]       @relation("UserLikes")
   subscribers      Subscriber[] @relation("UserSubscribers")
   followers        Subscriber[] @relation("FollowerSubscriber")  
-  leaderboard      Leaderboard?
   behavioralData   UserBehavior[]
   resetToken       String?      
   resetTokenExpires DateTime?
@@ -128,17 +127,6 @@ model Subscriber {
   follower   User   @relation("FollowerSubscriber", fields: [followerId], references: [id])
   @@unique([userId, followerId]) // Prevents duplicate subscriptions
 }
-
-model Leaderboard {
-  id        String   @id @default(uuid())
-  rank      Int
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
-  score     Int
-  answered  Int      @default(0)
-  joined    DateTime @default(now())
-}
-
 model UserBehavior {
   id           String       @id @default(uuid())
   userId       String
@@ -170,4 +158,8 @@ enum PostCategory {
   SOFTWARE
   RESEARCH
   DESIGN
+   BUSINESS
+  AI
+  MARKETING
 }
+
