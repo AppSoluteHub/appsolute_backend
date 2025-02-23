@@ -47,7 +47,9 @@ class AuthController {
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
       });
-      res.status(200).json({ message: "Login successful", token, user });
+      
+      const { password: _,  ...rest } = user;
+      res.status(200).json({ message: "Login successful", token, rest });
 
     } catch (error) {
       console.log(error);

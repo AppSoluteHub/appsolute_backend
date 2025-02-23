@@ -54,8 +54,8 @@ static async register({
       if(!user) throw new BadRequestError("Invalid credentials");
       const hashedPassword = await bcrypt.compare(password,user.password);
       if(!hashedPassword) throw new BadRequestError("Invalid credentials");
-      // if (!user || !(await bcrypt.compare(password, user.password))) throw new BadRequestError("Invalid Credentials");
-        return {user} ;
+      const {password: _, ...rest} = user;
+      return {user} ;
     } catch (error: any) {
       console.error(error);
     if (error instanceof AppError) throw error; 
