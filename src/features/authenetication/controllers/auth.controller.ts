@@ -15,7 +15,7 @@ class AuthController {
         profileImage,
         password,
       });
-        const { password: _, ...rest } = newUser;
+        const { password: _,resetToken, resetTokenExpires, ...rest } = newUser;
       res.status(201).json(appResponse("User registered successfully", rest));
     } catch (error) {
       console.error("Error in register controller:", error);
@@ -48,7 +48,7 @@ class AuthController {
         sameSite: "strict",
       });
       
-      const { password: _,  ...rest } = user;
+      const { password: _, resetToken,resetTokenExpires, ...rest } = user;
       res.status(200).json({ message: "Login successful", token, rest });
 
     } catch (error) {
