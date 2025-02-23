@@ -96,62 +96,17 @@ export class UserService {
     }
   }
 
-  // static async updateUser(
-  //   userId: string,
-  //   updates: Partial<{
-  //     fullName: string;
-  //     email: string;
-  //     profileImage: string;
-  //     password: string;
-  //     role: Role
-      
-  //   }>
-  // ) {
-  //   try {
-  //     if (!userId) throw new BadRequestError("User ID is required");
 
-  //     const user = await prisma.user.findUnique({ where: { id: userId } });
-  //     if (!user) throw new NotFoundError("User not found");
-
-  //     const { fullName, email, profileImage, password, role } = updates;
-  //      const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
-
-  //     if(role && !validRoles.includes(role)){
-  //       throw new BadRequestError("Invalid role");
-  //     }
-  //     const updateData: any = {};
-  //     if (fullName) updateData.fullName = fullName;
-  //     if(role) updateData.role = role;
-  //     if (email) {
-  //       const existingUser = await prisma.user.findUnique({ where: { email } });
-  //       if (existingUser && existingUser.id !== userId) {
-  //         throw new DuplicateError("Email already in use");
-  //       }
-  //       updateData.email = email;
-  //     }
-  //     if (profileImage) updateData.profileImage = profileImage;
-  //     if (password) {
-  //       const hashedPassword = await bcrypt.hash(password, 10);
-  //       updateData.password = hashedPassword;
-  //     }
-
-  //     const updatedUser = await prisma.user.update({
-  //       where: { id: userId },
-  //       data: updateData,
-  //     });
-
-  //     return updatedUser;
-  //   } catch (error) {
-  //     console.error("Error updating user:", error);
-  //     throw new InternalServerError("Unable to update user");
-  //   }
-  // }
 
 
 static async updateUser(
   userId: string,
   updates: Partial<{
     fullName: string;
+    gender : string;
+    country : string;
+    nickNmae : string;
+    phone : string;
     email: string;
     password: string;
     role: Role;
