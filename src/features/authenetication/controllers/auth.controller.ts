@@ -15,8 +15,8 @@ class AuthController {
         profileImage,
         password,
       });
-  
-      res.status(201).json(appResponse("User registered successfully", newUser));
+        const { password: _, ...rest } = newUser;
+      res.status(201).json(appResponse("User registered successfully", rest));
     } catch (error) {
       console.error("Error in register controller:", error);
        next(error);
