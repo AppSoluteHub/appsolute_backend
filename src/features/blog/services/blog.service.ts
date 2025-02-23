@@ -1,6 +1,7 @@
 import { PostCategory, PrismaClient } from "@prisma/client";
 import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
 import {
+  AppError,
   BadRequestError,
   InternalServerError,
   NotFoundError,
@@ -10,8 +11,6 @@ import {
 const prisma = new PrismaClient();
 
 class PostService {
-  
-
   static async createPost(userId: string, postData: PostData) {
     const { title, imageUrl, description, category, contributors, isPublished } = postData;
   
@@ -52,6 +51,7 @@ class PostService {
       return post;
     } catch (error) {
       console.error("Error creating post:", error);
+      if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to create post");
     }
   }
@@ -66,6 +66,8 @@ class PostService {
         },
       });
     } catch (error) {
+      console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to fetch posts");
     }
   }
@@ -83,6 +85,8 @@ class PostService {
 
       return post;
     } catch (error) {
+      console.log(error)
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to fetch post");
     }
   }
@@ -104,6 +108,8 @@ class PostService {
         data: updateData,
       });
     } catch (error) {
+      console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to update post");
     }
   }
@@ -131,6 +137,7 @@ class PostService {
       return { message: "Post deleted successfully" };
     } catch (error) {
       console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to delete post");
     }
   }
