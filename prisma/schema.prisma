@@ -23,8 +23,6 @@ model User {
   posts            Post[]       @relation("UserPosts")
   comments         Comment[]    @relation("UserComments")
   likes            Like[]       @relation("UserLikes")
-  subscribers      Subscriber[] @relation("UserSubscribers")
-  followers        Subscriber[] @relation("FollowerSubscriber")  
   behavioralData   UserBehavior[]
   resetToken       String?      
   resetTokenExpires DateTime?
@@ -120,13 +118,10 @@ model Content {
 
 
 model Subscriber {
-  id         String @id @default(uuid())
-  userId     String
-  user       User   @relation("UserSubscribers", fields: [userId], references: [id])
-  followerId String
-  follower   User   @relation("FollowerSubscriber", fields: [followerId], references: [id])
-  @@unique([userId, followerId]) // Prevents duplicate subscriptions
+  id    String @id @default(uuid())
+  email String @unique
 }
+
 model UserBehavior {
   id           String       @id @default(uuid())
   userId       String

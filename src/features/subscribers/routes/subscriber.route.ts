@@ -1,8 +1,9 @@
+
 import express from "express";
-import { ContactController } from "../controllers/subscriber.controller";
+import SubscriberController from "../controllers/subscriber.controller";
 
 const router = express.Router();
-const contactController = new ContactController();
-router.post("/contact", (req, res) => contactController.sendMessage(req, res));
+
+router.post("/", SubscriberController.subscribe);
 
 export default router;

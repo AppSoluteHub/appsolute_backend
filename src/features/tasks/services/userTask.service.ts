@@ -1,14 +1,15 @@
 import { PrismaClient } from '@prisma/client';
+import { BadRequestError, InternalServerError } from '../../../lib/appError';
 
 const prisma = new PrismaClient();
 
-export const answerTask = async (userId: string, taskId: string, userAnswer: number) => {
+export const answerTask = async (userId: string, taskId: string, userAnswer: string) => {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task) throw new Error("Task not found");
+  if (!task) throw new BadRequestError("Task not found");
 
   const isCorrect = userAnswer === task.correctAnswer;
   const scoreEarned = isCorrect ? task.score : 0;
-
+try {
   const userTask = await prisma.userTask.create({
     data: {
       userId,
@@ -25,6 +26,11 @@ export const answerTask = async (userId: string, taskId: string, userAnswer: num
       data: { totalScore: { increment: scoreEarned } },
     });
   }
-
   return userTask;
+} catch (error) {
+  console.log(error);
+  if(error instanceof BadRequestError) throw error;
+  throw new InternalServerError("Unable to answer task");
+}
+ 
 };

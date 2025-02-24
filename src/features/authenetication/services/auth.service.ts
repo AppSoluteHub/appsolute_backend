@@ -9,9 +9,10 @@ import {
   InternalServerError,
   InvalidError,
   NotFoundError,
+  UnAuthorizedError,
 } from "../../../lib/appError";
 import { RegisterInput, EmailData } from "../../../interfaces/auth.interfaces";
-import { generateToken } from "../../../utils/jwt";
+
 
 
 const prisma = new PrismaClient();
@@ -51,9 +52,9 @@ static async register({
   static async login(email: string, password: string) {
     try {
       const user = await prisma.user.findUnique({ where: { email } });
-      if(!user) throw new BadRequestError("Invalid credentials");
+      if(!user) throw new UnAuthorizedError("Invalid credentials");
       const hashedPassword = await bcrypt.compare(password,user.password);
-      if(!hashedPassword) throw new BadRequestError("Invalid credentials");
+      if(!hashedPassword) throw new UnAuthorizedError("Invalid credentials");
       const {password: _, ...rest} = user;
       return {user} ;
     } catch (error: any) {

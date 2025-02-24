@@ -4,8 +4,9 @@ import { createTask, getAllTasks } from "../services/task.service";
 
 export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
   try {
+    
     const { question, options, correctAnswer } = req.body;
-
+ 
     if (!question || !options || !correctAnswer) {
        res.status(400).json({ error: "All fields are required" });
     }

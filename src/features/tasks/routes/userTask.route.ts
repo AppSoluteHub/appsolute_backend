@@ -3,6 +3,6 @@ import { answerTaskHandler } from "../controllers/userTask.controller";
 
 const router = Router();
 
-router.post("/tasks/answer", answerTaskHandler);
+router.post("/answer/:userId", answerTaskHandler);
 
 export default router;
