@@ -31,7 +31,7 @@ export default class SubscriberService {
               <p style="font-size: 14px;">To get the best content, subscribe to our YouTube channel:</p>
 
               <div style="text-align: center; margin: 20px 0;">
-                <a href="https://www.youtube.com/@YourChannel" 
+                <a href="https://www.youtube.com/@appsolutehub" 
                    style="text-decoration: none; background: red; color: white; padding: 10px 20px; border-radius: 5px; font-size: 14px;">
                   Subscribe Now 🔥
                 </a>
