@@ -68,6 +68,9 @@ export class UserService {
           fullName: true,
           email: true,
           profileImage: true,
+          nickName : true,
+          gender: true,
+          role: true
         },
       });
 
@@ -105,7 +108,7 @@ static async updateUser(
     fullName: string;
     gender : string;
     country : string;
-    nickNmae : string;
+    nickName : string;
     phone : string;
     email: string;
     password: string;
@@ -119,7 +122,7 @@ static async updateUser(
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundError("User not found");
 
-    const { fullName, email, password, role, profileImageFile } = updates;
+    const { fullName, email, password, role, profileImageFile,gender, country,phone,nickName } = updates;
 
     const updateData: any = {};
     if (fullName) updateData.fullName = fullName;
@@ -140,6 +143,11 @@ static async updateUser(
         throw new BadRequestError("Invalid role");
       }
       updateData.role = role;
+      updateData.gender = gender;
+      updateData.country = country;
+      updateData.phone = phone;
+      updateData.nickName = nickName;
+      
     }
 
     // Upload profile image if provided

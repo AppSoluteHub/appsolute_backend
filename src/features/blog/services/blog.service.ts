@@ -1,6 +1,7 @@
 import { PostCategory, PrismaClient } from "@prisma/client";
 import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
 import {
+  AppError,
   BadRequestError,
   InternalServerError,
   NotFoundError,
@@ -11,18 +12,12 @@ const prisma = new PrismaClient();
 
 class PostService {
   static async createPost(userId: string, postData: PostData) {
-    const {
-      title,
-      imageUrl,
-      description,
-      category,
-      contributors,
-      isPublished,
-    } = postData;
-
-    if (!title || !description || !imageUrl)
-      throw new BadRequestError("Title, description and imageUrl are required");
-
+    const { title, imageUrl, description, category, contributors, isPublished } = postData;
+  
+    if (!title || !description || !imageUrl) {
+      throw new BadRequestError("Title, description, and imageUrl are required");
+    }
+  
     const validCategories: PostCategory[] = [
       "AI",
       "TECHNOLOGY",
@@ -30,32 +25,37 @@ class PostService {
       "DESIGN",
       "SOFTWARE",
     ];
-
+  
     const sanitizedCategory = category?.trim().toUpperCase() as PostCategory;
-
-    const postCategory: PostCategory = validCategories.includes(
-      sanitizedCategory
-    )
-      ? sanitizedCategory
-      : "TECHNOLOGY";
-
+    
+   
+    const postCategory: string[] = validCategories.includes(sanitizedCategory)
+      ? [sanitizedCategory]
+      : ["TECHNOLOGY"];
+  
+   
+    const postContributors = Array.isArray(contributors) ? contributors : [];
+  
     try {
       const post = await prisma.post.create({
         data: {
           title,
           description,
-          category: postCategory,
+          category: postCategory, 
           authorId: userId,
           imageUrl,
-          contributors,
-          isPublished,
+          contributors: postContributors,
+          isPublished: isPublished ?? false,
         },
       });
       return post;
     } catch (error) {
+      console.error("Error creating post:", error);
+      if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to create post");
     }
   }
+  
 
   static async getAllPosts(publishedOnly: boolean = true) {
     try {
@@ -66,6 +66,8 @@ class PostService {
         },
       });
     } catch (error) {
+      console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to fetch posts");
     }
   }
@@ -83,6 +85,8 @@ class PostService {
 
       return post;
     } catch (error) {
+      console.log(error)
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to fetch post");
     }
   }
@@ -104,6 +108,8 @@ class PostService {
         data: updateData,
       });
     } catch (error) {
+      console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to update post");
     }
   }
@@ -131,6 +137,7 @@ class PostService {
       return { message: "Post deleted successfully" };
     } catch (error) {
       console.log(error);
+    if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to delete post");
     }
   }
