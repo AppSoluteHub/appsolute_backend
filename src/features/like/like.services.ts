@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { BadRequestError, DuplicateError } from '../../lib/appError';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +14,7 @@ export class LikeService {
     });
 
     if (existingLike) {
-      throw new Error("You have already liked this post.");
+      throw new DuplicateError("You have already liked this post.");
     }
 
     const newLike = await prisma.like.create({
@@ -36,7 +37,7 @@ export class LikeService {
     });
 
     if (!existingLike) {
-      throw new Error("You have not liked this post yet.");
+      throw new BadRequestError("You have not liked this post yet.");
     }
 
     // Delete the like
