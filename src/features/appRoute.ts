@@ -6,6 +6,7 @@ import leaderboardRoute from './leaderBoard/routes/leaderBoard.route';
 import contactRoute from './subscribers/routes/subscriber.route';
 import adminRoute from './admin/routes/manageUser.route';
 import userTaskRoute from './tasks/routes/userTask.route';
+import commentRoute from './comments/comment.route';
 import taskRoute from './tasks/routes/task.route';
 
 export default (appRouter :any) => {
@@ -18,6 +19,7 @@ export default (appRouter :any) => {
   appRouter.use("/admin",adminRoute);
   appRouter.use("/tasks",taskRoute);
   appRouter.use("/tasks",userTaskRoute);
+  appRouter.use("/coments",commentRoute);
 
   return appRouter;
 };

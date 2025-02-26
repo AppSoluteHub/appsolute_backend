@@ -1,10 +1,11 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { CommentService } from "./comment.service";
 
 const commentService = new CommentService();
 
 export class CommentController {
   async createComment(req: Request, res: Response): Promise<void> {
+    console.log("here")
     try {
       const { postId } = req.params;
       const { body } = req.body;
@@ -36,23 +37,25 @@ export class CommentController {
     }
   }
 
-  async getCommentsByPostId(req: Request, res: Response) {
+  async getCommentsByPostId(req: Request, res: Response, next : NextFunction) {
     try {
       const { postId } = req.params;
       const comments = await commentService.getCommentsByPostId(postId);
       res.status(200).json(comments);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch comments" });
+      // res.status(500).json({ error: "Failed to fetch comments" });
+      console.log(error);
+      next(error);
     }
   }
 
   async updateComment(req: Request, res: Response) {
     try {
-      const { postId } = req.params;
+      const { commentId } = req.params;
       const { body } = req.body;
-      console.log(body);
-      console.log(postId);
-      const updatedComment = await commentService.updateComment(postId, {
+      console.log(body, "body");
+      console.log(commentId, "commentId");
+      const updatedComment = await commentService.updateComment(commentId, {
         body,
       });
       res.status(200).json(updatedComment);
@@ -65,7 +68,7 @@ export class CommentController {
     try {
       const { id } = req.params;
       await commentService.deleteComment(id);
-      res.status(204).send();
+      res.status(204).send("Successfully deleted comment");
     } catch (error) {
       res.status(500).json({ error: "Failed to delete comment" });
     }

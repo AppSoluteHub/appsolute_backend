@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { CreateCommentDto, UpdateCommentDto } from "../../interfaces/comment.interface";
+import { AppError, NotFoundError } from "../../lib/appError";
 const  prisma = new PrismaClient();
 
 export class CommentService {
@@ -12,19 +13,31 @@ export class CommentService {
   }
 
 
+ 
   async getCommentsByPostId(postId: string) {
-    return await prisma.comment.findMany({
-      where: { postId },
-      include: {
-        author: { select: { fullName: true, profileImage: true } }, 
-      },
-    });
-  }
-
+    try {
+      const comments = await prisma.comment.findMany({
+        where: { postId },
+        include: {
+          author: { select: { fullName: true, profileImage: true } }, 
+        },
+      });
   
-  async updateComment(commentId: string, data: UpdateCommentDto) {
+      if (comments.length === 0) {
+        throw new NotFoundError("No comments found for this post");
+      }
+  
+      return comments;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new Error("Failed to fetch comments");
+    }
+  }
+  
+  
+  async updateComment(comentId: string, data: UpdateCommentDto) {
     return await prisma.comment.update({
-      where: { id: commentId },
+      where: { id: comentId },
       data,
     });
   }
