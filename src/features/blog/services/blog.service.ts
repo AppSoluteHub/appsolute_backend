@@ -3,6 +3,7 @@ import { PostData, UpdatePostData } from "../../../interfaces/post.interface";
 import {
   AppError,
   BadRequestError,
+  ForbiddenError,
   InternalServerError,
   NotFoundError,
   UnAuthorizedError,
@@ -114,34 +115,64 @@ class PostService {
     }
   }
 
+  // static async deletePost(postId: string, userId: string) {
+  //   try {
+  //     const post = await prisma.post.findUnique({ where: { id: postId } });
+  //     if (!post) throw { statusCode: 404, message: "Post not found" };
+
+  //     const user = await prisma.user.findUnique({ where: { id: userId } });
+  //     if (!user) throw { statusCode: 404, message: "User not found" };
+
+  //     if (user.role !== "ADMIN" && post.authorId !== userId) {
+  //       throw {
+  //         statusCode: 403,
+  //         message: "Not authorized to delete this post",
+  //       };
+  //     }
+
+  //     await prisma.comment.deleteMany({
+  //       where: { postId: postId },
+  //     });
+
+  //     await prisma.like.deleteMany({
+  //       where: { postId: postId },});
+
+  //     await prisma.post.delete({ where: { id: postId } });
+      
+  //     return { message: "Post deleted successfully" };
+  //   } catch (error) {
+  //     console.log(error);
+  //   if (error instanceof AppError) throw error; 
+  //     throw new InternalServerError("Unable to delete post");
+  //   }
+  // }
+
   static async deletePost(postId: string, userId: string) {
     try {
       const post = await prisma.post.findUnique({ where: { id: postId } });
-      if (!post) throw { statusCode: 404, message: "Post not found" };
-
+      if (!post) throw new NotFoundError("Post not found");
+  
       const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) throw { statusCode: 404, message: "User not found" };
-
+      if (!user) throw new NotFoundError("User not found");
+  
       if (user.role !== "ADMIN" && post.authorId !== userId) {
-        throw {
-          statusCode: 403,
-          message: "Not authorized to delete this post",
-        };
+        throw new ForbiddenError("Not authorized to delete this post");
       }
-
-      await prisma.comment.deleteMany({
-        where: { postId: postId },
-      });
-      await prisma.post.delete({ where: { id: postId } });
-      
+  
+      await prisma.$transaction([
+        prisma.comment.deleteMany({ where: { postId } }),
+        prisma.like.deleteMany({ where: { postId } }),
+        prisma.post.delete({ where: { id: postId } }),
+      ]);
+  
       return { message: "Post deleted successfully" };
     } catch (error) {
-      console.log(error);
-    if (error instanceof AppError) throw error; 
+      console.error("Error deleting post:", error);
+      if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to delete post");
     }
   }
-
+  
 }
 
 export default PostService;

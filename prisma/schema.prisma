@@ -36,6 +36,7 @@ model User {
 
 model Task {
   id          String    @id @default(uuid())
+  url         String
   question    String
   options     String[]      
   correctAnswer String  
@@ -67,8 +68,8 @@ model Post {
   imageUrl     String?
   description  String?
   authorId     String
-  contributors String[]
-  editorRole   String?
+  contributors String[] @default(["contributor"])
+  editorRole   String? 
   author       User         @relation("UserPosts", fields: [authorId], references: [id])
   category     String[]
   isPublished  Boolean      @default(false)
