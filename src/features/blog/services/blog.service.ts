@@ -73,24 +73,56 @@ class PostService {
     }
   }
 
+  // static async getPostById(postId: string) {
+  //   try {
+  //     const post = await prisma.post.findUnique({
+  //       where: { id: postId },
+  //       include: {
+  //         author: { select: { id: true, fullName: true, email: true } },
+  //       },
+  //     });
+
+  //     if (!post) throw new NotFoundError("Post not found");
+
+  //     return post;
+  //   } catch (error) {
+  //     console.log(error)
+  //   if (error instanceof AppError) throw error; 
+  //     throw new InternalServerError("Unable to fetch post");
+  //   }
+  // }
+
   static async getPostById(postId: string) {
     try {
       const post = await prisma.post.findUnique({
         where: { id: postId },
         include: {
-          author: { select: { id: true, fullName: true, email: true } },
+          author: { 
+            select: { id: true, fullName: true, email: true } 
+          },
+          comments: {
+            include: {
+              author: { select: { id: true, fullName: true, profileImage: true } }
+            }
+          },
+          likes: {
+            include: {
+              user: { select: { id: true, fullName: true, email: true } }
+            }
+          }
         },
       });
-
+  
       if (!post) throw new NotFoundError("Post not found");
-
+  
       return post;
     } catch (error) {
-      console.log(error)
-    if (error instanceof AppError) throw error; 
+      console.error("Error fetching post:", error);
+      if (error instanceof AppError) throw error; 
       throw new InternalServerError("Unable to fetch post");
     }
   }
+  
 
   static async updatePost(
     postId: string,
