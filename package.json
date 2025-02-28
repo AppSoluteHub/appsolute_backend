@@ -27,6 +27,8 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth2": "^0.1.10",
     "@types/passport-google-oauth20": "^2.0.16",
+    "@types/redis": "^4.0.11",
+    "@types/socket.io": "^3.0.2",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-schema-official": "^2.0.25",
     "@types/swagger-ui-express": "^4.1.7",
@@ -36,6 +38,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@redis/client": "^1.6.0",
     "axios": "^1.7.9",
     "bad-words": "^4.0.0",
     "bcryptjs": "^2.4.3",
@@ -55,6 +58,8 @@
     "passport-google-oauth20": "^2.0.0",
     "prisma": "^5.22.0",
     "profanity-filter": "^0.2.1",
+    "redis": "^4.7.0",
+    "socket.io": "^4.8.1",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1"
   }
