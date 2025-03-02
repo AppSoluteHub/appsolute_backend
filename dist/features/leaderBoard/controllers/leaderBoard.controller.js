@@ -1,74 +1,29 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LeaderboardController = void 0;
+exports.leaderboardController = void 0;
 const leaderBoard_services_1 = require("../services/leaderBoard.services");
-class LeaderboardController {
-    /**
-     * Create a new leaderboard entry for a user.
-     * @param req - The HTTP request object.
-     * @param res - The HTTP response object.
-     */
-    static async createLeaderboard(req, res) {
-        try {
-            const { userId, score, answered } = req.body;
-            // Call the service method to create leaderboard entry
-            await leaderBoard_services_1.LeaderboardService.createLeaderboard(userId, score, answered);
-            res.status(201).json({ message: 'Leaderboard entry created successfully.' });
-        }
-        catch (error) {
-            res.status(400).json({ error });
-        }
+let cachedLeaderboard = null;
+let lastUpdated = 0;
+const refreshLeaderboard = async () => {
+    try {
+        cachedLeaderboard = await (0, leaderBoard_services_1.getLeaderboard)();
+        lastUpdated = Date.now();
     }
-    /**
-     * Add or update user score on the leaderboard.
-     * @param req - The HTTP request object.
-     * @param res - The HTTP response object.
-     */
-    static async addOrUpdateScore(req, res) {
-        try {
-            const { userId, score } = req.body;
-            // Call the service method to add or update score
-            await leaderBoard_services_1.LeaderboardService.addOrUpdateScore(userId, score);
-            res.status(200).json({ message: 'Leaderboard score updated successfully.' });
-        }
-        catch (error) {
-            console.log(error);
-            res.status(400).json({ error });
-        }
+    catch (error) {
+        console.error("Error refreshing leaderboard:", error);
     }
-    /**
-     * Fetch leaderboard rankings with pagination.
-     * @param req - The HTTP request object.
-     * @param res - The HTTP response object.
-     */
-    static async fetchLeaderboard(req, res) {
-        try {
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 10;
-            // Call the service method to fetch leaderboard
-            const leaderboard = await leaderBoard_services_1.LeaderboardService.fetchLeaderboard(page, limit);
-            res.status(200).json(leaderboard);
+};
+refreshLeaderboard();
+setInterval(refreshLeaderboard, 24 * 60 * 60 * 1000);
+const leaderboardController = async (req, res, next) => {
+    try {
+        if (!cachedLeaderboard) {
+            await refreshLeaderboard();
         }
-        catch (error) {
-            console.log(error);
-            res.status(400).json({ error });
-        }
+        res.status(200).json({ success: true, leaderboard: cachedLeaderboard, lastUpdated });
     }
-    /**
-     * Reset the leaderboard (e.g., for weekly/monthly reset).
-     * @param req - The HTTP request object.
-     * @param res - The HTTP response object.
-     */
-    static async resetLeaderboard(req, res) {
-        try {
-            // Call the service method to reset leaderboard
-            await leaderBoard_services_1.LeaderboardService.resetLeaderboard();
-            res.status(200).json({ message: 'Leaderboard reset successfully.' });
-        }
-        catch (error) {
-            console.log(error);
-            res.status(400).json({ error });
-        }
+    catch (error) {
+        next(error);
     }
-}
-exports.LeaderboardController = LeaderboardController;
+};
+exports.leaderboardController = leaderboardController;

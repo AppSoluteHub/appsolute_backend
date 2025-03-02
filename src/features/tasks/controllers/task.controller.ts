@@ -5,7 +5,7 @@ import { createTask, deleteTask, getAllTasks, updateTask } from "../services/tas
 export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     
-    const { question, options, correctAnswer } = req.body;
+    const { question, options, correctAnswer , url} = req.body;
  
     if (!question || !options || !correctAnswer) {
        res.status(400).json({ error: "All fields are required" });
@@ -15,7 +15,7 @@ export const createTaskHandler = async (req: Request, res: Response): Promise<vo
        res.status(400).json({ error: "Options must be an array" });
     }
 
-    const task = await createTask(question, options, correctAnswer);
+    const task = await createTask(question, options, correctAnswer, url);
     res.status(201).json(task);
   } catch (error) {
     console.error("Error creating task:", error);

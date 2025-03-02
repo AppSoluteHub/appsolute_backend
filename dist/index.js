@@ -1,9 +1,60 @@
 "use strict";
+// import express, { Request, Response } from "express";
+// import { Router } from "express";
+// import bodyParser from "body-parser";
+// import cors from "cors";
+// import cookieParser from "cookie-parser";
+// import multer from "multer";
+// import baseRoutes from "./features/appRoute";
+// import setupSwagger from "./swagger/swagger";
+// import session from "express-session";
+// import passport from "passport";
+// import googleRoute from "./middlewares/auth.google.middleware";
+// import dotenv from "dotenv";
+// import { errorHandler } from "./middlewares/error.middleware";
+// dotenv.config();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.upload = void 0;
+// const app = express();
+// const port = process.env.PORT;
+// app.use(bodyParser.json());
+// app.use(express.urlencoded({ extended: true }));
+// app.use(
+//   cors({
+//     origin: [
+//       "http://localhost:3001",
+//     ], 
+//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//     credentials: true, 
+//   })
+// );
+// app.options("*", cors());
+// app.use(cookieParser());
+// app.use(express.json());
+// const storage = multer.memoryStorage();
+// export const upload = multer({ storage });
+// app.use(
+//   session({
+//     secret: process.env.SESSION_SECRET as string,
+//     resave: false,
+//     saveUninitialized: true,
+//     //     cookie: { secure: false },
+//   })
+// );
+// app.use(passport.initialize());
+// app.use(passport.session());
+// app.use("/", googleRoute);
+// const router = Router();
+// const rootRouter = baseRoutes(router);
+// app.use("/api/v1", rootRouter);
+// app.use(errorHandler)
+// setupSwagger(app);
+// app.listen(port, () => console.log(`🚀 Server is firing on port ${port}`));
+// export default app;
 const express_1 = __importDefault(require("express"));
 const express_2 = require("express");
 const body_parser_1 = __importDefault(require("body-parser"));
@@ -15,13 +66,26 @@ const swagger_1 = __importDefault(require("./swagger/swagger"));
 const express_session_1 = __importDefault(require("express-session"));
 const passport_1 = __importDefault(require("passport"));
 const auth_google_middleware_1 = __importDefault(require("./middlewares/auth.google.middleware"));
-// import googleRouter from "./google.route";
+const dotenv_1 = __importDefault(require("dotenv"));
+const error_middleware_1 = require("./middlewares/error.middleware");
+const http_1 = __importDefault(require("http"));
+// import { initializeSocket } from "./config/websocket";
+// import { connectRedis } from "./config/redis";
+dotenv_1.default.config();
 const app = (0, express_1.default)();
-const port = process.env.PORT;
-// Setup express-session for storing session data (if you're using sessions)
+const port = process.env.PORT || 5000;
+const server = http_1.default.createServer(app);
+// connectRedis();
+// initializeSocket(server);
 app.use(body_parser_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
-app.use((0, cors_1.default)());
+app.use((0, cors_1.default)({
+    origin: ["http://localhost:3001"],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+}));
+app.options("*", (0, cors_1.default)());
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 const storage = multer_1.default.memoryStorage();
@@ -30,15 +94,15 @@ app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-    //     cookie: { secure: false },
 }));
 app.use(passport_1.default.initialize());
 app.use(passport_1.default.session());
-// googleAuthMiddleware(app)
+app.use("/", auth_google_middleware_1.default);
 const router = (0, express_2.Router)();
 const rootRouter = (0, appRoute_1.default)(router);
-app.use("/signWithGoogle", auth_google_middleware_1.default);
-app.use("/", rootRouter);
+app.use("/api/v1", rootRouter);
+app.use(error_middleware_1.errorHandler);
 (0, swagger_1.default)(app);
-app.listen(port, () => console.log(`🚀 Server is firing on port ${port}`));
+// Start Server
+server.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
 exports.default = app;

@@ -17,11 +17,12 @@ class AuthController {
                 profileImage,
                 password,
             });
-            res.send((0, appResponse_1.default)("User registered successfully", newUser));
+            const { password: _, resetToken, resetTokenExpires, ...rest } = newUser;
+            res.status(201).json((0, appResponse_1.default)("User registered successfully", rest));
         }
         catch (error) {
+            console.error("Error in register controller:", error);
             next(error);
-            console.log(error);
         }
     }
     static async login(req, res, next) {
@@ -40,7 +41,8 @@ class AuthController {
                 secure: process.env.NODE_ENV === "production",
                 sameSite: "strict",
             });
-            res.status(200).json({ message: "Login successful", token, user });
+            const { password: _, resetToken, resetTokenExpires, ...rest } = user;
+            res.status(200).json({ message: "Login successful", token, rest });
         }
         catch (error) {
             console.log(error);
@@ -57,25 +59,10 @@ class AuthController {
             next(error);
         }
     }
-    // static async resetPassword(
-    //   req: Request,
-    //   res: Response,
-    //   next: NextFunction
-    // ): Promise<void> {
-    //   try {
-    //     const { password, otp } = req.body;
-    //     if(!otp || !password) throw new BadRequestError("Otp and password are required");
-    //     const result = await AuthService.resetPassword(otp, password);
-    //     res.send(appResponse("message:", result));
-    //   } catch (error) {
-    //     console.log(error);
-    //     next(error);
-    //   }
-    // }
     static async resetPassword(req, res, next) {
         try {
-            const { password, confirmPassword, otp } = req.body;
-            if (!otp || !password || !confirmPassword)
+            const { password, confirmPassword, token } = req.body;
+            if (!token || !password || !confirmPassword)
                 throw new appError_1.BadRequestError("OTP, password, and confirm password are required");
             if (password !== confirmPassword)
                 throw new appError_1.BadRequestError("Password and confirm password do not match");
@@ -83,7 +70,7 @@ class AuthController {
             if (!passwordRegex.test(password)) {
                 throw new appError_1.BadRequestError("Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character");
             }
-            const result = await auth_service_1.default.resetPassword(otp, password);
+            const result = await auth_service_1.default.resetPassword(token, password, confirmPassword);
             res.send((0, appResponse_1.default)("Password reset successful", result));
         }
         catch (error) {

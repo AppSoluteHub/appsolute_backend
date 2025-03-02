@@ -1,30 +1,45 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
+const appError_1 = require("../../../lib/appError");
 const prisma = new client_1.PrismaClient();
 class PostService {
     static async createPost(userId, postData) {
         const { title, imageUrl, description, category, contributors, isPublished } = postData;
-        console.log(postData);
-        const validCategory = category && Object.values(client_1.PostCategory).includes(category)
-            ? category
-            : client_1.PostCategory.TECHNOLOGY;
+        if (!title || !description || !imageUrl) {
+            throw new appError_1.BadRequestError("Title, description, and imageUrl are required");
+        }
+        const validCategories = [
+            "AI",
+            "TECHNOLOGY",
+            "MARKETING",
+            "DESIGN",
+            "SOFTWARE",
+        ];
+        const sanitizedCategory = category?.trim().toUpperCase();
+        const postCategory = validCategories.includes(sanitizedCategory)
+            ? [sanitizedCategory]
+            : ["TECHNOLOGY"];
+        const postContributors = Array.isArray(contributors) ? contributors : [];
         try {
             const post = await prisma.post.create({
                 data: {
                     title,
                     description,
-                    category: validCategory,
+                    category: postCategory,
                     authorId: userId,
                     imageUrl,
-                    contributors,
-                    isPublished,
+                    contributors: postContributors,
+                    isPublished: isPublished ?? false,
                 },
             });
             return post;
         }
         catch (error) {
-            throw PostService.formatError(error);
+            console.error("Error creating post:", error);
+            if (error instanceof appError_1.AppError)
+                throw error;
+            throw new appError_1.InternalServerError("Unable to create post");
         }
     }
     static async getAllPosts(publishedOnly = true) {
@@ -37,7 +52,10 @@ class PostService {
             });
         }
         catch (error) {
-            throw PostService.formatError(error);
+            console.log(error);
+            if (error instanceof appError_1.AppError)
+                throw error;
+            throw new appError_1.InternalServerError("Unable to fetch posts");
         }
     }
     static async getPostById(postId) {
@@ -45,51 +63,75 @@ class PostService {
             const post = await prisma.post.findUnique({
                 where: { id: postId },
                 include: {
-                    author: { select: { id: true, fullName: true, email: true } },
+                    author: {
+                        select: { id: true, fullName: true, email: true }
+                    },
+                    comments: {
+                        include: {
+                            author: { select: { id: true, fullName: true, profileImage: true } }
+                        }
+                    },
+                    likes: {
+                        include: {
+                            user: { select: { id: true, fullName: true, email: true } }
+                        }
+                    }
                 },
             });
             if (!post)
-                throw { statusCode: 404, message: "Post not found" };
+                throw new appError_1.NotFoundError("Post not found");
             return post;
         }
         catch (error) {
-            throw PostService.formatError(error);
+            console.error("Error fetching post:", error);
+            if (error instanceof appError_1.AppError)
+                throw error;
+            throw new appError_1.InternalServerError("Unable to fetch post");
         }
     }
     static async updatePost(postId, userId, updateData) {
         try {
             const post = await prisma.post.findUnique({ where: { id: postId } });
             if (!post)
-                throw { statusCode: 404, message: "Post not found" };
+                throw new appError_1.NotFoundError("Post not found");
             if (post.authorId !== userId)
-                throw { statusCode: 403, message: "Not authorized to update this post" };
+                throw new appError_1.UnAuthorizedError("Not authorized");
             return await prisma.post.update({
                 where: { id: postId },
                 data: updateData,
             });
         }
         catch (error) {
-            throw PostService.formatError(error);
+            console.log(error);
+            if (error instanceof appError_1.AppError)
+                throw error;
+            throw new appError_1.InternalServerError("Unable to update post");
         }
     }
     static async deletePost(postId, userId) {
         try {
             const post = await prisma.post.findUnique({ where: { id: postId } });
             if (!post)
-                throw { statusCode: 404, message: "Post not found" };
-            if (post.authorId !== userId)
-                throw { statusCode: 403, message: "Not authorized to delete this post" };
-            await prisma.post.delete({ where: { id: postId } });
+                throw new appError_1.NotFoundError("Post not found");
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            if (!user)
+                throw new appError_1.NotFoundError("User not found");
+            if (user.role !== "ADMIN" && post.authorId !== userId) {
+                throw new appError_1.ForbiddenError("Not authorized to delete this post");
+            }
+            await prisma.$transaction([
+                prisma.comment.deleteMany({ where: { postId } }),
+                prisma.like.deleteMany({ where: { postId } }),
+                prisma.post.delete({ where: { id: postId } }),
+            ]);
             return { message: "Post deleted successfully" };
         }
         catch (error) {
-            throw PostService.formatError(error);
+            console.error("Error deleting post:", error);
+            if (error instanceof appError_1.AppError)
+                throw error;
+            throw new appError_1.InternalServerError("Unable to delete post");
         }
-    }
-    static formatError(error) {
-        if (error.statusCode && error.message)
-            return error;
-        return { statusCode: 500, message: "An unexpected error occurred" };
     }
 }
 exports.default = PostService;
