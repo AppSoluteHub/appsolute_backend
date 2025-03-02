@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createTask, getAllTasks } from "../services/task.service";
+import { createTask, deleteTask, getAllTasks, updateTask } from "../services/task.service";
 
 
 export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
@@ -30,4 +30,28 @@ export const getTasksHandler = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({ error: error });
   }
+
+  
 };
+
+export const deleteTaskHandler = async (req: Request, res: Response) => {
+  try {
+    const taskId= req.params.id;
+    await deleteTask(taskId);
+    res.status(204).send(`Task of Id : ${taskId} was deleted successfully`);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+}
+
+export const updateTaskHandler = async (req: Request, res: Response) => {
+  try {
+    const taskId = req.params.id;
+    const { question, options, correctAnswer } = req.body;
+    await updateTask(taskId, question, options, correctAnswer);
+    res.status(204).send(`Task of Id : ${taskId} was updated successfully`);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+}
+
