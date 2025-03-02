@@ -10,6 +10,7 @@ const validateRegister = (req, res, next) => {
         fullName: joi_1.default.string().min(3).max(50).required(),
         email: joi_1.default.string().email().required(),
         password: joi_1.default.string().min(8).required(),
+        role: joi_1.default.string().optional()
     });
     const { error } = schema.validate(req.body);
     if (error) {
@@ -47,7 +48,7 @@ exports.validateForgotPassword = validateForgotPassword;
 const validateResetPassword = (req, res, next) => {
     const schema = joi_1.default.object({
         password: joi_1.default.string().min(8).required(),
-        otp: joi_1.default.string().min(6).required(),
+        token: joi_1.default.string().min(6).required(),
         confirmPassword: joi_1.default.string().valid(joi_1.default.ref("password")).optional(),
     });
     const { error } = schema.validate(req.body);

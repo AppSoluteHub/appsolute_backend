@@ -7,6 +7,7 @@ exports.UserService = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const cloudinary_1 = __importDefault(require("../../config/cloudinary"));
 const prisma = new client_1.PrismaClient();
 class UserService {
     static async getUsers({ page = 1, limit = 10, search = "", }) {
@@ -53,6 +54,9 @@ class UserService {
                     fullName: true,
                     email: true,
                     profileImage: true,
+                    nickName: true,
+                    gender: true,
+                    role: true
                 },
             });
             if (!user)
@@ -86,7 +90,7 @@ class UserService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
-            const { fullName, email, profileImage, password } = updates;
+            const { fullName, email, password, role, profileImageFile, gender, country, phone, nickName } = updates;
             const updateData = {};
             if (fullName)
                 updateData.fullName = fullName;
@@ -97,12 +101,32 @@ class UserService {
                 }
                 updateData.email = email;
             }
-            if (profileImage)
-                updateData.profileImage = profileImage;
             if (password) {
                 const hashedPassword = await bcryptjs_1.default.hash(password, 10);
                 updateData.password = hashedPassword;
             }
+            if (role) {
+                const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
+                if (!validRoles.includes(role)) {
+                    throw new appError_1.BadRequestError("Invalid role");
+                }
+                updateData.role = role;
+                updateData.gender = gender;
+                updateData.country = country;
+                updateData.phone = phone;
+                updateData.nickName = nickName;
+            }
+            // Upload profile image if provided
+            if (profileImageFile) {
+                const result = cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
+                    if (error)
+                        throw new Error("Error uploading image to Cloudinary");
+                    updateData.profileImage = result?.secure_url;
+                });
+                console.log(result);
+                result.end(profileImageFile.buffer);
+            }
+            console.log("update", updateData);
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: updateData,

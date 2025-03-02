@@ -1,91 +1,85 @@
-
-datasource db {
-  provider = "postgresql" // 
-  url      = env("DATABASE_URL") 
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
-
-model User {
-  id               String       @id @default(uuid())
-  fullName         String
-  nickName         String?
-  country          String?
-  phone            String?
-  gender           String?
-  email            String       @unique
-  password         String
-  profileImage     String?
-  role             Role         @default(GUEST)
-  posts            Post[]       @relation("UserPosts")
-  comments         Comment[]    @relation("UserComments")
-  likes            Like[]       @relation("UserLikes")
-  behavioralData   UserBehavior[]
-  resetToken       String?      
-  resetTokenExpires DateTime?
- contributors   Contributor[] @relation("UserContributors")
-  totalScore  Int       @default(0)
-  userTasks   UserTask[]
-
-
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+model User {
+  id                String         @id @default(uuid())
+  fullName          String
+  nickName          String?
+  country           String?
+  phone             String?
+  gender            String?
+  email             String         @unique
+  password          String
+  profileImage      String?
+  role              Role           @default(GUEST)
+  resetToken        String?
+  resetTokenExpires DateTime?
+  totalScore        Int            @default(0)
+  comments          Comment[]      @relation("UserComments")
+  contributors      Contributor[]  @relation("UserContributors")
+  likes             Like[]         @relation("UserLikes")
+  posts             Post[]         @relation("UserPosts")
+  behavioralData    UserBehavior[]
+  userTasks         UserTask[]
+}
 
 model Task {
-  id          String    @id @default(uuid())
-  url         String
-  question    String
-  options     String[]      
-  correctAnswer String  
-  score       Int       @default(5)  
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  userTasks   UserTask[]
+  id            String     @id @default(uuid())
+  question      String
+  url            String
+  options       String[]
+  correctAnswer String
+  score         Int        @default(5)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  userTasks     UserTask[]
 }
 
 model UserTask {
-  id          String    @id @default(uuid())
-  userId      String    
-  taskId      String    
-  userAnswer  String    
-  isCorrect   Boolean   @default(false)
-  scoreEarned Int       @default(0)
-  answeredAt  DateTime  @default(now())
+  id          String   @id @default(uuid())
+  userId      String
+  taskId      String
+  userAnswer  String
+  isCorrect   Boolean  @default(false)
+  scoreEarned Int      @default(0)
+  answeredAt  DateTime @default(now())
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, taskId]) 
+  @@unique([userId, taskId])
 }
-
 
 model Post {
-  id           String       @id @default(uuid())
-  title        String
-  imageUrl     String?
-  description  String?
-  authorId     String
-  contributors String[] @default(["contributor"])
-  editorRole   String? 
-  author       User         @relation("UserPosts", fields: [authorId], references: [id])
-  category     String[]
-  isPublished  Boolean      @default(false)
-  comments     Comment[]    @relation("PostComments")
-  likes        Like[]       @relation("PostLikes")
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id               String        @id @default(uuid())
+  title            String
+  imageUrl         String?
+  description      String?
+  authorId         String
+  contributors     String[]
+  editorRole       String?
+  category         String[]
+  isPublished      Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  comments         Comment[]     @relation("PostComments")
   contributorsList Contributor[] @relation("PostContributors")
- 
+  likes            Like[]        @relation("PostLikes")
+  author           User          @relation("UserPosts", fields: [authorId], references: [id])
 }
+
 model Contributor {
-  id        String  @id @default(uuid())
-  userId    String
-  user      User    @relation("UserContributors", fields: [userId], references: [id])
-  postId    String
-  post      Post    @relation("PostContributors", fields: [postId], references: [id])
+  id     String @id @default(uuid())
+  userId String
+  postId String
+  post   Post   @relation("PostContributors", fields: [postId], references: [id])
+  user   User   @relation("UserContributors", fields: [userId], references: [id])
+
   @@unique([postId, userId])
 }
 
@@ -94,19 +88,20 @@ model Comment {
   body      String
   authorId  String
   postId    String
+  createdAt DateTime @default(now())
   author    User     @relation("UserComments", fields: [authorId], references: [id])
   post      Post     @relation("PostComments", fields: [postId], references: [id])
-  createdAt DateTime @default(now())
 }
 
 model Like {
   id        String   @id @default(uuid())
   userId    String
   postId    String
-  user      User     @relation("UserLikes", fields: [userId], references: [id])
-  post      Post     @relation("PostLikes", fields: [postId], references: [id])
   createdAt DateTime @default(now())
-  @@unique([userId, postId]) 
+  post      Post     @relation("PostLikes", fields: [postId], references: [id])
+  user      User     @relation("UserLikes", fields: [userId], references: [id])
+
+  @@unique([userId, postId])
 }
 
 model Content {
@@ -114,9 +109,7 @@ model Content {
   contentUrl  String
   description String
   category    String
-  
 }
-
 
 model Subscriber {
   id    String @id @default(uuid())
@@ -124,12 +117,12 @@ model Subscriber {
 }
 
 model UserBehavior {
-  id           String       @id @default(uuid())
+  id           String          @id @default(uuid())
   userId       String
-  user         User         @relation(fields: [userId], references: [id])
   postCategory PostCategory
   interaction  InteractionType
-  timestamp    DateTime      @default(now())
+  timestamp    DateTime        @default(now())
+  user         User            @relation(fields: [userId], references: [id])
 }
 
 enum Role {
@@ -158,4 +151,3 @@ enum PostCategory {
   AI
   MARKETING
 }
-

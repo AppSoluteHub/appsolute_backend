@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validatePost = void 0;
+// src/postValidation.ts
+const client_1 = require("@prisma/client");
 const joi_1 = __importDefault(require("joi"));
 // Define the schema
 const createPostSchema = joi_1.default.object({
@@ -13,10 +15,9 @@ const createPostSchema = joi_1.default.object({
     isPublished: joi_1.default.boolean().optional(),
     imageUrl: joi_1.default.string().optional(),
     category: joi_1.default.string()
-        .valid('AI', 'TECHNOLOGY', 'MARKETING', 'DESIGN', 'SOFTWARE')
+        .valid(...Object.values(client_1.PostCategory))
         .optional(),
 });
-// Validation middleware
 const validatePost = (req, res, next) => {
     const { error } = createPostSchema.validate(req.body, { abortEarly: false });
     if (error) {

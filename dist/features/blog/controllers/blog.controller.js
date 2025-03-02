@@ -5,41 +5,39 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const blog_service_1 = __importDefault(require("../services/blog.service"));
 const cloudinary_1 = __importDefault(require("../../../config/cloudinary"));
+const appError_1 = require("../../../lib/appError");
+const appResponse_1 = __importDefault(require("../../../lib/appResponse"));
 class PostController {
-    static async createPost(req, res) {
+    static async createPost(req, res, next) {
         try {
             const userId = req.user?.id;
             const { title, description, category, contributors, isPublished } = req.body;
-            if (!userId) {
-                res.status(401).json({ success: false, message: "Unauthorized" });
-                return;
-            }
-            if (!title || !description || !category) {
-                res.status(400).json({
-                    success: false,
-                    message: "Title, category , and description are required",
-                });
-                return;
-            }
+            if (!userId)
+                throw new appError_1.UnAuthorizedError("Unauthorized");
+            if (!title || !description || !category)
+                throw new appError_1.BadRequestError("Title, category, and description are required");
             let imageUrl = "";
             if (req.file) {
-                const file = req.file;
-                imageUrl = await new Promise((resolve, reject) => {
-                    const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "posts" }, (error, result) => {
-                        if (error) {
-                            reject(new Error("Failed to upload image to Cloudinary"));
-                        }
-                        else if (result) {
-                            resolve(result.secure_url);
-                        }
+                try {
+                    const file = req.file;
+                    imageUrl = await new Promise((resolve, reject) => {
+                        const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute" }, (error, result) => {
+                            if (error)
+                                return reject(new appError_1.BadRequestError("Failed to upload image to Cloudinary"));
+                            if (result)
+                                return resolve(result.secure_url);
+                        });
+                        uploadStream.end(file.buffer);
                     });
-                    uploadStream.end(file.buffer);
-                });
+                }
+                catch (error) {
+                    return next(error);
+                }
             }
             const post = await blog_service_1.default.createPost(userId, {
                 title,
                 description,
-                category,
+                category: category,
                 isPublished,
                 contributors,
                 imageUrl,
@@ -51,100 +49,61 @@ class PostController {
             });
         }
         catch (error) {
-            console.error("Error creating post:", error);
-            res.status(500).json({
-                success: false,
-                message: error.message || "Internal server error",
-            });
+            next(error);
         }
     }
-    static async getAllPosts(req, res) {
+    static async getAllPosts(req, res, next) {
         try {
             const { publishedOnly } = req.query;
             const posts = await blog_service_1.default.getAllPosts(publishedOnly === "true");
-            res.status(200).json({
-                success: true,
-                data: posts,
-            });
+            res.send((0, appResponse_1.default)("Posts fetched successfully", posts));
         }
         catch (error) {
-            res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal server error",
-            });
+            next(error);
         }
     }
-    static async getPostById(req, res) {
+    static async getPostById(req, res, next) {
         try {
             const { id } = req.params;
             const post = await blog_service_1.default.getPostById(id);
-            res.status(200).json({
-                success: true,
-                data: post,
-            });
+            res.send((0, appResponse_1.default)("Post fetched successfully", post));
         }
         catch (error) {
-            res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal server error",
-            });
+            next(error);
         }
     }
-    static async updatePost(req, res) {
+    static async updatePost(req, res, next) {
         try {
             const userId = req.user?.id;
             const { id } = req.params;
-            const { title, description, imageUrl, isPublished, } = req.body;
-            if (!userId) {
-                res.status(401).json({ success: false, message: "Unauthorized" });
-            }
-            // Update post
+            const { title, description, imageUrl, isPublished } = req.body;
+            if (!userId)
+                throw new appError_1.UnAuthorizedError("You are not Authenticated");
             const updatedPost = await blog_service_1.default.updatePost(id, userId, {
                 title,
                 description,
                 imageUrl,
                 isPublished,
             });
-            // Handle case if post wasn't found
-            if (!updatedPost) {
-                res.status(404).json({ success: false, message: "Post not found" });
-            }
-            // Respond with success
-            res.status(200).json({
-                success: true,
-                message: "Post updated successfully",
-                data: updatedPost,
-            });
+            if (!updatedPost)
+                throw new appError_1.BadRequestError("Post not found");
+            res.send((0, appResponse_1.default)("Post updated successfully", updatedPost));
         }
         catch (error) {
-            // Handle unexpected errors
-            console.error(error); // Log error for debugging
-            res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal server error",
-            });
+            next(error);
         }
     }
-    static async deletePost(req, res) {
+    static async deletePost(req, res, next) {
         try {
             const userId = req.user?.id;
             const { id } = req.params;
-            console.log(userId);
-            if (!userId) {
-                res.status(401).json({ message: "Unauthorized" });
-                return;
-            }
+            if (!userId)
+                throw new appError_1.UnAuthorizedError("You are not Authenticated");
             await blog_service_1.default.deletePost(id, userId);
-            res.status(200).json({
-                success: true,
-                message: "Post deleted successfully",
-            });
+            res.send((0, appResponse_1.default)("Post deleted successfully"));
         }
         catch (error) {
-            res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal server error",
-            });
+            next(error);
         }
     }
 }

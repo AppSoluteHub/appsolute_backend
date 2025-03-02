@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LikeService = void 0;
 const client_1 = require("@prisma/client");
+const appError_1 = require("../../lib/appError");
 const prisma = new client_1.PrismaClient();
 class LikeService {
     async likePost(userId, postId) {
@@ -11,7 +12,7 @@ class LikeService {
             },
         });
         if (existingLike) {
-            throw new Error("You have already liked this post.");
+            throw new appError_1.DuplicateError("You have already liked this post.");
         }
         const newLike = await prisma.like.create({
             data: {
@@ -29,7 +30,7 @@ class LikeService {
             },
         });
         if (!existingLike) {
-            throw new Error("You have not liked this post yet.");
+            throw new appError_1.BadRequestError("You have not liked this post yet.");
         }
         // Delete the like
         await prisma.like.delete({
