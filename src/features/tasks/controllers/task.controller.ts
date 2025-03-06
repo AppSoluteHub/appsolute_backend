@@ -38,6 +38,7 @@ export const getTaskByIdHandler = async (req: Request, res: Response) => {
     const taskId = req.params.id;
     const task = await getTaskById(taskId);
     res.json({mesage : "Task fetched successfully", "Task": task});
+    
   } catch (error) {
     res.status(500).json({ error: error });
   }

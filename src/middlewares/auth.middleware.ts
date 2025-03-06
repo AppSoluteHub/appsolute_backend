@@ -51,3 +51,37 @@ export default async function authenticate(
       .json({ success: false, message: "Invalid or expired token" });
   }
 }
+
+
+export const  isAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
+    return;
+  }
+
+  const { role } = req.user;
+
+  if (role !== "ADMIN" && role !== "SUPERADMIN") {
+    res.status(403).json({ success: false, message: "Access denied: Admins only" });
+    return;
+  }
+
+  next();
+}
+
+
+export const isSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
+    return;
+  }
+
+  const { role } = req.user;
+
+  if (role !== "SUPERADMIN") {
+    res.status(403).json({ success: false, message: "Access denied: Superadmins only" });
+    return;
+  }
+
+  next();
+}
