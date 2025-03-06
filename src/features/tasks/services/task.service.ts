@@ -16,7 +16,13 @@ export const createTask = async (question: string, options: string[], correctAns
 export const getAllTasks = async () => {
   return await prisma.task.findMany();
 };
-
+export const getTaskById = async(taskI : string) =>{
+  return await prisma.task.findUnique({
+    where: {
+      id: taskI,
+    },
+  });
+}
 export const deleteTask = async (taskId: string) => {
   return await prisma.task.delete({ where: { id: taskId } });
 };

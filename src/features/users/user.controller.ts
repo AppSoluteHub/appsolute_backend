@@ -22,6 +22,24 @@ export class UserController {
     }
   }
 
+
+  static async getAdmins(req: Request, res: Response) {
+    try {
+      const { search } = req.query;
+
+      const admins = await UserService.getAdmins({
+        search: search as string,
+      });
+
+      return res.status(200).json({ success: true, data: admins });
+    } catch (error) {
+      console.error("Error in getAdmins controller:", error);
+      return res.status(500).json({ success: false, message: "Internal Server Error" });
+    }
+  }
+
+
+
   static async getUserById(req: Request, res: Response) {
     try {
       const { userId } = req.params;

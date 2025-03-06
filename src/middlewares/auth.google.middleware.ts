@@ -92,11 +92,13 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+
+
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
-    res.redirect("/profile");
+    res.redirect("https://appsolutehub.vercel.app");
   }
 );
 

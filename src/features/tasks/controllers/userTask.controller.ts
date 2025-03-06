@@ -4,7 +4,6 @@ import { answerTask } from "../services/userTask.service";
 export const answerTaskHandler = async (req: Request, res: Response) => {
   try {
     const userId =req.params.userId;
-    console.log(userId);
     const {taskId, userAnswer } = req.body;
     if (!userId ) {
       res.status(401).json({ error: "You are not authenticated" });
