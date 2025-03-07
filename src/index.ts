@@ -29,16 +29,36 @@ const server = http.createServer(app);
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
+// app.use(
+//   cors({
+//     origin: ["http://localhost:3001","https://appsolutehub.vercel.app"],
+//     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//     credentials: true,
+//   })
+// );
+
+// app.options("*", cors());
+
+
+const allowedOrigins = ['https://appsolutehub.vercel.app', 'http://localhost:3001'];
+
 app.use(
   cors({
-    origin: ["http://localhost:3001","https://appsolutehub.vercel.app"],
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
 
-app.options("*", cors());
+app.options('*', cors());
 
 app.use(cookieParser());
 app.use(express.json());
