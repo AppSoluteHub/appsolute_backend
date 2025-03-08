@@ -9,7 +9,6 @@ export const answerTask = async (
   userAnswer: string
 ) => {
   try {
-  
     const existingAttempt = await prisma.userTask.findFirst({
       where: { userId, taskId },
     });
@@ -24,7 +23,6 @@ export const answerTask = async (
     const isCorrect = userAnswer === task.correctAnswer;
     const scoreEarned = isCorrect ? task.score : 0;
 
-   
     const userTask = await prisma.userTask.create({
       data: {
         userId,
@@ -35,7 +33,6 @@ export const answerTask = async (
       },
     });
 
- 
     if (isCorrect) {
       await prisma.user.update({
         where: { id: userId },
@@ -43,16 +40,19 @@ export const answerTask = async (
       });
     }
 
+    await prisma.user.update({
+      where: { id: userId },
+      data: { answered: { increment: 1 } },
+    });
+
     return userTask;
   } catch (error: any) {
     console.error("Error in answerTask:", error);
 
-   
     if (error instanceof BadRequestError) {
       throw error;
     }
 
-   
     if (error.code) {
       throw new BadRequestError(`Database error: ${error.message}`);
     }

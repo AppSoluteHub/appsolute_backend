@@ -123,77 +123,120 @@ export class UserService {
 
 
 
-static async updateUser(
-  userId: string,
-  updates: Partial<{
-    fullName: string;
-    gender : string;
-    country : string;
-    nickName : string;
-    phone : string;
-    email: string;
-    password: string;
-    role: Role;
-    profileImageFile: Express.Multer.File | undefined;
-  }>
-) {
-  try {
-    if (!userId) throw new BadRequestError("User ID is required");
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundError("User not found");
-
-    const { fullName, email, password, role, profileImageFile,gender, country,phone,nickName } = updates;
-
-    const updateData: any = {};
-    if (fullName) updateData.fullName = fullName;
-    if (email) {
-      const existingUser = await prisma.user.findUnique({ where: { email } });
-      if (existingUser && existingUser.id !== userId) {
-        throw new DuplicateError("Email already in use");
+  static async updateUser(
+    userId: string,
+    updates: Partial<{
+      fullName: string;
+      gender: string;
+      country: string;
+      nickName: string;
+      phone: string;
+      email: string;
+      password: string;
+      role: Role;
+      profileImageFile: Express.Multer.File | undefined;
+    }>
+  ) {
+    try {
+      if (!userId) throw new BadRequestError("User ID is required");
+  
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundError("User not found");
+  
+      const { fullName, email, password, role, profileImageFile, gender, country, phone, nickName } = updates;
+  
+      const updateData: any = {};
+      if (fullName) updateData.fullName = fullName;
+      if (email) {
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser && existingUser.id !== userId) {
+          throw new DuplicateError("Email already in use");
+        }
+        updateData.email = email;
       }
-      updateData.email = email;
-    }
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateData.password = hashedPassword;
-    }
-    if (role) {
-      const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
-      if (!validRoles.includes(role)) {
-        throw new BadRequestError("Invalid role");
+      if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        updateData.password = hashedPassword;
       }
-      updateData.role = role;
+      if (role) {
+        const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
+        if (!validRoles.includes(role)) {
+          throw new BadRequestError("Invalid role");
+        }
+        updateData.role = role;
+      }
+      
       updateData.gender = gender;
       updateData.country = country;
       updateData.phone = phone;
       updateData.nickName = nickName;
-      
-    }
-
-    // Upload profile image if provided
-    if (profileImageFile) {
-      const result =  cloudinary.uploader.upload_stream(
-        { folder: "profile_images" },
-        (error, result) => {
-          if (error) throw new Error("Error uploading image to Cloudinary");
-          updateData.profileImage = result?.secure_url;
+  
+    
+      if (profileImageFile) {
+        const uploadResult = await new Promise<string>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "profile_images" },
+            (error, result) => {
+              if (error) return reject(new Error("Error uploading image to Cloudinary"));
+              resolve(result?.secure_url || "");
+            }
+          );
+          uploadStream.end(profileImageFile.buffer);
+        });
+  
+        if (uploadResult) {
+          updateData.profileImage = uploadResult;
         }
-      );
-    console.log(result); 
-      result.end(profileImageFile.buffer);
+      }
+  
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+      });
+  
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw new InternalServerError("Unable to update user");
     }
- console.log("update",updateData)
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-    });
-
-    return updatedUser;
-  } catch (error) {
-    console.error("Error updating user:", error);
-    throw new InternalServerError("Unable to update user");
   }
-}
+  
+  static async updateUserProfileImage(userId: string, profileImageFile: Express.Multer.File) {
+    try {
+      if (!userId) throw new BadRequestError("User ID is required");
+  
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new NotFoundError("User not found");
+  
+      if (!profileImageFile || !profileImageFile.buffer) {
+        throw new BadRequestError("Invalid image file");
+      }
+  
+      // Upload image to Cloudinary
+      const uploadResult = await new Promise<string>((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: "profile_images" },
+          (error, result) => {
+            if (error || !result) {
+              return reject(new Error("Error uploading image to Cloudinary"));
+            }
+            resolve(result.secure_url);
+          }
+        ).end(profileImageFile.buffer);
+      });
+  
+      // Update user's profile image
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { profileImage: uploadResult },
+      });
+  
+      return updatedUser;
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+      throw new InternalServerError("Unable to update profile image");
+    }
+  }
+  
 
 }

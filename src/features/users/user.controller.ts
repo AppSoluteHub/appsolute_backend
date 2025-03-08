@@ -72,10 +72,14 @@ export class UserController {
   static async updateUser(req: Request, res: Response) {
     try {
       const { userId } = req.params;
-      const updates = req.body
-     
-      const updatedUser = await UserService.updateUser(userId, updates);
-
+      const updates = req.body; 
+      const profileImageFile = req.file; 
+  
+      const updatedUser = await UserService.updateUser(userId, { 
+        ...updates, 
+        profileImageFile 
+      });
+  
       res.status(200).json({
         message: "User updated successfully",
         data: updatedUser,
@@ -84,4 +88,25 @@ export class UserController {
       res.status(error.statusCode || 500).json({ error: error.message });
     }
   }
+  
+  static async updateProfileImage(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const profileImageFile = req.file;
+  
+      if (!profileImageFile) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+  
+      const updatedUser = await UserService.updateUserProfileImage(userId, profileImageFile);
+  
+      res.status(200).json({
+        message: "Profile image updated successfully",
+        data: updatedUser,
+      });
+    } catch (error: any) {
+      res.status(error.statusCode || 500).json({ error: error.message });
+    }
+  }
+  
 }

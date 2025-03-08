@@ -1,21 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { getLeaderboard } from "../services/leaderBoard.services";
-
-let cachedLeaderboard: any = null;
-let lastUpdated: number = 0;
-
-const refreshLeaderboard = async () => {
-  try {
-    cachedLeaderboard = await getLeaderboard();
-    lastUpdated = Date.now();
-  } catch (error) {
-    console.error("Error refreshing leaderboard:", error);
-  }
-};
-
-refreshLeaderboard();
-
-setInterval(refreshLeaderboard, 24 * 60 * 60 * 1000);
+import { cachedLeaderboard, lastUpdated, refreshLeaderboard } from "../services/leaderBoard.services";
 
 export const leaderboardController = async (
   req: Request,
