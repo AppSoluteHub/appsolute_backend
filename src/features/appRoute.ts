@@ -1,5 +1,5 @@
 import userRoute from './authenetication/routes/auth.route';
-import userAuthRoute from './users/user.route';
+import userPageRoute from './users/user.route';
 import blogRoute from './blog/routes/blog.route';
 import contentRoute from './contents/routes/content.route';
 import leaderboardRoute from './leaderBoard/routes/leaderBoard.route';
@@ -15,7 +15,7 @@ import adminUserRoute from './admin/routes/usersAdmin'
 
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
-  appRouter.use("/users/auth",userAuthRoute);
+  appRouter.use("/userPage",userPageRoute);
   appRouter.use("/posts",blogRoute);
   appRouter.use("/contents",contentRoute);
   appRouter.use("/leaderborad",leaderboardRoute);

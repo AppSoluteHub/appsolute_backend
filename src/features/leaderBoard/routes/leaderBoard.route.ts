@@ -8,4 +8,3 @@ router.get("/", leaderboardController);
 export default router;
 
 
- 

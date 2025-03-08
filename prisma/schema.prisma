@@ -13,8 +13,9 @@ model User {
   nickName          String?
   country           String?
   phone             String?
-  gender            String?
+  gender            String? 
   email             String         @unique
+  answered          Int?       @default(0)
   password          String
   profileImage      String?
   role              Role           @default(GUEST)
