@@ -10,6 +10,7 @@ export const getLeaderboard = async () => {
       id: true,
       fullName: true,
       totalScore: true,
+      
     },
   });
 };

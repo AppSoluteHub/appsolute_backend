@@ -6,10 +6,10 @@ import { UploadStream } from "cloudinary";
 import { upload } from "../..";
 
 const router = express.Router();
-router.get("/",authenticate, UserController.getUsers);
-router.get("/:userId",authenticate, UserController.getUserById);
-router.delete("/:userId",authenticate, UserController.deleteUser);
-router.patch("/:userId", authenticate, validateUpdateUser, UserController.updateUser);
+router.get("/", UserController.getUsers);
+router.get("/:userId", UserController.getUserById);
+router.delete("/:userId", UserController.deleteUser);
+router.patch("/:userId", validateUpdateUser, UserController.updateUser);
 
 
 export default router;

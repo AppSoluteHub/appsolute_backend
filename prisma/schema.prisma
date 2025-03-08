@@ -16,6 +16,7 @@ model User {
   gender            String? 
   email             String         @unique
   answered          Int?       @default(0)
+  joined            DateTime
   password          String
   profileImage      String?
   role              Role           @default(GUEST)
