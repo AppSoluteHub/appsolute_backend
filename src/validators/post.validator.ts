@@ -3,7 +3,7 @@ import { PostCategory } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 
-// Define the schema
+
 const createPostSchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),

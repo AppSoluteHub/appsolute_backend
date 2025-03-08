@@ -8,12 +8,23 @@ export const answerTask = async (
   taskId: string,
   userAnswer: string
 ) => {
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task) throw new BadRequestError("Task not found");
-
-  const isCorrect = userAnswer === task.correctAnswer;
-  const scoreEarned = isCorrect ? task.score : 0;
   try {
+  
+    const existingAttempt = await prisma.userTask.findFirst({
+      where: { userId, taskId },
+    });
+
+    if (existingAttempt) {
+      throw new BadRequestError("You have already attempted this task.");
+    }
+
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) throw new BadRequestError("Task not found.");
+
+    const isCorrect = userAnswer === task.correctAnswer;
+    const scoreEarned = isCorrect ? task.score : 0;
+
+   
     const userTask = await prisma.userTask.create({
       data: {
         userId,
@@ -24,16 +35,28 @@ export const answerTask = async (
       },
     });
 
+ 
     if (isCorrect) {
       await prisma.user.update({
         where: { id: userId },
         data: { totalScore: { increment: scoreEarned } },
       });
     }
+
     return userTask;
-  } catch (error) {
-    console.log(error);
-    if (error instanceof BadRequestError) throw error;
-    throw new InternalServerError("Unable to answer task");
+  } catch (error: any) {
+    console.error("Error in answerTask:", error);
+
+   
+    if (error instanceof BadRequestError) {
+      throw error;
+    }
+
+   
+    if (error.code) {
+      throw new BadRequestError(`Database error: ${error.message}`);
+    }
+
+    throw new InternalServerError("Unable to answer task.");
   }
 };
