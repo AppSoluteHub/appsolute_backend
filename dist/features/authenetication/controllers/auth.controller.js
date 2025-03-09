@@ -11,6 +11,7 @@ class AuthController {
     static async register(req, res, next) {
         try {
             const { fullName, email, password, profileImage } = req.body;
+            const lowercaseEmail = email.toLowerCase();
             const newUser = await auth_service_1.default.register({
                 fullName,
                 email,
@@ -28,7 +29,8 @@ class AuthController {
     static async login(req, res, next) {
         try {
             const { email, password } = req.body;
-            const { user } = await auth_service_1.default.login(email, password);
+            const lowercaseEmail = email.toLowerCase();
+            const { user } = await auth_service_1.default.login(lowercaseEmail, password);
             const token = (0, jwt_1.generateToken)(user.id);
             const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
             res.cookie("token", token, {
@@ -52,7 +54,8 @@ class AuthController {
     static async forgotPassword(req, res, next) {
         try {
             const { email } = req.body;
-            const result = await auth_service_1.default.forgotPassword(email);
+            const lowercaseEmail = email.toLowerCase();
+            const result = await auth_service_1.default.forgotPassword(lowercaseEmail);
             res.send((0, appResponse_1.default)("Message:", result));
         }
         catch (error) {
