@@ -106,6 +106,10 @@ router.get(
   }
 );
 
+router.get("/me", isAuthenticated, (req: Request, res: Response) => {
+  res.json(req.user);
+});
+
 router.get("/logout", (req: Request, res: Response) => {
   req.logout(() => {
     res.redirect("/");
