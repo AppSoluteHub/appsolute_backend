@@ -11,7 +11,8 @@ export const getLeaderboard = async () => {
       fullName: true,
       totalScore: true,
       answered: true,
-      joined : true
+      joined : true,
+      profileImage: true
     },
   });
 };
