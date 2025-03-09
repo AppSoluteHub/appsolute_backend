@@ -98,7 +98,7 @@ router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
-    res.redirect("https://appsolutehub.vercel.app");
+    res.redirect("http://localhost:3001/");
   }
 );
 
