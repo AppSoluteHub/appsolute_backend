@@ -110,7 +110,7 @@ class UserService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
-            const { fullName, email, password, role, profileImageFile, gender, country, phone, nickName } = updates;
+            const { fullName, email, password, role, gender, country, phone, nickName } = updates;
             const updateData = {};
             if (fullName)
                 updateData.fullName = fullName;
@@ -136,19 +136,6 @@ class UserService {
             updateData.country = country;
             updateData.phone = phone;
             updateData.nickName = nickName;
-            if (profileImageFile) {
-                const uploadResult = await new Promise((resolve, reject) => {
-                    const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
-                        if (error)
-                            return reject(new Error("Error uploading image to Cloudinary"));
-                        resolve(result?.secure_url || "");
-                    });
-                    uploadStream.end(profileImageFile.buffer);
-                });
-                if (uploadResult) {
-                    updateData.profileImage = uploadResult;
-                }
-            }
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: updateData,

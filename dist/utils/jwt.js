@@ -8,7 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 require("dotenv").config();
 const jwtSecret = process.env.JWT_SECRET;
 const generateToken = (userId) => {
-    return jsonwebtoken_1.default.sign({ userId }, jwtSecret, { expiresIn: "1d" });
+    return jsonwebtoken_1.default.sign({ userId }, jwtSecret, { expiresIn: "7d" });
 };
 exports.generateToken = generateToken;
 const generateRefreshToken = (userId) => {

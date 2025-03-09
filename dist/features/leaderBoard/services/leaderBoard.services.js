@@ -12,6 +12,8 @@ const getLeaderboard = async () => {
             fullName: true,
             totalScore: true,
             answered: true,
+            joined: true,
+            profileImage: true
         },
     });
 };

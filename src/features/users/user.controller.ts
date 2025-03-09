@@ -73,11 +73,9 @@ export class UserController {
     try {
       const { userId } = req.params;
       const updates = req.body; 
-      const profileImageFile = req.file; 
   
       const updatedUser = await UserService.updateUser(userId, { 
         ...updates, 
-        profileImageFile 
       });
   
       res.status(200).json({

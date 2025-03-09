@@ -3,13 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateTask = exports.deleteTask = exports.getTaskById = exports.getAllTasks = exports.createTask = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-const createTask = async (question, options, correctAnswer, url) => {
+const createTask = async (question, options, correctAnswer, url, tags, points, title) => {
     return await prisma.task.create({
         data: {
             question,
             options,
             correctAnswer,
             url,
+            tags,
+            points,
+            title
         },
     });
 };
@@ -30,13 +33,16 @@ const deleteTask = async (taskId) => {
     return await prisma.task.delete({ where: { id: taskId } });
 };
 exports.deleteTask = deleteTask;
-const updateTask = async (taskId, question, options, correctAnswer) => {
+const updateTask = async (taskId, question, options, correctAnswer, points, title, tags) => {
     return await prisma.task.update({
         where: { id: taskId },
         data: {
             question,
             options,
             correctAnswer,
+            points,
+            title,
+            tags
         },
     });
 };

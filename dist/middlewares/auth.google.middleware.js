@@ -8,6 +8,7 @@ const passport_1 = __importDefault(require("passport"));
 const passport_google_oauth20_1 = require("passport-google-oauth20");
 const dotenv_1 = __importDefault(require("dotenv"));
 const client_1 = require("@prisma/client");
+const jwt_1 = require("../utils/jwt");
 dotenv_1.default.config();
 const prisma = new client_1.PrismaClient();
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
@@ -58,11 +59,9 @@ const isAuthenticated = (req, res, next) => {
 const router = express_1.default.Router();
 router.get("/auth/google", passport_1.default.authenticate("google", { scope: ["profile", "email"] }));
 router.get("/auth/google/callback", passport_1.default.authenticate("google", { failureRedirect: "/" }), (req, res) => {
-    res.redirect("https://appsolutehub.vercel.app");
-});
-router.get("/profile", isAuthenticated, (req, res) => {
-    const user = req.user;
-    res.send(`Welcome ${user.fullName}`);
+    const token = (0, jwt_1.generateToken)(req.user.id);
+    res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
+    res.redirect("/http://localhost:3001/dashboard");
 });
 router.get("/logout", (req, res) => {
     req.logout(() => {

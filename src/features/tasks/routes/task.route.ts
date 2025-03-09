@@ -8,8 +8,8 @@ const router = Router();
 router.post("/", validateTask, createTaskHandler);
 router.get("/", getTasksHandler);
 router.get("/:id", getTaskByIdHandler);
-router.delete("/",deleteTaskHandler);
-router.patch("/",validateUpdateTask, updateTaskHandler);
+router.delete("/:id",deleteTaskHandler);
+router.patch("/:id",validateUpdateTask, updateTaskHandler);
 
 export default router;
 

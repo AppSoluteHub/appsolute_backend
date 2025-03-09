@@ -4,14 +4,17 @@ exports.updateTaskHandler = exports.deleteTaskHandler = exports.getTaskByIdHandl
 const task_service_1 = require("../services/task.service");
 const createTaskHandler = async (req, res) => {
     try {
-        const { question, options, correctAnswer, url } = req.body;
+        const { question, options, correctAnswer, url, title, points, tags } = req.body;
         if (!question || !options || !correctAnswer) {
             res.status(400).json({ error: "All fields are required" });
         }
         if (!Array.isArray(options)) {
             res.status(400).json({ error: "Options must be an array" });
         }
-        const task = await (0, task_service_1.createTask)(question, options, correctAnswer, url);
+        if (!Array.isArray(tags)) {
+            res.status(400).json({ error: "Options must be an array" });
+        }
+        const task = await (0, task_service_1.createTask)(question, options, correctAnswer, url, points, tags, title);
         res.status(201).json(task);
     }
     catch (error) {
@@ -55,8 +58,8 @@ exports.deleteTaskHandler = deleteTaskHandler;
 const updateTaskHandler = async (req, res) => {
     try {
         const taskId = req.params.id;
-        const { question, options, correctAnswer } = req.body;
-        await (0, task_service_1.updateTask)(taskId, question, options, correctAnswer);
+        const { question, options, correctAnswer, points, tags, title, } = req.body;
+        await (0, task_service_1.updateTask)(taskId, question, options, correctAnswer, points, title, tags);
         res.status(204).send(`Task of Id : ${taskId} was updated successfully`);
     }
     catch (error) {
