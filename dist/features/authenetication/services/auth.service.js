@@ -15,11 +15,12 @@ class AuthService {
             const existingUser = await prisma.user.findUnique({ where: { email } });
             if (existingUser)
                 throw new appError_1.DuplicateError("Email already exists");
+            const lowercaseEmail = email.toLowerCase();
             const hashedPassword = await bcryptjs_1.default.hash(password, 10);
             const user = await prisma.user.create({
                 data: {
                     fullName,
-                    email,
+                    email: lowercaseEmail,
                     password: hashedPassword,
                     profileImage: profileImage || "https://png.pngtree.com/png-clipart/20200224/original/pngtree-cartoon-color-simple-male-avatar-png-image_5230557.jpg"
                 }
