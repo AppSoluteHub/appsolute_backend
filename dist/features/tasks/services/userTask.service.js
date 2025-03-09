@@ -16,7 +16,7 @@ const answerTask = async (userId, taskId, userAnswer) => {
         if (!task)
             throw new appError_1.BadRequestError("Task not found.");
         const isCorrect = userAnswer === task.correctAnswer;
-        const scoreEarned = isCorrect ? task.score : 0;
+        const scoreEarned = isCorrect ? task.points : 0;
         const userTask = await prisma.userTask.create({
             data: {
                 userId,

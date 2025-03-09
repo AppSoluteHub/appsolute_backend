@@ -8,6 +8,6 @@ const router = (0, express_1.Router)();
 router.post("/", task_validation_1.validateTask, task_controller_1.createTaskHandler);
 router.get("/", task_controller_1.getTasksHandler);
 router.get("/:id", task_controller_1.getTaskByIdHandler);
-router.delete("/", task_controller_1.deleteTaskHandler);
-router.patch("/", updatePost_validator_1.validateUpdateTask, task_controller_1.updateTaskHandler);
+router.delete("/:id", task_controller_1.deleteTaskHandler);
+router.patch("/:id", updatePost_validator_1.validateUpdateTask, task_controller_1.updateTaskHandler);
 exports.default = router;

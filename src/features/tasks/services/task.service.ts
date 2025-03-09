@@ -2,13 +2,16 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const createTask = async (question: string, options: string[], correctAnswer: string, url : string) => {
+export const createTask = async (question: string, options: string[], correctAnswer: string, url : string, tags : string[], points: number, title: string) => {
   return await prisma.task.create({
     data: {
       question,
       options,
       correctAnswer,
       url,
+      tags,
+      points,
+      title
     },
   });
 };
@@ -27,13 +30,16 @@ export const deleteTask = async (taskId: string) => {
   return await prisma.task.delete({ where: { id: taskId } });
 };
 
-export const updateTask = async(taskId: string, question: string, options: string[], correctAnswer: string) => {
+export const updateTask = async(taskId: string, question: string, options: string[], correctAnswer: string, points:number, title: string, tags : string[]) => {
   return await prisma.task.update({
     where: { id: taskId },
     data: {
       question,
       options,
       correctAnswer,
+      points, 
+      title,
+      tags  
     },
   });
 }

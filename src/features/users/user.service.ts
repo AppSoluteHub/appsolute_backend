@@ -134,7 +134,6 @@ export class UserService {
       email: string;
       password: string;
       role: Role;
-      profileImageFile: Express.Multer.File | undefined;
     }>
   ) {
     try {
@@ -143,7 +142,7 @@ export class UserService {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundError("User not found");
   
-      const { fullName, email, password, role, profileImageFile, gender, country, phone, nickName } = updates;
+      const { fullName, email, password, role, gender, country, phone, nickName } = updates;
   
       const updateData: any = {};
       if (fullName) updateData.fullName = fullName;
@@ -172,23 +171,6 @@ export class UserService {
       updateData.nickName = nickName;
   
     
-      if (profileImageFile) {
-        const uploadResult = await new Promise<string>((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            { folder: "profile_images" },
-            (error, result) => {
-              if (error) return reject(new Error("Error uploading image to Cloudinary"));
-              resolve(result?.secure_url || "");
-            }
-          );
-          uploadStream.end(profileImageFile.buffer);
-        });
-  
-        if (uploadResult) {
-          updateData.profileImage = uploadResult;
-        }
-      }
-  
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: updateData,
