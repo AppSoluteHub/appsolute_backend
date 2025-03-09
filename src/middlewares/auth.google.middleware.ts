@@ -101,13 +101,13 @@ router.get(
   (req: Request, res: Response) => {
     const token = generateToken ((req.user as User).id);
     res.cookie("token", token, {  httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
-    res.redirect("/http://localhost:3001/dashboard");
+    res.redirect("/rofile");
    
   }
 );
 
-router.get("/me", isAuthenticated, (req: Request, res: Response) => {
-  res.json(req.user);
+router.get("/profile", isAuthenticated, (req: Request, res: Response) => {
+  res.redirect("http://localhost:3001/dashboard");
 });
 
 router.get("/logout", (req: Request, res: Response) => {
