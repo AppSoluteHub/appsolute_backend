@@ -11,7 +11,7 @@ class AuthController {
   ): Promise<void> {
     try {
       const { fullName, email, password, profileImage } = req.body;
-
+      const lowercaseEmail = email.toLowerCase();
       const newUser = await AuthService.register({
         fullName,
         email,
@@ -25,7 +25,7 @@ class AuthController {
       next(error);
     }
   }
-
+  
   static async login(
     req: Request,
     res: Response,
@@ -33,7 +33,8 @@ class AuthController {
   ): Promise<void> {
     try {
       const { email, password } = req.body;
-      const { user } = await AuthService.login(email, password);
+      const lowercaseEmail = email.toLowerCase();
+      const { user } = await AuthService.login(lowercaseEmail, password);
 
       const token = generateToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
@@ -58,6 +59,9 @@ class AuthController {
     }
   }
 
+  
+ 
+
   static async forgotPassword(
     req: Request,
     res: Response,
@@ -65,7 +69,8 @@ class AuthController {
   ): Promise<void> {
     try {
       const { email } = req.body;
-      const result = await AuthService.forgotPassword(email);
+      const lowercaseEmail = email.toLowerCase();
+      const result = await AuthService.forgotPassword(lowercaseEmail);
       res.send(appResponse("Message:", result));
     } catch (error) {
       next(error);

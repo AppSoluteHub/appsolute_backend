@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.isSuperAdmin = exports.isAdmin = void 0;
 exports.default = authenticate;
 const jwt_1 = require("../utils/jwt");
 const client_1 = require("@prisma/client");
@@ -26,3 +27,29 @@ async function authenticate(req, res, next) {
             .json({ success: false, message: "Invalid or expired token" });
     }
 }
+const isAdmin = (req, res, next) => {
+    if (!req.user) {
+        res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
+        return;
+    }
+    const { role } = req.user;
+    if (role !== "ADMIN" && role !== "SUPERADMIN") {
+        res.status(403).json({ success: false, message: "Access denied: Admins only" });
+        return;
+    }
+    next();
+};
+exports.isAdmin = isAdmin;
+const isSuperAdmin = (req, res, next) => {
+    if (!req.user) {
+        res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
+        return;
+    }
+    const { role } = req.user;
+    if (role !== "SUPERADMIN") {
+        res.status(403).json({ success: false, message: "Access denied: Superadmins only" });
+        return;
+    }
+    next();
+};
+exports.isSuperAdmin = isSuperAdmin;

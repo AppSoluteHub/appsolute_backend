@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTaskHandler = exports.deleteTaskHandler = exports.getTasksHandler = exports.createTaskHandler = void 0;
+exports.updateTaskHandler = exports.deleteTaskHandler = exports.getTaskByIdHandler = exports.getTasksHandler = exports.createTaskHandler = void 0;
 const task_service_1 = require("../services/task.service");
 const createTaskHandler = async (req, res) => {
     try {
@@ -30,6 +30,17 @@ const getTasksHandler = async (req, res) => {
     }
 };
 exports.getTasksHandler = getTasksHandler;
+const getTaskByIdHandler = async (req, res) => {
+    try {
+        const taskId = req.params.id;
+        const task = await (0, task_service_1.getTaskById)(taskId);
+        res.json({ mesage: "Task fetched successfully", "Task": task });
+    }
+    catch (error) {
+        res.status(500).json({ error: error });
+    }
+};
+exports.getTaskByIdHandler = getTaskByIdHandler;
 const deleteTaskHandler = async (req, res) => {
     try {
         const taskId = req.params.id;

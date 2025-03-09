@@ -13,33 +13,35 @@ model User {
   nickName          String?
   country           String?
   phone             String?
-  gender            String? 
+  gender            String?
   email             String         @unique
-  answered          Int?       @default(0)
-  joined            DateTime
   password          String
   profileImage      String?
   role              Role           @default(GUEST)
   resetToken        String?
   resetTokenExpires DateTime?
   totalScore        Int            @default(0)
+  answered          Int?           @default(0)
   comments          Comment[]      @relation("UserComments")
   contributors      Contributor[]  @relation("UserContributors")
   likes             Like[]         @relation("UserLikes")
   posts             Post[]         @relation("UserPosts")
   behavioralData    UserBehavior[]
   userTasks         UserTask[]
+  joined             DateTime?    @default(now())
+  updatedAt             DateTime?    @default(now())
+
 }
 
 model Task {
   id            String     @id @default(uuid())
   question      String
-  url            String
   options       String[]
   correctAnswer String
   score         Int        @default(5)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
+  url           String
   userTasks     UserTask[]
 }
 

@@ -58,7 +58,7 @@ const isAuthenticated = (req, res, next) => {
 const router = express_1.default.Router();
 router.get("/auth/google", passport_1.default.authenticate("google", { scope: ["profile", "email"] }));
 router.get("/auth/google/callback", passport_1.default.authenticate("google", { failureRedirect: "/" }), (req, res) => {
-    res.redirect("/profile");
+    res.redirect("https://appsolutehub.vercel.app");
 });
 router.get("/profile", isAuthenticated, (req, res) => {
     const user = req.user;
