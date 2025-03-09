@@ -43,6 +43,26 @@ class UserService {
             throw new appError_1.InternalServerError("Unable to fetch users");
         }
     }
+    static async getAdmins({ search = "" }) {
+        try {
+            const admins = await prisma.user.findMany({
+                where: {
+                    role: {
+                        in: ["ADMIN", "SUPERADMIN"],
+                    },
+                    OR: [
+                        { fullName: { contains: search, mode: "insensitive" } },
+                        { email: { contains: search, mode: "insensitive" } },
+                    ],
+                },
+            });
+            return admins;
+        }
+        catch (error) {
+            console.error("Error fetching admins:", error);
+            throw new appError_1.InternalServerError("Unable to fetch admins");
+        }
+    }
     static async getUserById(userId) {
         try {
             if (!userId)
@@ -111,22 +131,24 @@ class UserService {
                     throw new appError_1.BadRequestError("Invalid role");
                 }
                 updateData.role = role;
-                updateData.gender = gender;
-                updateData.country = country;
-                updateData.phone = phone;
-                updateData.nickName = nickName;
             }
-            // Upload profile image if provided
+            updateData.gender = gender;
+            updateData.country = country;
+            updateData.phone = phone;
+            updateData.nickName = nickName;
             if (profileImageFile) {
-                const result = cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
-                    if (error)
-                        throw new Error("Error uploading image to Cloudinary");
-                    updateData.profileImage = result?.secure_url;
+                const uploadResult = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
+                        if (error)
+                            return reject(new Error("Error uploading image to Cloudinary"));
+                        resolve(result?.secure_url || "");
+                    });
+                    uploadStream.end(profileImageFile.buffer);
                 });
-                console.log(result);
-                result.end(profileImageFile.buffer);
+                if (uploadResult) {
+                    updateData.profileImage = uploadResult;
+                }
             }
-            console.log("update", updateData);
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: updateData,
@@ -136,6 +158,37 @@ class UserService {
         catch (error) {
             console.error("Error updating user:", error);
             throw new appError_1.InternalServerError("Unable to update user");
+        }
+    }
+    static async updateUserProfileImage(userId, profileImageFile) {
+        try {
+            if (!userId)
+                throw new appError_1.BadRequestError("User ID is required");
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            if (!user)
+                throw new appError_1.NotFoundError("User not found");
+            if (!profileImageFile || !profileImageFile.buffer) {
+                throw new appError_1.BadRequestError("Invalid image file");
+            }
+            // Upload image to Cloudinary
+            const uploadResult = await new Promise((resolve, reject) => {
+                cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
+                    if (error || !result) {
+                        return reject(new Error("Error uploading image to Cloudinary"));
+                    }
+                    resolve(result.secure_url);
+                }).end(profileImageFile.buffer);
+            });
+            // Update user's profile image
+            const updatedUser = await prisma.user.update({
+                where: { id: userId },
+                data: { profileImage: uploadResult },
+            });
+            return updatedUser;
+        }
+        catch (error) {
+            console.error("Error updating profile image:", error);
+            throw new appError_1.InternalServerError("Unable to update profile image");
         }
     }
 }

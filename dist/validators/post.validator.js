@@ -7,7 +7,6 @@ exports.validatePost = void 0;
 // src/postValidation.ts
 const client_1 = require("@prisma/client");
 const joi_1 = __importDefault(require("joi"));
-// Define the schema
 const createPostSchema = joi_1.default.object({
     title: joi_1.default.string().required(),
     description: joi_1.default.string().required(),
