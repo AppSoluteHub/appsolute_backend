@@ -2,7 +2,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export const createTask = async (question: string, options: string[], correctAnswer: string, url : string, tags : string[], points: number, title: string) => {
+export const createTask = async (
+  question: string,
+  options: string[],
+  correctAnswer: string,
+  url: string,
+  tags: string[],
+  points: number,
+  title: string
+) => {
   return await prisma.task.create({
     data: {
       question,
@@ -11,10 +19,11 @@ export const createTask = async (question: string, options: string[], correctAns
       url,
       tags,
       points,
-      title
+      title,
     },
   });
 };
+
 
 export const getAllTasks = async () => {
   return await prisma.task.findMany();
