@@ -64,8 +64,10 @@ export const validateUpdateUser = (req: Request, res: Response, next: NextFuncti
   const schema = Joi.object({
     fullName: Joi.string().min(3).max(50).optional(),
     email: Joi.string().email().optional(),
-    password: Joi.string().min(8).optional(),
-    profileImage: Joi.string().optional(),
+    phone: Joi.string().optional(),
+    gender: Joi.string().optional(),
+    country: Joi.string().optional(),
+    nickName: Joi.string().optional(),
     role: Joi.forbidden(), 
   });
 

@@ -81,28 +81,35 @@ export class UserService {
   static async getUserById(userId: string) {
     try {
       if (!userId) throw new BadRequestError("User ID is required");
-
+  
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
           id: true,
           fullName: true,
+          nickName: true,
+          country: true,
+          phone: true,
+          gender: true,
           email: true,
           profileImage: true,
-          nickName : true,
-          gender: true,
-          role: true
+          role: true,
+          totalScore: true,
+          answered: true,
+         
+         
         },
       });
-
+  
       if (!user) throw new NotFoundError("User not found");
-
+  
       return user;
     } catch (error) {
       console.error("Error fetching user by ID:", error);
       throw new InternalServerError("Unable to fetch user");
     }
   }
+  
 
   static async deleteUser(userId: string) {
     try {

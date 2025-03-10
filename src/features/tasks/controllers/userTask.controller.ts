@@ -9,14 +9,15 @@ export const answerTaskHandler = async (
     const userId = req.user?.id as string;
     const { taskId } = req.params;
     const { answers } = req.body;
-
+    console.log(userId, answers, taskId); 
     if (!answers || !Array.isArray(answers) || answers.length === 0) {
       res.status(400).json({ error: "Answers must be provided in an array." });
       return;
-    }
+    } 
+
 
     const response = await answerTask(userId, taskId, answers);
-
+     
     res.status(200).json(response);
     return;
   } catch (error: any) {
