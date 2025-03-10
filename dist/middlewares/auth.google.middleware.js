@@ -61,7 +61,10 @@ router.get("/auth/google", passport_1.default.authenticate("google", { scope: ["
 router.get("/auth/google/callback", passport_1.default.authenticate("google", { failureRedirect: "/" }), (req, res) => {
     const token = (0, jwt_1.generateToken)(req.user.id);
     res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
-    res.redirect("/http://localhost:3001/dashboard");
+    res.redirect("/rofile");
+});
+router.get("/profile", isAuthenticated, (req, res) => {
+    res.redirect("http://localhost:3001/dashboard");
 });
 router.get("/logout", (req, res) => {
     req.logout(() => {
