@@ -19,11 +19,15 @@ export const answerTask = async (
 
     const task = await prisma.task.findUnique({
       where: { id: taskId },
-      include: { questions: true }, 
+      include: { questions: true },
     });
 
     if (!task) throw new BadRequestError("Task not found.");
 
+    const totalQuestions = task.questions.length;
+    if (totalQuestions === 0) throw new BadRequestError("No questions in this task.");
+
+    const pointsPerQuestion = task.points / totalQuestions;
     let totalScoreEarned = 0;
 
     const userAnswers = answers.map(({ questionId, userAnswer }) => {
@@ -34,7 +38,8 @@ export const answerTask = async (
       }
 
       const isCorrect = userAnswer === question.correctAnswer;
-      if (isCorrect) totalScoreEarned += task.points;
+      const scoreEarned = isCorrect ? pointsPerQuestion : 0;
+      totalScoreEarned += scoreEarned;
 
       return {
         userId,
@@ -42,11 +47,10 @@ export const answerTask = async (
         questionId,
         userAnswer,
         isCorrect,
-        scoreEarned: isCorrect ? task.points : 0,
+        scoreEarned,
       };
     });
 
-    
     await prisma.userTask.createMany({ data: userAnswers });
 
     if (totalScoreEarned > 0) {

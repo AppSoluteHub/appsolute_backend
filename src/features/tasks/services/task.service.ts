@@ -50,33 +50,23 @@ export const createTaskWithQuestions = async (
     },
   });
 };
+
+
 export const getAllTasks = async () => {
   return await prisma.task.findMany();
 };
-export const getTaskById = async(taskI : string) =>{
+
+
+export const getTaskById = async (taskId: string) => {
   return await prisma.task.findUnique({
-    where: {
-      id: taskI,
-    },
+    where: { id: taskId },
+    include: { questions: true }, 
   });
-}
+};
 export const deleteTask = async (taskId: string) => {
   return await prisma.task.delete({ where: { id: taskId } });
 };
 
-// export const updateTask = async(taskId: string, question: string, options: string[], correctAnswer: string,url: string, points:number, title: string, tags : string[]) => {
-//   return await prisma.task.update({
-//     where: { id: taskId },
-//     data: {
-//       questions: { questionText: string; options: string[]; correctAnswer: string }[],
-//       correctAnswer,
-//       points, 
-//       title,
-//       tags  ,
-//       url
-//     },
-//   });
-// }
 
 
 export const updateTask = async (
