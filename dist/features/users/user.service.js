@@ -71,11 +71,15 @@ class UserService {
                 select: {
                     id: true,
                     fullName: true,
+                    nickName: true,
+                    country: true,
+                    phone: true,
+                    gender: true,
                     email: true,
                     profileImage: true,
-                    nickName: true,
-                    gender: true,
-                    role: true
+                    role: true,
+                    totalScore: true,
+                    answered: true,
                 },
             });
             if (!user)

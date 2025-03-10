@@ -49,11 +49,10 @@ const getAllTasks = async () => {
     return await prisma.task.findMany();
 };
 exports.getAllTasks = getAllTasks;
-const getTaskById = async (taskI) => {
+const getTaskById = async (taskId) => {
     return await prisma.task.findUnique({
-        where: {
-            id: taskI,
-        },
+        where: { id: taskId },
+        include: { questions: true },
     });
 };
 exports.getTaskById = getTaskById;
@@ -61,19 +60,6 @@ const deleteTask = async (taskId) => {
     return await prisma.task.delete({ where: { id: taskId } });
 };
 exports.deleteTask = deleteTask;
-// export const updateTask = async(taskId: string, question: string, options: string[], correctAnswer: string,url: string, points:number, title: string, tags : string[]) => {
-//   return await prisma.task.update({
-//     where: { id: taskId },
-//     data: {
-//       questions: { questionText: string; options: string[]; correctAnswer: string }[],
-//       correctAnswer,
-//       points, 
-//       title,
-//       tags  ,
-//       url
-//     },
-//   });
-// }
 const updateTask = async (taskId, title, tags, url, points, questions) => {
     return await prisma.$transaction(async (prisma) => {
         const updatedTask = await prisma.task.update({

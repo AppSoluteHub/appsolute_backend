@@ -64,8 +64,10 @@ const validateUpdateUser = (req, res, next) => {
     const schema = joi_1.default.object({
         fullName: joi_1.default.string().min(3).max(50).optional(),
         email: joi_1.default.string().email().optional(),
-        password: joi_1.default.string().min(8).optional(),
-        profileImage: joi_1.default.string().optional(),
+        phone: joi_1.default.string().optional(),
+        gender: joi_1.default.string().optional(),
+        country: joi_1.default.string().optional(),
+        nickName: joi_1.default.string().optional(),
         role: joi_1.default.forbidden(),
     });
     const { error } = schema.validate(req.body);
