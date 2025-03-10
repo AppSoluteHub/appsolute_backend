@@ -50,7 +50,7 @@ model Question {
  id             Int         @id @default(autoincrement())
   taskId         String
   questionText   String
-  options        String[]    // Array of options
+  options        String[]    
   correctAnswer  String
 
   task           Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
