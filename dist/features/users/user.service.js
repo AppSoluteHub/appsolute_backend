@@ -7,7 +7,6 @@ exports.UserService = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const cloudinary_1 = __importDefault(require("../../config/cloudinary"));
 const prisma = new client_1.PrismaClient();
 class UserService {
     static async getUsers({ page = 1, limit = 10, search = "", }) {
@@ -147,36 +146,11 @@ class UserService {
             throw new appError_1.InternalServerError("Unable to update user");
         }
     }
-    static async updateUserProfileImage(userId, profileImageFile) {
-        try {
-            if (!userId)
-                throw new appError_1.BadRequestError("User ID is required");
-            const user = await prisma.user.findUnique({ where: { id: userId } });
-            if (!user)
-                throw new appError_1.NotFoundError("User not found");
-            if (!profileImageFile || !profileImageFile.buffer) {
-                throw new appError_1.BadRequestError("Invalid image file");
-            }
-            // Upload image to Cloudinary
-            const uploadResult = await new Promise((resolve, reject) => {
-                cloudinary_1.default.uploader.upload_stream({ folder: "profile_images" }, (error, result) => {
-                    if (error || !result) {
-                        return reject(new Error("Error uploading image to Cloudinary"));
-                    }
-                    resolve(result.secure_url);
-                }).end(profileImageFile.buffer);
-            });
-            // Update user's profile image
-            const updatedUser = await prisma.user.update({
-                where: { id: userId },
-                data: { profileImage: uploadResult },
-            });
-            return updatedUser;
-        }
-        catch (error) {
-            console.error("Error updating profile image:", error);
-            throw new appError_1.InternalServerError("Unable to update profile image");
-        }
+    static async updateProfileImage(userId, imageUrl) {
+        return await prisma.user.update({
+            where: { id: userId },
+            data: { profileImage: imageUrl },
+        });
     }
 }
 exports.UserService = UserService;

@@ -1,33 +1,33 @@
 import { Request, Response } from "express";
 import { answerTask } from "../services/userTask.service";
-import { BadRequestError, InternalServerError } from "../../../lib/appError";
 
-export const answerTaskHandler = async (req: Request, res: Response): Promise<void> => {
+export const answerTaskHandler = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const userId = req.params.userId;
-    const { taskId, userAnswer } = req.body;
+    const userId = req.user?.id as string;
+    const { taskId } = req.params;
+    const { answers } = req.body;
 
-    if (!userId) {
-      res.status(401).json({ error: "You are not authenticated" });
+    if (!answers || !Array.isArray(answers) || answers.length === 0) {
+      res.status(400).json({ error: "Answers must be provided in an array." });
       return;
     }
 
-    if (!taskId || !userAnswer) {
-      res.status(400).json({ error: "All fields are required" });
-      return;
-    }
+    const response = await answerTask(userId, taskId, answers);
 
-    const userTask = await answerTask(userId, taskId, userAnswer);
-    res.status(201).json(userTask);
+    res.status(200).json(response);
+    return;
   } catch (error: any) {
     console.error("Error in answerTaskHandler:", error);
 
-    if (error instanceof BadRequestError) {
-      res.status(400).json({ error: error.message });
-    } else if (error instanceof InternalServerError) {
-      res.status(500).json({ error: error.message });
-    } else {
-      res.status(500).json({ error: "An unexpected error occurred" });
+    if (error.statusCode) {
+      res.status(error.statusCode).json({ error: error.message });
+      return;
     }
+
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };

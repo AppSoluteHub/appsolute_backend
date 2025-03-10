@@ -1,6 +1,7 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { UserService } from "./user.service";
-import { BadRequestError } from "../../lib/appError";
+import { BadRequestError, UnAuthorizedError } from "../../lib/appError";
+import cloudinary from "../../config/cloudinary";
 
 export class UserController {
   static async getUsers(req: Request, res: Response) {
@@ -87,23 +88,48 @@ export class UserController {
     }
   }
   
-  static async updateProfileImage(req: Request, res: Response) {
+  static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { userId } = req.params;
-      const profileImageFile = req.file;
-  
-      if (!profileImageFile) {
-        return res.status(400).json({ error: "No image file provided" });
+      const userId = req.user?.id as string;
+      if (!userId) {
+        throw new BadRequestError("Unauthorized: User ID is required");
       }
-  
-      const updatedUser = await UserService.updateUserProfileImage(userId, profileImageFile);
-  
+
+      let imageUrl: string = "";
+
+      if (req.file) {
+        try {
+          const file = req.file as Express.Multer.File;
+          imageUrl = await new Promise<string>((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              { folder: "AppSolute" },
+              (error, result) => {
+                if (error) {
+                  return reject(new BadRequestError("Failed to upload image to Cloudinary"));
+                }
+                if (result) return resolve(result.secure_url);
+              }
+            );
+            uploadStream.end(file.buffer);
+          });
+        } catch (error) {
+          return next(error);
+        }
+      }
+
+      if (!imageUrl) {
+        throw new BadRequestError("No image file uploaded");
+      }
+
+      const updatedUser = await UserService.updateProfileImage(userId, imageUrl);
+
       res.status(200).json({
+        success: true,
         message: "Profile image updated successfully",
         data: updatedUser,
       });
-    } catch (error: any) {
-      res.status(error.statusCode || 500).json({ error: error.message });
+    } catch (error) {
+      next(error);
     }
   }
   

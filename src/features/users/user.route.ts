@@ -10,6 +10,7 @@ router.get("/", UserController.getUsers);
 router.get("/:userId", UserController.getUserById);
 router.delete("/:userId", UserController.deleteUser);
 router.patch("/:userId", validateUpdateUser, UserController.updateUser);
+router.patch("/:userId", validateUpdateUser, UserController.updateProfileImage);
 
 
 export default router;

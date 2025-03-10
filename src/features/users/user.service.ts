@@ -183,41 +183,12 @@ export class UserService {
     }
   }
   
-  static async updateUserProfileImage(userId: string, profileImageFile: Express.Multer.File) {
-    try {
-      if (!userId) throw new BadRequestError("User ID is required");
-  
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (!user) throw new NotFoundError("User not found");
-  
-      if (!profileImageFile || !profileImageFile.buffer) {
-        throw new BadRequestError("Invalid image file");
-      }
-  
-      // Upload image to Cloudinary
-      const uploadResult = await new Promise<string>((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          { folder: "profile_images" },
-          (error, result) => {
-            if (error || !result) {
-              return reject(new Error("Error uploading image to Cloudinary"));
-            }
-            resolve(result.secure_url);
-          }
-        ).end(profileImageFile.buffer);
-      });
-  
-      // Update user's profile image
-      const updatedUser = await prisma.user.update({
-        where: { id: userId },
-        data: { profileImage: uploadResult },
-      });
-  
-      return updatedUser;
-    } catch (error) {
-      console.error("Error updating profile image:", error);
-      throw new InternalServerError("Unable to update profile image");
-    }
+
+  static async updateProfileImage(userId: string, imageUrl: string) {
+    return await prisma.user.update({
+      where: { id: userId },
+      data: { profileImage: imageUrl },
+    });
   }
   
 

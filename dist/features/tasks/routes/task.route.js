@@ -2,10 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const task_controller_1 = require("../controllers/task.controller");
-const task_validation_1 = require("../../../validators/task.validation");
 const updatePost_validator_1 = require("../../../validators/updatePost.validator");
 const router = (0, express_1.Router)();
-router.post("/", task_validation_1.validateTask, task_controller_1.createTaskHandler);
+router.post("/", task_controller_1.createTaskHandler);
 router.get("/", task_controller_1.getTasksHandler);
 router.get("/:id", task_controller_1.getTaskByIdHandler);
 router.delete("/:id", task_controller_1.deleteTaskHandler);
