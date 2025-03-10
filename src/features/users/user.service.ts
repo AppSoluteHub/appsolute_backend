@@ -139,7 +139,6 @@ export class UserService {
       nickName: string;
       phone: string;
       email: string;
-      password: string;
       role: Role;
     }>
   ) {
@@ -149,7 +148,7 @@ export class UserService {
       const user = await prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new NotFoundError("User not found");
   
-      const { fullName, email, password, role, gender, country, phone, nickName } = updates;
+      const { fullName, email, role, gender, country, phone, nickName } = updates;
   
       const updateData: any = {};
       if (fullName) updateData.fullName = fullName;
@@ -160,10 +159,6 @@ export class UserService {
         }
         updateData.email = email;
       }
-      if (password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        updateData.password = hashedPassword;
-      }
       if (role) {
         const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
         if (!validRoles.includes(role)) {
@@ -171,16 +166,28 @@ export class UserService {
         }
         updateData.role = role;
       }
-      
+  
       updateData.gender = gender;
       updateData.country = country;
       updateData.phone = phone;
       updateData.nickName = nickName;
   
-    
       const updatedUser = await prisma.user.update({
         where: { id: userId },
         data: updateData,
+        select: {
+          id: true,
+          fullName: true,
+          gender: true,
+          country: true,
+          nickName: true,
+          phone: true,
+          email: true,
+          role: true,
+          joined: true,
+          profileImage:true,
+          updatedAt: true,
+        }, 
       });
   
       return updatedUser;
