@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 export const answerTask = async (
   userId: string,
   taskId: string,
-  userAnswer: string
+  answers: { questionId: number; userAnswer: string }[]
 ) => {
   try {
     const existingAttempt = await prisma.userTask.findFirst({
@@ -17,35 +17,51 @@ export const answerTask = async (
       throw new BadRequestError("You have already attempted this task.");
     }
 
-    const task = await prisma.task.findUnique({ where: { id: taskId } });
-    if (!task) throw new BadRequestError("Task not found.");
-
-    const isCorrect = userAnswer === task.correctAnswer;
-    const scoreEarned = isCorrect ? task.points : 0;
-
-    const userTask = await prisma.userTask.create({
-      data: {
-        userId,
-        taskId,
-        userAnswer,
-        isCorrect,
-        scoreEarned,
-      },
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { questions: true }, 
     });
 
-    if (isCorrect) {
+    if (!task) throw new BadRequestError("Task not found.");
+
+    let totalScoreEarned = 0;
+
+    const userAnswers = answers.map(({ questionId, userAnswer }) => {
+      const question = task.questions.find((q) => q.id === questionId);
+
+      if (!question) {
+        throw new BadRequestError(`Question ID ${questionId} not found in this task.`);
+      }
+
+      const isCorrect = userAnswer === question.correctAnswer;
+      if (isCorrect) totalScoreEarned += task.points;
+
+      return {
+        userId,
+        taskId,
+        questionId,
+        userAnswer,
+        isCorrect,
+        scoreEarned: isCorrect ? task.points : 0,
+      };
+    });
+
+    
+    await prisma.userTask.createMany({ data: userAnswers });
+
+    if (totalScoreEarned > 0) {
       await prisma.user.update({
         where: { id: userId },
-        data: { totalScore: { increment: scoreEarned } },
+        data: { totalScore: { increment: totalScoreEarned } },
       });
     }
 
     await prisma.user.update({
       where: { id: userId },
-      data: { answered: { increment: 1 } },
+      data: { answered: { increment: answers.length } },
     });
 
-    return userTask;
+    return { message: "Answers submitted successfully", totalScoreEarned };
   } catch (error: any) {
     console.error("Error in answerTask:", error);
 

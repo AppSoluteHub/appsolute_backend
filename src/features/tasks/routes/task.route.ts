@@ -5,7 +5,7 @@ import { validateUpdateTask } from "../../../validators/updatePost.validator";
 
 const router = Router();
 
-router.post("/",validateTask, createTaskHandler);
+router.post("/", createTaskHandler);
 router.get("/", getTasksHandler);
 router.get("/:id", getTaskByIdHandler);
 router.delete("/:id",deleteTaskHandler);

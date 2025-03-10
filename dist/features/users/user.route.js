@@ -11,4 +11,5 @@ router.get("/", user_controller_1.UserController.getUsers);
 router.get("/:userId", user_controller_1.UserController.getUserById);
 router.delete("/:userId", user_controller_1.UserController.deleteUser);
 router.patch("/:userId", userValidator_1.validateUpdateUser, user_controller_1.UserController.updateUser);
+router.patch("/:userId", userValidator_1.validateUpdateUser, user_controller_1.UserController.updateProfileImage);
 exports.default = router;
