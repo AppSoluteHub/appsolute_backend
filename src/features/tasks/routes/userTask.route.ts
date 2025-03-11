@@ -4,6 +4,6 @@ import authenticate from "../../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/answer/:taskId",authenticate, answerTaskHandler);
+router.post("/answer/:taskId", answerTaskHandler);
 
 export default router;

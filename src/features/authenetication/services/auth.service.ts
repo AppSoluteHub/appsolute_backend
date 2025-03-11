@@ -125,7 +125,7 @@ static async register({
   if (newPassword !== confirmPassword) throw new BadRequestError("Passwords do not match");
 
 
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/
   if (!passwordRegex.test(newPassword)) {
     throw new BadRequestError(
       "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character."
