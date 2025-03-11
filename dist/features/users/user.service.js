@@ -1,12 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
 class UserService {
     static async getUsers({ page = 1, limit = 10, search = "", }) {
@@ -106,6 +102,66 @@ class UserService {
             throw new appError_1.InternalServerError("Unable to delete user");
         }
     }
+    // static async updateUser(
+    //   userId: string,
+    //   updates: Partial<{
+    //     fullName: string;
+    //     gender: string;
+    //     country: string;
+    //     nickName: string;
+    //     phone: string;
+    //     email: string;
+    //     role: Role;
+    //   }>
+    // ) {
+    //   try {
+    //     if (!userId) throw new BadRequestError("User ID is required");
+    //     const user = await prisma.user.findUnique({ where: { id: userId } });
+    //     if (!user) throw new NotFoundError("User not found");
+    //     const { fullName, email, role, gender, country, phone, nickName } = updates;
+    //     const updateData: any = {};
+    //     if (fullName) updateData.fullName = fullName;
+    //     if (email) {
+    //       const existingUser = await prisma.user.findUnique({ where: { email } });
+    //       if (existingUser && existingUser.id !== userId) {
+    //         throw new DuplicateError("Email already in use");
+    //       }
+    //       updateData.email = email;
+    //     }
+    //     if (role) {
+    //       const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
+    //       if (!validRoles.includes(role)) {
+    //         throw new BadRequestError("Invalid role");
+    //       }
+    //       updateData.role = role;
+    //     }
+    //     updateData.gender = gender;
+    //     updateData.country = country;
+    //     updateData.phone = phone;
+    //     updateData.nickName = nickName;
+    //     const updatedUser = await prisma.user.update({
+    //       where: { id: userId },
+    //       data: updateData,
+    //       select: {
+    //         id: true,
+    //         fullName: true,
+    //         gender: true,
+    //         country: true,
+    //         nickName: true,
+    //         phone: true,
+    //         email: true,
+    //         role: true,
+    //         joined: true,
+    //         profileImage:true,
+    //         updatedAt: true,
+    //       }, 
+    //     });
+    //     return updatedUser;
+    //   } catch (error) {
+    //     console.error("Error updating user:", error);
+    //     throw new InternalServerError("Unable to update user");
+    //   }
+    // }
     static async updateUser(userId, updates) {
         try {
             if (!userId)
@@ -113,7 +169,7 @@ class UserService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
-            const { fullName, email, password, role, gender, country, phone, nickName } = updates;
+            const { fullName, email, role, gender, country, phone, nickName } = updates;
             const updateData = {};
             if (fullName)
                 updateData.fullName = fullName;
@@ -124,10 +180,6 @@ class UserService {
                 }
                 updateData.email = email;
             }
-            if (password) {
-                const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-                updateData.password = hashedPassword;
-            }
             if (role) {
                 const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
                 if (!validRoles.includes(role)) {
@@ -135,13 +187,30 @@ class UserService {
                 }
                 updateData.role = role;
             }
-            updateData.gender = gender;
-            updateData.country = country;
-            updateData.phone = phone;
-            updateData.nickName = nickName;
+            if (gender !== undefined)
+                updateData.gender = gender;
+            if (country !== undefined)
+                updateData.country = country;
+            if (phone !== undefined)
+                updateData.phone = phone;
+            if (nickName !== undefined)
+                updateData.nickName = nickName;
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: updateData,
+                select: {
+                    id: true,
+                    fullName: true,
+                    gender: true,
+                    country: true,
+                    nickName: true,
+                    phone: true,
+                    email: true,
+                    role: true,
+                    joined: true,
+                    profileImage: true,
+                    updatedAt: true,
+                },
             });
             return updatedUser;
         }

@@ -70,15 +70,16 @@ export class UserController {
     }
   }
 
-  static async updateUser(req: Request, res: Response) {
+  static async updateUser(req: Request, res: Response): Promise<void> {
     try {
       const { userId } = req.params;
-      const updates = req.body; 
+      const { password, ...updates } = req.body; 
   
-      const updatedUser = await UserService.updateUser(userId, { 
-        ...updates, 
-      });
-  
+      if (password) {
+         res.status(400).json({ error: "Password update is not allowed" });
+         return;
+      }
+      const updatedUser = await UserService.updateUser(userId, updates);
       res.status(200).json({
         message: "User updated successfully",
         data: updatedUser,
@@ -87,6 +88,7 @@ export class UserController {
       res.status(error.statusCode || 500).json({ error: error.message });
     }
   }
+  
   
   static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
