@@ -130,6 +130,7 @@ export class UserService {
 
 
 
+
   static async updateUser(
     userId: string,
     updates: Partial<{
@@ -167,10 +168,11 @@ export class UserService {
         updateData.role = role;
       }
   
-      updateData.gender = gender;
-      updateData.country = country;
-      updateData.phone = phone;
-      updateData.nickName = nickName;
+      
+      if (gender !== undefined) updateData.gender = gender;
+      if (country !== undefined) updateData.country = country;
+      if (phone !== undefined) updateData.phone = phone;
+      if (nickName !== undefined) updateData.nickName = nickName;
   
       const updatedUser = await prisma.user.update({
         where: { id: userId },
@@ -185,9 +187,9 @@ export class UserService {
           email: true,
           role: true,
           joined: true,
-          profileImage:true,
+          profileImage: true,
           updatedAt: true,
-        }, 
+        },
       });
   
       return updatedUser;

@@ -14,7 +14,7 @@ const prisma = new client_1.PrismaClient();
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    callbackURL: "https://appsolutehub.vercel.app/auth/google/callback",
+    callbackURL: "http://localhost:3000/auth/google/callback",
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await prisma.user.findUnique({
