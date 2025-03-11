@@ -66,10 +66,12 @@ class UserController {
     static async updateUser(req, res) {
         try {
             const { userId } = req.params;
-            const updates = req.body;
-            const updatedUser = await user_service_1.UserService.updateUser(userId, {
-                ...updates,
-            });
+            const { password, ...updates } = req.body;
+            if (password) {
+                res.status(400).json({ error: "Password update is not allowed" });
+                return;
+            }
+            const updatedUser = await user_service_1.UserService.updateUser(userId, updates);
             res.status(200).json({
                 message: "User updated successfully",
                 data: updatedUser,

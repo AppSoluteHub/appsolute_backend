@@ -1,12 +1,8 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma = new client_1.PrismaClient();
 class UserService {
     static async getUsers({ page = 1, limit = 10, search = "", }) {
@@ -113,7 +109,7 @@ class UserService {
             const user = await prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
-            const { fullName, email, password, role, gender, country, phone, nickName } = updates;
+            const { fullName, email, role, gender, country, phone, nickName } = updates;
             const updateData = {};
             if (fullName)
                 updateData.fullName = fullName;
@@ -123,10 +119,6 @@ class UserService {
                     throw new appError_1.DuplicateError("Email already in use");
                 }
                 updateData.email = email;
-            }
-            if (password) {
-                const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-                updateData.password = hashedPassword;
             }
             if (role) {
                 const validRoles = ["GUEST", "ADMIN", "SUPERADMIN"];
@@ -142,6 +134,19 @@ class UserService {
             const updatedUser = await prisma.user.update({
                 where: { id: userId },
                 data: updateData,
+                select: {
+                    id: true,
+                    fullName: true,
+                    gender: true,
+                    country: true,
+                    nickName: true,
+                    phone: true,
+                    email: true,
+                    role: true,
+                    joined: true,
+                    profileImage: true,
+                    updatedAt: true,
+                },
             });
             return updatedUser;
         }
