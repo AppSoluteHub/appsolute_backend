@@ -2,8 +2,6 @@ import express from "express";
 import { UserController } from "./user.controller";
 import authenticate from "../../middlewares/auth.middleware";
 import { validateUpdateUser } from "../../validators/userValidator";
-import { UploadStream } from "cloudinary";
-import { upload } from "../..";
 
 const router = express.Router();
 router.get("/", UserController.getUsers);
