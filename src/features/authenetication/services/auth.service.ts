@@ -83,7 +83,7 @@ static async register({
       },
     });
 
-    const resetLink = `http://localhost:3001/reset-password?token=${resetToken}`;
+    const resetLink = `https://appsolutehub.vercel.app/reset-password?token=${resetToken}`;
 
     const emailTemplate = `
       <html>
