@@ -7,10 +7,10 @@ import authenticate from "../../../middlewares/auth.middleware";
 const router = Router();
 
 router.post("/", authenticate, createTaskHandler);
-router.get("/", getTasksHandler);
-router.get("/:id", getTaskByIdHandler);
+router.get("/", authenticate,getTasksHandler);
+router.get("/:id",authenticate, getTaskByIdHandler);
 router.delete("/:id",authenticate,deleteTaskHandler);
-router.patch("/:id",authenticate,validateUpdateTask, updateTaskHandler);
+router.patch("/:id", authenticate,validateUpdateTask, updateTaskHandler);
 
 export default router;
 

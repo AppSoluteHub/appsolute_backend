@@ -2,27 +2,6 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// export const createTask = async (
-//   question: string,
-//   options: string[],
-//   correctAnswer: string,
-//   url: string,
-//   tags: string[],
-//   points: number,
-//   title: string
-// ) => {
-//   return await prisma.task.create({
-//     data: {
-//       question,
-//       options,
-//       correctAnswer,
-//       url,
-//       tags,
-//       points,
-//       title,
-//     },
-//   });
-// };
 
 export const createTaskWithQuestions = async (
   title: string,
@@ -51,18 +30,51 @@ export const createTaskWithQuestions = async (
   });
 };
 
+// export const getAllTasks = async () => {
+//   return await prisma.task.findMany();
+// };
 
-export const getAllTasks = async () => {
-  return await prisma.task.findMany();
-};
-
-
-export const getTaskById = async (taskId: string) => {
-  return await prisma.task.findUnique({
-    where: { id: taskId },
-    include: { questions: true }, 
+export const getAllTasks = async (userId: string) => {
+  console.log("Userid",userId);
+  return await prisma.task.findMany({
+    where: {
+      NOT: {
+        userTasks: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+    },
+    include: { questions: true },
   });
 };
+
+export const getTaskById = async (taskId: string, userId: string) => {
+  console.log(userId)
+  return await prisma.task.findFirst({
+    where: {
+      id: taskId,
+      NOT: {
+        userTasks: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+    },
+    include: { questions: true }, 
+  });
+}
+
+
+
+// export const getTaskById = async (taskId: string) => {
+//   return await prisma.task.findUnique({
+//     where: { id: taskId },
+//     include: { questions: true }, 
+//   });
+// };
 export const deleteTask = async (taskId: string) => {
   return await prisma.task.delete({ where: { id: taskId } });
 };

@@ -90,41 +90,97 @@ export class UserController {
   }
   
   
+  // static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
+  //   try {
+  //     const userId = req.user?.id as string;
+  //     if (!userId) {
+  //       throw new BadRequestError("Unauthorized: User ID is required");
+  //     }
+
+  //     let imageUrl: string = "";
+
+  //     if (req.file) {
+  //       try {
+  //         const file = req.file as Express.Multer.File;
+  //         console.log(file);
+  //         imageUrl = await new Promise<string>((resolve, reject) => {
+  //           const uploadStream = cloudinary.uploader.upload_stream(
+  //             { folder: "AppSolute/profile" },
+  //             (error, result) => {
+  //               if (error) {
+  //                 return reject(new BadRequestError("Failed to upload image to Cloudinary"));
+  //               }
+  //               if (result) return resolve(result.secure_url);
+  //             }
+  //           );
+  //           uploadStream.end(file.buffer);
+  //         });
+  //       } catch (error) {
+  //         return next(error);
+  //       }
+  //     }
+
+  //     if (!imageUrl) {
+  //       throw new BadRequestError("No image file uploaded");
+  //     }
+
+  //     const updatedUser = await UserService.updateProfileImage(userId, imageUrl);
+
+  //     res.status(200).json({
+  //       success: true,
+  //       message: "Profile image updated successfully",
+  //       data: updatedUser,
+  //     });
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+  
   static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      console.log("here")
       const userId = req.user?.id as string;
       if (!userId) {
         throw new BadRequestError("Unauthorized: User ID is required");
       }
-
+  
+      console.log("User ID:", userId);
+      console.log("Received file:", req.file);
+  
       let imageUrl: string = "";
-
+  
       if (req.file) {
         try {
           const file = req.file as Express.Multer.File;
+          console.log(file);
           imageUrl = await new Promise<string>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
-              { folder: "AppSolute" },
+              { folder: "AppSolute/profile" },
               (error, result) => {
                 if (error) {
+                  console.error("Cloudinary upload error:", error);
                   return reject(new BadRequestError("Failed to upload image to Cloudinary"));
                 }
+                console.log("Cloudinary upload result:", result);
                 if (result) return resolve(result.secure_url);
               }
             );
             uploadStream.end(file.buffer);
           });
+  
         } catch (error) {
           return next(error);
         }
-      }
-
-      if (!imageUrl) {
+      } else {
         throw new BadRequestError("No image file uploaded");
       }
-
+  
+      console.log("Image URL:", imageUrl);
+  
       const updatedUser = await UserService.updateProfileImage(userId, imageUrl);
-
+  
+      console.log("Updated User:", updatedUser);
+  
       res.status(200).json({
         success: true,
         message: "Profile image updated successfully",
