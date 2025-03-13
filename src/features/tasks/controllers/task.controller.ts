@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { createTaskWithQuestions, deleteTask, getAllTasks, getTaskById, updateTask,  } from "../services/task.service";
+import { use } from "passport";
 
 
 // export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
@@ -62,8 +63,9 @@ export const createTaskHandler = async (req: Request, res: Response): Promise<vo
 };
 
 export const getTasksHandler = async (req: Request, res: Response) => {
+  const userId = req.user?.id as string;
   try {
-    const tasks = await getAllTasks();
+    const tasks = await getAllTasks(userId);
     res.json(tasks);
   } catch (error) {
     res.status(500).json({ error: error });
@@ -73,8 +75,9 @@ export const getTasksHandler = async (req: Request, res: Response) => {
 };
 export const getTaskByIdHandler = async (req: Request, res: Response) => {
   try {
+    const userId = req.user?.id as string;
     const taskId = req.params.id;
-    const task = await getTaskById(taskId);
+    const task = await getTaskById(taskId, userId);
     res.json({mesage : "Task fetched successfully", "Task": task});
     
   } catch (error) {

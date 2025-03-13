@@ -104,7 +104,7 @@ export class UserController {
           const file = req.file as Express.Multer.File;
           imageUrl = await new Promise<string>((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
-              { folder: "AppSolute" },
+              { folder: "AppSolute/profile" },
               (error, result) => {
                 if (error) {
                   return reject(new BadRequestError("Failed to upload image to Cloudinary"));
