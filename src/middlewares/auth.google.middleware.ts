@@ -32,7 +32,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: "https://appsolutehub.vercel.app/auth/google/callback",
+      callbackURL: "https://appsolutehub.vercel.app/dashboard",
     },
     async (accessToken: string, refreshToken: string, profile: Profile, done) => {
       try {
