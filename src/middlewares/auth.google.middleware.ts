@@ -32,25 +32,25 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: "https://appsolutehub.vercel.app/dashboard",
+      callbackURL: "https://appsolute-api-1.onrender.com/auth/google/callback", 
     },
     async (accessToken: string, refreshToken: string, profile: Profile, done) => {
       try {
         let user = await prisma.user.findUnique({
           where: { email: profile.emails?.[0].value || "" },
         });
+
         if (!user) {
           user = await prisma.user.create({
             data: {
               fullName: profile.displayName,
               email: profile.emails?.[0].value || "",
               role: "GUEST",
-              password: "password",
+              password: "password", 
               profileImage: profile.photos?.[0].value || null,
             },
           });
         }
-        console.log(user, "NewUSer")
 
         return done(null, {
           id: user.id,
@@ -74,18 +74,6 @@ passport.deserializeUser((obj: Express.User, done) => {
   done(null, obj);
 });
 
-const isAuthenticated = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect("/");
-};
-
-
 const router = express.Router();
 
 router.get(
@@ -93,22 +81,20 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-
-
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
-    const token = generateToken ((req.user as User).id);
-    res.cookie("token", token, {  httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
-    res.redirect("/dashboard");
+    if (!req.user) {
+      return res.redirect("/"); 
+    }
+
+    const token = generateToken((req.user as User).id);
+
    
+    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}`);
   }
 );
-
-
-
-
 
 router.get("/logout", (req: Request, res: Response) => {
   req.logout(() => {
@@ -117,4 +103,3 @@ router.get("/logout", (req: Request, res: Response) => {
 });
 
 export default router;
-
