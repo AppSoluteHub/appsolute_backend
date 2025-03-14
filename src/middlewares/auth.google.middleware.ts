@@ -86,19 +86,30 @@ router.get(
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
     if (!req.user) {
-      return res.redirect("/"); 
+       res.status(401).json({ message: "Authentication failed" });
+       return;
     }
 
-    const token = generateToken((req.user as User).id);
+    const user = req.user as User;
+    console.log("User", user);
+    const token = generateToken(user.id);
 
-   
-    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}`);
+    res.json({
+      message: "Authentication successful",
+      token,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+      },
+    });
   }
 );
 
 router.get("/logout", (req: Request, res: Response) => {
   req.logout(() => {
-    res.redirect("/");
+    res.json({ message: "Logged out successfully" });
   });
 });
 
