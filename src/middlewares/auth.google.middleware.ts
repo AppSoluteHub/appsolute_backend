@@ -81,29 +81,46 @@ router.get(
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
+// router.get(
+//   "/auth/google/callback",
+//   passport.authenticate("google", { failureRedirect: "/" }),
+//   (req: Request, res: Response) => {
+//     if (!req.user) {
+//        res.status(401).json({ message: "Authentication failed" });
+//        return;
+//     }
+
+//     const user = req.user as User;
+//     console.log("User", user);
+//     const token = generateToken(user.id);
+
+//     res.json({
+//       message: "Authentication successful",
+//       token,
+//       user: {
+//         id: user.id,
+//         fullName: user.fullName,
+//         email: user.email,
+//         role: user.role,
+//       },
+//     });
+//   }
+// );
+
 router.get(
   "/auth/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
     if (!req.user) {
-       res.status(401).json({ message: "Authentication failed" });
-       return;
+      return res.redirect("https://appsolutehub.vercel.app/login?error=AuthenticationFailed");
     }
 
     const user = req.user as User;
     console.log("User", user);
     const token = generateToken(user.id);
 
-    res.json({
-      message: "Authentication successful",
-      token,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-      },
-    });
+    
+    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}&userId=${user.id}`);
   }
 );
 
