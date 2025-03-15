@@ -1,6 +1,7 @@
 import express from "express";
 import AuthController from "../controllers/auth.controller";
 import { validateRegister,validateLogin,validateForgotPassword,validateResetPassword } from "../../../validators/userValidator";
+import authenticate from "../../../middlewares/auth.middleware";
 
 // import googleAuth from "../controllers/auth.google"
 const router = express.Router();

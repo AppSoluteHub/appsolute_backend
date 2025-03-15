@@ -24,7 +24,7 @@ export class UserController {
   }
 
 
-  static async getAdmins(req: Request, res: Response) {
+  static async getAdmins(req: Request, res: Response):Promise<void> {
     try {
       const { search } = req.query;
 
@@ -32,10 +32,12 @@ export class UserController {
         search: search as string,
       });
 
-      return res.status(200).json({ success: true, data: admins });
+       res.status(200).json({ success: true, data: admins });
+       return;
     } catch (error) {
       console.error("Error in getAdmins controller:", error);
-      return res.status(500).json({ success: false, message: "Internal Server Error" });
+       res.status(500).json({ success: false, message: "Internal Server Error" });
+       return;
     }
   }
 
@@ -90,55 +92,9 @@ export class UserController {
   }
   
   
-  // static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
-  //   try {
-  //     const userId = req.user?.id as string;
-  //     if (!userId) {
-  //       throw new BadRequestError("Unauthorized: User ID is required");
-  //     }
-
-  //     let imageUrl: string = "";
-
-  //     if (req.file) {
-  //       try {
-  //         const file = req.file as Express.Multer.File;
-  //         console.log(file);
-  //         imageUrl = await new Promise<string>((resolve, reject) => {
-  //           const uploadStream = cloudinary.uploader.upload_stream(
-  //             { folder: "AppSolute/profile" },
-  //             (error, result) => {
-  //               if (error) {
-  //                 return reject(new BadRequestError("Failed to upload image to Cloudinary"));
-  //               }
-  //               if (result) return resolve(result.secure_url);
-  //             }
-  //           );
-  //           uploadStream.end(file.buffer);
-  //         });
-  //       } catch (error) {
-  //         return next(error);
-  //       }
-  //     }
-
-  //     if (!imageUrl) {
-  //       throw new BadRequestError("No image file uploaded");
-  //     }
-
-  //     const updatedUser = await UserService.updateProfileImage(userId, imageUrl);
-
-  //     res.status(200).json({
-  //       success: true,
-  //       message: "Profile image updated successfully",
-  //       data: updatedUser,
-  //     });
-  //   } catch (error) {
-  //     next(error);
-  //   }
-  // }
   
   static async updateProfileImage(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      console.log("here")
       const userId = req.user?.id as string;
       if (!userId) {
         throw new BadRequestError("Unauthorized: User ID is required");

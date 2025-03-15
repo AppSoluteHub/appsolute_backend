@@ -26,6 +26,40 @@ class AuthController {
     }
   }
   
+  // static async login(
+  //   req: Request,
+  //   res: Response,
+  //   next: NextFunction
+  // ): Promise<void> {
+  //   try {
+  //     const { email, password } = req.body;
+  //     const lowercaseEmail = email.toLowerCase();
+  //     const { user } = await AuthService.login(lowercaseEmail, password);
+
+  //     const token = generateToken(user.id);
+  //     const refreshToken = generateRefreshToken(user.id);
+
+  //     res.cookie("token", token, {
+  //       httpOnly: true,
+  //       secure: process.env.NODE_ENV === "production",
+  //       sameSite: "strict",
+  //     });
+
+  //     res.cookie("refreshToken", refreshToken, {
+  //       httpOnly: true,
+  //       secure: process.env.NODE_ENV === "production",
+  //       sameSite: "strict",
+  //     });
+
+  //     const { password: _, resetToken, resetTokenExpires, ...rest } = user;
+  //     res.status(200).json({ message: "Login successful", token, rest });
+  //   } catch (error) {
+  //     console.log(error);
+  //     next(error);
+  //   }
+  // }
+
+  
   static async login(
     req: Request,
     res: Response,
@@ -35,32 +69,27 @@ class AuthController {
       const { email, password } = req.body;
       const lowercaseEmail = email.toLowerCase();
       const { user } = await AuthService.login(lowercaseEmail, password);
-
+  
       const token = generateToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
-
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-      });
-
+  
+     
+      res.setHeader("Authorization", `Bearer ${token}`);
+      res.setHeader("x-refresh-token", refreshToken);
+  
       const { password: _, resetToken, resetTokenExpires, ...rest } = user;
-      res.status(200).json({ message: "Login successful", token, rest });
+      
+      res.status(200).json({
+        message: "Login successful",
+        user: rest,
+        token, 
+      });
     } catch (error) {
       console.log(error);
       next(error);
     }
   }
-
   
- 
 
   static async forgotPassword(
     req: Request,
@@ -112,21 +141,39 @@ class AuthController {
     }
   }
 
-  static async logout(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
+  // static async logout(
+  //   req: Request,
+  //   res: Response,
+  //   next: NextFunction
+  // ): Promise<void> {
+  //   try {
+  //     const token = req.cookies?.token;
+  //     if (!token) throw new Error("Token not provided");
+  //     const result = await AuthService.logout(token);
+  //     res.clearCookie("token", { httpOnly: true, secure: true });
+  //     res.send(appResponse("Message:", result));
+  //   } catch (error) {
+  //     next(error);
+  //   }
+  // }
+
+  static async logout(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const token = req.cookies?.token;
-      if (!token) throw new Error("Token not provided");
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new Error("Token not provided or malformed token");
+      }
+  
+      const token = authHeader.split(" ")[1];
+  
       const result = await AuthService.logout(token);
-      res.clearCookie("token", { httpOnly: true, secure: true });
-      res.send(appResponse("Message:", result));
+      
+      res.status(200).json({ message: "Logout successful", data: result });
     } catch (error) {
       next(error);
     }
   }
+  
 }
 
 export default AuthController;
