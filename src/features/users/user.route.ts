@@ -8,7 +8,7 @@ const upload = multer();
 const router = express.Router();
 router.get("/", UserController.getUsers);
 router.get("/:userId", UserController.getUserById);
-router.delete("/:userId", authenticate,UserController.deleteUser);
+router.delete("/:userId",UserController.deleteUser);
 router.patch("/:userId",authenticate, validateUpdateUser, UserController.updateUser);
 router.patch("/profile/:userId",authenticate,upload.single("file"), UserController.updateProfileImage);
 
