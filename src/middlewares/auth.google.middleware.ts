@@ -15,7 +15,7 @@ declare global {
       id: string;
       fullName: string;
       email: string;
-      role: "ADMIN" | "GUEST" | "SUPERADMIN";
+      role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
     }
   }
 }
@@ -24,7 +24,7 @@ interface User {
   id: string;
   fullName: string;
   email: string;
-  role: "ADMIN" | "GUEST" | "SUPERADMIN";
+  role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
 }
 
 passport.use(
