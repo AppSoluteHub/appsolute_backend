@@ -150,6 +150,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import AuthService from "../services/auth.service";
+import { generateRefreshToken, generateToken } from "../../../utils/jwt";
 
 class AuthController {
 
@@ -193,17 +194,34 @@ class AuthController {
     }
   }
 
-
-  static async login(req: Request, res: Response, next: NextFunction) {
+  static async login(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
     try {
       const { email, password } = req.body;
-      const result = await AuthService.login(email, password);
-      res.status(200).json(result);
+      const lowercaseEmail = email.toLowerCase();
+      const { user } = await AuthService.login(lowercaseEmail, password);
+  
+      const token = generateToken(user.id);
+      const refreshToken = generateRefreshToken(user.id);
+  
+     
+      res.setHeader("Authorization", `Bearer ${token}`);
+      res.setHeader("x-refresh-token", refreshToken);
+      
+      res.status(200).json({
+        message: "Login successful",
+        user: user,
+        token, 
+      });
     } catch (error) {
+      console.log(error);
       next(error);
     }
   }
-
+  
  
   static async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {

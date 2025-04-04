@@ -1,3 +1,4 @@
+
 // import { NextFunction, Request, Response } from "express";
 // import { verifyToken } from "../utils/jwt";
 // import { PrismaClient, User as PrismaUser } from "@prisma/client";
@@ -101,7 +102,7 @@ declare global {
       user?: {
         id: string;
         email: string;
-        role: "ADMIN" | "GUEST" | "SUPERADMIN";
+        role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
       };
     }
   }
@@ -113,7 +114,6 @@ export default async function authenticate(
   next: NextFunction
 ): Promise<void> {
   const authHeader = req.headers.authorization;
-    console.log("heren")
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({ success: false, message: "No token provided or malformed token" });
     return;
@@ -137,7 +137,7 @@ export default async function authenticate(
   }
 }
 
-// Middleware for admin access
+
 export const isAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
@@ -154,7 +154,7 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction): void =
   next();
 };
 
-// Middleware for superadmin access
+
 export const isSuperAdmin = (req: Request, res: Response, next: NextFunction): void => {
   if (!req.user) {
     res.status(403).json({ success: false, message: "Unauthorized: No user data found" });
