@@ -30,12 +30,9 @@ export const createTaskWithQuestions = async (
   });
 };
 
-// export const getAllTasks = async () => {
-//   return await prisma.task.findMany();
-// };
+
 
 export const getAllTasks = async (userId: string) => {
-  console.log("Userid",userId);
   return await prisma.task.findMany({
     where: {
       NOT: {
@@ -68,13 +65,6 @@ export const getTaskById = async (taskId: string, userId: string) => {
 }
 
 
-
-// export const getTaskById = async (taskId: string) => {
-//   return await prisma.task.findUnique({
-//     where: { id: taskId },
-//     include: { questions: true }, 
-//   });
-// };
 export const deleteTask = async (taskId: string) => {
   return await prisma.task.delete({ where: { id: taskId } });
 };

@@ -3,34 +3,6 @@ import { createTaskWithQuestions, deleteTask, getAllTasks, getTaskById, updateTa
 import { use } from "passport";
 
 
-// export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const { question, options, correctAnswer, url, title, points, tags } = req.body;
-
-//     if (!question || !options || !correctAnswer || !url || !title || !tags || !points) {
-//        res.status(400).json({ error: "All fields are required" });
-//        return;
-//     }
-
-//     if (!Array.isArray(options)) {
-//        res.status(400).json({ error: "Options must be an array" });
-//        return;
-//     }
-
-//     if (!Array.isArray(tags)) {
-//        res.status(400).json({ error: "Tags must be an array" });
-//        return;
-//     }
-
-//     const task = await createTask(question, options, correctAnswer, url, tags, points, title);
-//     res.status(201).json(task);
-//   } catch (error) {
-//     console.error("Error creating task:", error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
-
-
 export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
   try {
     const { title, tags, url, points, questions } = req.body;
@@ -63,7 +35,7 @@ export const createTaskHandler = async (req: Request, res: Response): Promise<vo
 };
 
 export const getTasksHandler = async (req: Request, res: Response) => {
-  const userId = req.user?.id as string;
+  const {userId} = req.body;
   try {
     const tasks = await getAllTasks(userId);
     res.json(tasks);

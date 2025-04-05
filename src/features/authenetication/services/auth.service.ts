@@ -101,26 +101,67 @@ class AuthService {
     }
   }
 
-
-
   static async verifyEmail(token: string) {
-    if (!token) throw new BadRequestError("Verification token is required");
-
-    const user = await prisma.user.findFirst({
-      where: { resetTokenExpires: { gte: new Date() } },
-    });
-
-    if (!user || !(await bcrypt.compare(token, user.resetToken!))) {
-      throw new InvalidError("Invalid or expired verification token");
+    if (!token) throw new BadRequestError("Verification token is required.");
+  
+    try {
+      const user = await prisma.user.findFirst({
+        where: {
+          resetTokenExpires: {
+            gte: new Date(), 
+          },
+          resetToken: {
+            not: null,
+          },
+        },
+      });
+  
+    
+      if (!user) throw new InvalidError("Invalid or expired verification token.");
+  
+      const isTokenValid = await bcrypt.compare(token, user.resetToken!);
+  
+      if (!isTokenValid) {
+    
+        if (!user.verified) {
+          await prisma.user.delete({ where: { id: user.id } });
+        }
+        throw new InvalidError("Verification token is incorrect or expired , please register again.");
+      }
+  
+      if (user.verified) {
+        throw new BadRequestError("This account is already verified.");
+      }
+  
+      // Everything checks out, verify the user
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verified: true,
+          resetToken: null,
+          resetTokenExpires: null,
+        },
+      });
+  
+      return { message: "Email verified successfully." };
+  
+    } catch (error: any) {
+ 
+      if (error.code === "P2025") {
+        throw new NotFoundError("User not found.");
+      }
+  
+      if (error instanceof BadRequestError || error instanceof InvalidError || error instanceof NotFoundError) {
+        throw error;
+      }
+  
+      console.error("Error in verifyEmail:", error);
+      throw new Error("Something went wrong while verifying your email.");
     }
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { resetToken: null, resetTokenExpires: null, verified: true },
-    });
-
-    return { message: "Email verified successfully" };
   }
+  
+  
+  
 
   static async resendVerificationEmail(email: string) {
     if (!email) throw new BadRequestError("Email is required");
@@ -177,6 +218,8 @@ class AuthService {
 
     return { message: "Verification email resent successfully" };
   }
+
+
   static async login(email: string, password: string) {
     try {
       const user = await prisma.user.findUnique({
@@ -201,6 +244,7 @@ class AuthService {
         : new InternalServerError("Something went wrong during login.");
     }
   }
+
 
   static async forgotPassword(email: string) {
     if (!email) throw new BadRequestError("Email is required");
