@@ -43,7 +43,7 @@ class AuthService {
             profileImage ||
             "https://png.pngtree.com/png-clipart/20200224/original/pngtree-cartoon-color-simple-male-avatar-png-image_5230557.jpg",
           resetToken: verificationTokenHash,
-          resetTokenExpires: new Date(Date.now() + 30 * 60 * 1000),
+          resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
           verified: false,
         },
       });
