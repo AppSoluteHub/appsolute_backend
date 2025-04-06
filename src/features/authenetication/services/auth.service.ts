@@ -17,24 +17,47 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 const prisma = new PrismaClient();
 
 class AuthService {
-  static async register({
-    fullName,
-    profileImage,
-    email,
-    password,
-  }: RegisterInput) {
-    try {
-      const lowercaseEmail = email.toLowerCase();
-      const existingUser = await prisma.user.findUnique({
+
+static async register({
+  fullName,
+  profileImage,
+  email,
+  password,
+}: RegisterInput) {
+  try {
+    const lowercaseEmail = email.toLowerCase();
+    const existingUser = await prisma.user.findUnique({
+      where: { email: lowercaseEmail },
+    });
+
+    if (existingUser && existingUser.verified) {
+      // Case 1: Already exists and verified
+      throw new DuplicateError("User with this email already exists and is verified.");
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenHash = await bcrypt.hash(verificationToken, 10);
+
+    let user;
+
+    if (existingUser && !existingUser.verified) {
+      // Case 2: User exists but not verified → update existing user
+      user = await prisma.user.update({
         where: { email: lowercaseEmail },
+        data: {
+          fullName,
+          password: hashedPassword,
+          profileImage:
+            profileImage ||
+            "https://png.pngtree.com/png-clipart/20200224/original/pngtree-cartoon-color-simple-male-avatar-png-image_5230557.jpg",
+          resetToken: verificationTokenHash,
+          resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        },
       });
-      if (existingUser) throw new DuplicateError("Email already exists");
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const verificationToken = crypto.randomBytes(32).toString("hex");
-      const verificationTokenHash = await bcrypt.hash(verificationToken, 10);
-
-      const user = await prisma.user.create({
+    } else {
+      // Case 3: New user → create
+      user = await prisma.user.create({
         data: {
           fullName,
           email: lowercaseEmail,
@@ -47,59 +70,57 @@ class AuthService {
           verified: false,
         },
       });
-
-      const verifyLink = `https://appsolutehub.vercel.app/verify-email?token=${verificationToken}`;
-
-      const emailTemplate = `
-    <html>
-    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
-      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
-        <div style="background: #37459C; padding: 20px; text-align: center; color: white;">
-          <h1 style="margin: 0;">AppSolute</h1>
-          <p style="margin: 5px 0; font-size: 16px;">Verify Your Email</p>
-        </div>
-        <div style="padding: 20px;">
-          <p style="font-size: 16px; color: #333;">Hello <strong style="color: #37459C;">${fullName}</strong>,</p>
-          <p style="font-size: 14px; color: #555;">Thank you for signing up! Please click the button below to verify your email and activate your account:</p>
-          <div style="text-align: center; margin: 20px 0;">
-            <a href="${verifyLink}" style="text-decoration: none; background: #37459C; color: white; padding: 10px 20px; border-radius: 5px; font-size: 14px;">Verify Email</a>
-          </div>
-          <p style="font-size: 14px; color: #555;">If you did not create this account, you can safely ignore this email.</p>
-        </div>
-        <div style="background: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #888;">
-          <p style="margin: 0;">If you have any questions, please contact us at <a href="mailto:support@appsolute.com" style="color: #4caf50;">support@appsolute.com</a>.</p>
-          <p style="margin: 0;">&copy; ${new Date().getFullYear()} AppSolute. All rights reserved.</p>
-        </div>
-      </div>
-    </body>
-  </html>
-`;
-
-      await sendEmail({
-        email: user.email,
-        subject: "Verify Your Email - AppSolute",
-        html: emailTemplate,
-      });
-
-      return {
-        message:
-          "User registered successfully. Please check your email to verify your account.",
-      };
-    } catch (error: any) {
-      console.error("Error in AuthService.register:", error);
-
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === "P2002") {
-          throw new BadRequestError("Email already exists");
-        }
-      }
-      if (error instanceof AppError) throw error;
-
-      throw new Error(
-        "Something went wrong during registration."
-      );
     }
+
+    const verifyLink = `https://appsolutehub.vercel.app/verify-email?token=${verificationToken}`;
+
+    const emailTemplate = `
+      <html>
+      <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
+          <div style="background: #37459C; padding: 20px; text-align: center; color: white;">
+            <h1 style="margin: 0;">AppSolute</h1>
+            <p style="margin: 5px 0; font-size: 16px;">Verify Your Email</p>
+          </div>
+          <div style="padding: 20px;">
+            <p style="font-size: 16px; color: #333;">Hello <strong style="color: #37459C;">${fullName}</strong>,</p>
+            <p style="font-size: 14px; color: #555;">Thank you for signing up! Please click the button below to verify your email and activate your account:</p>
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="${verifyLink}" style="text-decoration: none; background: #37459C; color: white; padding: 10px 20px; border-radius: 5px; font-size: 14px;">Verify Email</a>
+            </div>
+            <p style="font-size: 14px; color: #555;">If you did not create this account, you can safely ignore this email.</p>
+          </div>
+          <div style="background: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #888;">
+            <p style="margin: 0;">If you have any questions, please contact us at <a href="mailto:support@appsolute.com" style="color: #4caf50;">support@appsolute.com</a>.</p>
+            <p style="margin: 0;">&copy; ${new Date().getFullYear()} AppSolute. All rights reserved.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+    `;
+    await sendEmail({
+      email: user.email,
+      subject: "Verify Your Email - AppSolute",
+      html: emailTemplate,
+    });
+
+    return {
+      message:
+        "Registration successful. Please check your email to verify your account this time.",
+    };
+  } catch (error: any) {
+    console.error("Error in AuthService.register:", error);
+
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        throw new BadRequestError("Email already exists.");
+      }
+    }
+    if (error instanceof AppError) throw error;
+
+    throw new Error("Something went wrong during registration.");
   }
+}
 
   static async verifyEmail(token: string) {
     if (!token) throw new BadRequestError("Verification token is required.");
