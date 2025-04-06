@@ -106,7 +106,7 @@ static async register({
 
     return {
       message:
-        "Registration successful. Please check your email to verify your account this time.",
+        "Registration successful. Please check your email to verify your account.",
     };
   } catch (error: any) {
     console.error("Error in AuthService.register:", error);
