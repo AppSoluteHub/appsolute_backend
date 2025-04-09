@@ -1,28 +1,72 @@
 "use strict";
+// import { Request, Response, NextFunction } from "express";
+// import AuthService from "../services/auth.service";
+// import { generateRefreshToken, generateToken } from "../../../utils/jwt";
+// import appResponse from "../../../lib/appResponse";
+// import { BadRequestError } from "../../../lib/appError";
+// class AuthController {
+//   static async register(
+//     req: Request,
+//     res: Response,
+//     next: NextFunction
+//   ): Promise<void> {
+//     try {
+//       const { fullName, email, password, profileImage } = req.body;
+//       const lowercaseEmail = email.toLowerCase();
+//       const newUser = await AuthService.register({
+//         fullName,
+//         email,
+//         profileImage,
+//         password,
+//       });
+//       const { password: _, resetToken, resetTokenExpires, ...rest } = newUser;
+//       res.status(201).json(appResponse("User registered successfully", rest));
+//     } catch (error) {
+//       console.error("Error in register controller:", error);
+//       next(error);
+//     }
+//   }
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const auth_service_1 = __importDefault(require("../services/auth.service"));
 const jwt_1 = require("../../../utils/jwt");
-const appResponse_1 = __importDefault(require("../../../lib/appResponse"));
-const appError_1 = require("../../../lib/appError");
 class AuthController {
     static async register(req, res, next) {
         try {
-            const { fullName, email, password, profileImage } = req.body;
-            const lowercaseEmail = email.toLowerCase();
-            const newUser = await auth_service_1.default.register({
-                fullName,
-                email,
-                profileImage,
-                password,
-            });
-            const { password: _, resetToken, resetTokenExpires, ...rest } = newUser;
-            res.status(201).json((0, appResponse_1.default)("User registered successfully", rest));
+            const result = await auth_service_1.default.register(req.body);
+            res.status(201).json(result);
         }
         catch (error) {
-            console.error("Error in register controller:", error);
+            next(error);
+        }
+    }
+    static async verifyEmail(req, res, next) {
+        try {
+            const { token } = req.query;
+            if (!token || typeof token !== "string") {
+                res.status(400).json({ message: "Invalid verification token" });
+                return;
+            }
+            const result = await auth_service_1.default.verifyEmail(token);
+            res.status(200).json(result);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async resendVerificationEmail(req, res, next) {
+        try {
+            const { email } = req.body;
+            if (!email || typeof email !== "string") {
+                res.status(400).json({ message: "Invalid email address" });
+                return;
+            }
+            const result = await auth_service_1.default.resendVerificationEmail(email);
+            res.status(200).json(result);
+        }
+        catch (error) {
             next(error);
         }
     }
@@ -33,18 +77,13 @@ class AuthController {
             const { user } = await auth_service_1.default.login(lowercaseEmail, password);
             const token = (0, jwt_1.generateToken)(user.id);
             const refreshToken = (0, jwt_1.generateRefreshToken)(user.id);
-            res.cookie("token", token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
+            res.setHeader("Authorization", `Bearer ${token}`);
+            res.setHeader("x-refresh-token", refreshToken);
+            res.status(200).json({
+                message: "Login successful",
+                user: user,
+                token,
             });
-            res.cookie("refreshToken", refreshToken, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: "strict",
-            });
-            const { password: _, resetToken, resetTokenExpires, ...rest } = user;
-            res.status(200).json({ message: "Login successful", token, rest });
         }
         catch (error) {
             console.log(error);
@@ -54,9 +93,8 @@ class AuthController {
     static async forgotPassword(req, res, next) {
         try {
             const { email } = req.body;
-            const lowercaseEmail = email.toLowerCase();
-            const result = await auth_service_1.default.forgotPassword(lowercaseEmail);
-            res.send((0, appResponse_1.default)("Message:", result));
+            const result = await auth_service_1.default.forgotPassword(email);
+            res.status(200).json(result);
         }
         catch (error) {
             next(error);
@@ -64,31 +102,29 @@ class AuthController {
     }
     static async resetPassword(req, res, next) {
         try {
-            const { password, confirmPassword, token } = req.body;
-            if (!token || !password || !confirmPassword)
-                throw new appError_1.BadRequestError("OTP, password, and confirm password are required");
-            if (password !== confirmPassword)
-                throw new appError_1.BadRequestError("Password and confirm password do not match");
-            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-            if (!passwordRegex.test(password)) {
-                throw new appError_1.BadRequestError("Password must be at least 8 characters long, include one uppercase letter, one lowercase letter, one number, and one special character");
-            }
-            const result = await auth_service_1.default.resetPassword(token, password, confirmPassword);
-            res.send((0, appResponse_1.default)("Password reset successful", result));
+            const { token, newPassword, confirmPassword } = req.body;
+            const result = await auth_service_1.default.resetPassword(token, newPassword, confirmPassword);
+            res.status(200).json(result);
         }
         catch (error) {
-            console.error("Reset password error:", error);
             next(error);
         }
     }
     static async logout(req, res, next) {
         try {
-            const token = req.cookies?.token;
-            if (!token)
-                throw new Error("Token not provided");
+            const { token } = req.body;
             const result = await auth_service_1.default.logout(token);
-            res.clearCookie("token", { httpOnly: true, secure: true });
-            res.send((0, appResponse_1.default)("Message:", result));
+            res.status(200).json(result);
+        }
+        catch (error) {
+            next(error);
+        }
+    }
+    static async getUserById(req, res, next) {
+        try {
+            const { id } = req.params;
+            const result = await auth_service_1.default.findById(id);
+            res.status(200).json(result);
         }
         catch (error) {
             next(error);

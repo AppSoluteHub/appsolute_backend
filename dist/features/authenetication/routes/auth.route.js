@@ -1,18 +1,29 @@
 "use strict";
+// import express from "express";
+// import AuthController from "../controllers/auth.controller";
+// import { validateRegister,validateLogin,validateForgotPassword,validateResetPassword } from "../../../validators/userValidator";
+// import authenticate from "../../../middlewares/auth.middleware";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
+// const router = express.Router();
+// router.post("/register" ,validateRegister, AuthController.register);
+// router.post("/login", validateLogin, AuthController.login);
+// router.post("/login", validateLogin, AuthController.login);
+// router.post("/forgot-password",validateForgotPassword, AuthController.forgotPassword);
+// router.post("/reset-password",validateResetPassword, AuthController.resetPassword);
+// router.post("/logout", AuthController.logout);
+// export default router;
+const express_1 = require("express");
 const auth_controller_1 = __importDefault(require("../controllers/auth.controller"));
-const userValidator_1 = require("../../../validators/userValidator");
-// import googleAuth from "../controllers/auth.google"
-const router = express_1.default.Router();
-router.post("/register", userValidator_1.validateRegister, auth_controller_1.default.register);
-router.post("/login", userValidator_1.validateLogin, auth_controller_1.default.login);
-// router.get("googleAuth",googleAuth)
-router.post("/login", userValidator_1.validateLogin, auth_controller_1.default.login);
-router.post("/forgot-password", userValidator_1.validateForgotPassword, auth_controller_1.default.forgotPassword);
-router.post("/reset-password", userValidator_1.validateResetPassword, auth_controller_1.default.resetPassword);
+const router = (0, express_1.Router)();
+router.post("/register", auth_controller_1.default.register);
+router.get("/verify-email", auth_controller_1.default.verifyEmail);
+router.post("/resend-verification", auth_controller_1.default.resendVerificationEmail);
+router.post("/login", auth_controller_1.default.login);
+router.post("/forgot-password", auth_controller_1.default.forgotPassword);
+router.post("/reset-password", auth_controller_1.default.resetPassword);
 router.post("/logout", auth_controller_1.default.logout);
+router.get("/user/:id", auth_controller_1.default.getUserById);
 exports.default = router;

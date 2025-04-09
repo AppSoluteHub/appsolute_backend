@@ -31,11 +31,13 @@ class UserController {
             const admins = await user_service_1.UserService.getAdmins({
                 search: search,
             });
-            return res.status(200).json({ success: true, data: admins });
+            res.status(200).json({ success: true, data: admins });
+            return;
         }
         catch (error) {
             console.error("Error in getAdmins controller:", error);
-            return res.status(500).json({ success: false, message: "Internal Server Error" });
+            res.status(500).json({ success: false, message: "Internal Server Error" });
+            return;
         }
     }
     static async getUserById(req, res) {
@@ -87,15 +89,20 @@ class UserController {
             if (!userId) {
                 throw new appError_1.BadRequestError("Unauthorized: User ID is required");
             }
+            console.log("User ID:", userId);
+            console.log("Received file:", req.file);
             let imageUrl = "";
             if (req.file) {
                 try {
                     const file = req.file;
+                    console.log(file);
                     imageUrl = await new Promise((resolve, reject) => {
-                        const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute" }, (error, result) => {
+                        const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute/profile" }, (error, result) => {
                             if (error) {
+                                console.error("Cloudinary upload error:", error);
                                 return reject(new appError_1.BadRequestError("Failed to upload image to Cloudinary"));
                             }
+                            console.log("Cloudinary upload result:", result);
                             if (result)
                                 return resolve(result.secure_url);
                         });
@@ -106,10 +113,12 @@ class UserController {
                     return next(error);
                 }
             }
-            if (!imageUrl) {
+            else {
                 throw new appError_1.BadRequestError("No image file uploaded");
             }
+            console.log("Image URL:", imageUrl);
             const updatedUser = await user_service_1.UserService.updateProfileImage(userId, imageUrl);
+            console.log("Updated User:", updatedUser);
             res.status(200).json({
                 success: true,
                 message: "Profile image updated successfully",

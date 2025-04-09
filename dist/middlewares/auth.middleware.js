@@ -1,4 +1,7 @@
 "use strict";
+// import { NextFunction, Request, Response } from "express";
+// import { verifyToken } from "../utils/jwt";
+// import { PrismaClient, User as PrismaUser } from "@prisma/client";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isSuperAdmin = exports.isAdmin = void 0;
 exports.default = authenticate;
@@ -6,11 +9,12 @@ const jwt_1 = require("../utils/jwt");
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
 async function authenticate(req, res, next) {
-    const token = req.cookies?.token;
-    if (!token) {
-        res.status(401).json({ success: false, message: "No token provided" });
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ success: false, message: "No token provided or malformed token" });
         return;
     }
+    const token = authHeader.split(" ")[1];
     try {
         const decoded = (0, jwt_1.verifyToken)(token);
         const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
@@ -22,9 +26,7 @@ async function authenticate(req, res, next) {
         next();
     }
     catch (err) {
-        res
-            .status(401)
-            .json({ success: false, message: "Invalid or expired token" });
+        res.status(401).json({ success: false, message: "Invalid or expired token" });
     }
 }
 const isAdmin = (req, res, next) => {

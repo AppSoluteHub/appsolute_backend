@@ -21,26 +21,26 @@ const answerTask = async (userId, taskId, answers) => {
         const totalQuestions = task.questions.length;
         if (totalQuestions === 0)
             throw new appError_1.BadRequestError("No questions in this task.");
-        const pointsPerQuestion = task.points / totalQuestions;
-        let totalScoreEarned = 0;
+        let correctAnswersCount = 0;
         const userAnswers = answers.map(({ questionId, userAnswer }) => {
             const question = task.questions.find((q) => q.id === questionId);
             if (!question) {
                 throw new appError_1.BadRequestError(`Question ID ${questionId} not found in this task.`);
             }
             const isCorrect = userAnswer === question.correctAnswer;
-            const scoreEarned = isCorrect ? pointsPerQuestion : 0;
-            totalScoreEarned += scoreEarned;
+            if (isCorrect)
+                correctAnswersCount++;
             return {
                 userId,
                 taskId,
                 questionId,
                 userAnswer,
                 isCorrect,
-                scoreEarned,
             };
         });
         await prisma.userTask.createMany({ data: userAnswers });
+        let totalScoreEarned = (task.points / totalQuestions) * correctAnswersCount;
+        totalScoreEarned = Math.round(totalScoreEarned);
         if (totalScoreEarned > 0) {
             await prisma.user.update({
                 where: { id: userId },
