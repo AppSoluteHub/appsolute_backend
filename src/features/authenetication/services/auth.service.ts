@@ -72,7 +72,7 @@ static async register({
       });
     }
 
-    const verifyLink = `http://localhost:3001/signup?token=${verificationToken}`;
+    const verifyLink = `http://localhost:3001/verify-email?token=${verificationToken}`;
 
     const emailTemplate = `
       <html>

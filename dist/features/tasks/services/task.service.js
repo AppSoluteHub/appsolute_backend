@@ -1,29 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTask = exports.deleteTask = exports.getTaskById = exports.getAllTasks = exports.createTaskWithQuestions = void 0;
+exports.updateTask = exports.deleteTask = exports.getTaskById = exports.getTasks = exports.getAllTasks = exports.createTaskWithQuestions = void 0;
 const client_1 = require("@prisma/client");
 const prisma = new client_1.PrismaClient();
-// export const createTask = async (
-//   question: string,
-//   options: string[],
-//   correctAnswer: string,
-//   url: string,
-//   tags: string[],
-//   points: number,
-//   title: string
-// ) => {
-//   return await prisma.task.create({
-//     data: {
-//       question,
-//       options,
-//       correctAnswer,
-//       url,
-//       tags,
-//       points,
-//       title,
-//     },
-//   });
-// };
 const createTaskWithQuestions = async (title, tags, url, points, questions) => {
     return await prisma.task.create({
         data: {
@@ -45,13 +24,40 @@ const createTaskWithQuestions = async (title, tags, url, points, questions) => {
     });
 };
 exports.createTaskWithQuestions = createTaskWithQuestions;
-const getAllTasks = async () => {
-    return await prisma.task.findMany();
+const getAllTasks = async (userId) => {
+    return await prisma.task.findMany({
+        where: {
+            NOT: {
+                userTasks: {
+                    some: {
+                        userId: userId,
+                    },
+                },
+            },
+        },
+        include: { questions: true },
+    });
 };
 exports.getAllTasks = getAllTasks;
-const getTaskById = async (taskId) => {
-    return await prisma.task.findUnique({
-        where: { id: taskId },
+const getTasks = async () => {
+    return await prisma.task.findMany({
+        include: { questions: true },
+    });
+};
+exports.getTasks = getTasks;
+const getTaskById = async (taskId, userId) => {
+    console.log(userId);
+    return await prisma.task.findFirst({
+        where: {
+            id: taskId,
+            NOT: {
+                userTasks: {
+                    some: {
+                        userId: userId,
+                    },
+                },
+            },
+        },
         include: { questions: true },
     });
 };

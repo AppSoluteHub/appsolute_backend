@@ -14,7 +14,7 @@ const prisma = new client_1.PrismaClient();
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    callbackURL: "http://localhost:3000/auth/google/callback",
+    callbackURL: "https://appsolute-api-1.onrender.com/auth/google/callback",
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await prisma.user.findUnique({
@@ -31,7 +31,6 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
                 },
             });
         }
-        console.log(user, "NewUSer");
         return done(null, {
             id: user.id,
             fullName: user.fullName,
@@ -50,22 +49,43 @@ passport_1.default.serializeUser((user, done) => {
 passport_1.default.deserializeUser((obj, done) => {
     done(null, obj);
 });
-const isAuthenticated = (req, res, next) => {
-    if (req.isAuthenticated()) {
-        return next();
-    }
-    res.redirect("/");
-};
 const router = express_1.default.Router();
 router.get("/auth/google", passport_1.default.authenticate("google", { scope: ["profile", "email"] }));
+// router.get(
+//   "/auth/google/callback",
+//   passport.authenticate("google", { failureRedirect: "/" }),
+//   (req: Request, res: Response) => {
+//     if (!req.user) {
+//        res.status(401).json({ message: "Authentication failed" });
+//        return;
+//     }
+//     const user = req.user as User;
+//     console.log("User", user);
+//     const token = generateToken(user.id);
+//     res.json({
+//       message: "Authentication successful",
+//       token,
+//       user: {
+//         id: user.id,
+//         fullName: user.fullName,
+//         email: user.email,
+//         role: user.role,
+//       },
+//     });
+//   }
+// );
 router.get("/auth/google/callback", passport_1.default.authenticate("google", { failureRedirect: "/" }), (req, res) => {
-    const token = (0, jwt_1.generateToken)(req.user.id);
-    res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
-    res.redirect("/dashboard");
+    if (!req.user) {
+        return res.redirect("https://appsolutehub.vercel.app/login?error=AuthenticationFailed");
+    }
+    const user = req.user;
+    console.log("User", user);
+    const token = (0, jwt_1.generateToken)(user.id);
+    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}&userId=${user.id}`);
 });
 router.get("/logout", (req, res) => {
     req.logout(() => {
-        res.redirect("/");
+        res.json({ message: "Logged out successfully" });
     });
 });
 exports.default = router;

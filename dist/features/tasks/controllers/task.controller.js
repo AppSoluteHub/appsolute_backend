@@ -1,29 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateTaskHandler = exports.deleteTaskHandler = exports.getTaskByIdHandler = exports.getTasksHandler = exports.createTaskHandler = void 0;
+exports.updateTaskHandler = exports.deleteTaskHandler = exports.getTaskByIdHandler = exports.getAllTaskHandler = exports.getTasksHandler = exports.createTaskHandler = void 0;
 const task_service_1 = require("../services/task.service");
-// export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const { question, options, correctAnswer, url, title, points, tags } = req.body;
-//     if (!question || !options || !correctAnswer || !url || !title || !tags || !points) {
-//        res.status(400).json({ error: "All fields are required" });
-//        return;
-//     }
-//     if (!Array.isArray(options)) {
-//        res.status(400).json({ error: "Options must be an array" });
-//        return;
-//     }
-//     if (!Array.isArray(tags)) {
-//        res.status(400).json({ error: "Tags must be an array" });
-//        return;
-//     }
-//     const task = await createTask(question, options, correctAnswer, url, tags, points, title);
-//     res.status(201).json(task);
-//   } catch (error) {
-//     console.error("Error creating task:", error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
 const createTaskHandler = async (req, res) => {
     try {
         const { title, tags, url, points, questions } = req.body;
@@ -51,8 +29,9 @@ const createTaskHandler = async (req, res) => {
 };
 exports.createTaskHandler = createTaskHandler;
 const getTasksHandler = async (req, res) => {
+    const { userId } = req.body;
     try {
-        const tasks = await (0, task_service_1.getAllTasks)();
+        const tasks = await (0, task_service_1.getAllTasks)(userId);
         res.json(tasks);
     }
     catch (error) {
@@ -60,10 +39,22 @@ const getTasksHandler = async (req, res) => {
     }
 };
 exports.getTasksHandler = getTasksHandler;
+const getAllTaskHandler = async (req, res) => {
+    try {
+        console.log("tasks");
+        const tasks = await (0, task_service_1.getTasks)();
+        res.json(tasks);
+    }
+    catch (error) {
+        res.status(500).json({ error: error });
+    }
+};
+exports.getAllTaskHandler = getAllTaskHandler;
 const getTaskByIdHandler = async (req, res) => {
     try {
+        const userId = req.user?.id;
         const taskId = req.params.id;
-        const task = await (0, task_service_1.getTaskById)(taskId);
+        const task = await (0, task_service_1.getTaskById)(taskId, userId);
         res.json({ mesage: "Task fetched successfully", "Task": task });
     }
     catch (error) {

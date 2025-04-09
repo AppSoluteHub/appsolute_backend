@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createTaskWithQuestions, deleteTask, getAllTasks, getTaskById, updateTask,  } from "../services/task.service";
+import { createTaskWithQuestions, deleteTask, getAllTasks, getTaskById, getTasks, updateTask,  } from "../services/task.service";
 import { use } from "passport";
 
 
@@ -45,6 +45,28 @@ export const getTasksHandler = async (req: Request, res: Response) => {
 
   
 };
+
+// export const getAllTaskHandler = async (req: Request, res: Response) => {
+//   try {
+//     const tasks = await getTasks();
+//     res.json(tasks);
+//   } catch (error) {
+//     res.status(500).json({ error: error });
+//   }
+
+  
+// };
+
+export const getAllTaskHandler = async (req:Request, res: Response) => {
+  try {
+    const tasks = await getTasks();
+    res.status(200).json({ success: true, data: tasks });
+  } catch (error: any) {
+    console.error('Error fetching tasks:', error);
+    res.status(500).json({ success: false, message:  `Error fetching tasks: ${error.message}` });
+  }
+};
+
 export const getTaskByIdHandler = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id as string;

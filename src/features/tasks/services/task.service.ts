@@ -47,6 +47,14 @@ export const getAllTasks = async (userId: string) => {
   });
 };
 
+
+
+export const getTasks = async () => {
+  return await prisma.task.findMany({
+    include: { questions: true },
+  });
+};
+
 export const getTaskById = async (taskId: string, userId: string) => {
   console.log(userId)
   return await prisma.task.findFirst({
