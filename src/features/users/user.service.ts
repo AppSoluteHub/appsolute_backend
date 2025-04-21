@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { Prisma, PrismaClient, Role } from "@prisma/client";
 import { RegisterInput } from "../../interfaces/auth.interfaces";
 import {
   BadRequestError,
@@ -78,10 +78,13 @@ export class UserService {
     }
   }
   
+
   static async getUserById(userId: string) {
-    try {
-      if (!userId) throw new BadRequestError("User ID is required");
+    if (!userId) {
+      throw new BadRequestError("User ID is required");
+    }
   
+    try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -96,19 +99,30 @@ export class UserService {
           role: true,
           totalScore: true,
           answered: true,
-         
-         
         },
       });
   
-      if (!user) throw new NotFoundError("User not found");
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
   
       return user;
-    } catch (error) {
-      console.error("Error fetching user by ID:", error);
-      throw new InternalServerError("Unable to fetch user");
+    } catch (error : any) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        console.error("Prisma known error:", error.message);
+        throw new BadRequestError("Invalid request to the database");
+      }
+  
+      if (error instanceof Prisma.PrismaClientValidationError) {
+        console.error("Prisma validation error:", error.message);
+        throw new BadRequestError("Invalid input for database query");
+      }
+  
+      console.error("Unexpected error fetching user by ID:", error.message);
+      throw new InternalServerError(`${error.message}`);
     }
   }
+  
   
 
   static async deleteUser(userId: string) {
