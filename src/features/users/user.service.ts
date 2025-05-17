@@ -51,9 +51,9 @@ export class UserService {
         totalPages: Math.ceil(totalUsers / limit),
         currentPage: page,
       };
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error fetching users:", error);
-      throw new InternalServerError("Unable to fetch users");
+      throw new InternalServerError(`Unable to fetch users ${error.message}`);
     }
   }
 
@@ -72,9 +72,9 @@ export class UserService {
       });
   
       return admins;
-    } catch (error) {
+    } catch (error : any) {
       console.error("Error fetching admins:", error);
-      throw new InternalServerError("Unable to fetch admins");
+      throw new InternalServerError(`Unable to fetch admins ${error.message}`);
     }
   }
   
@@ -110,16 +110,16 @@ export class UserService {
     } catch (error : any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         console.error("Prisma known error:", error.message);
-        throw new BadRequestError("Invalid request to the database");
+        throw new Error("Invalid request to the database");
       }
   
       if (error instanceof Prisma.PrismaClientValidationError) {
         console.error("Prisma validation error:", error.message);
-        throw new BadRequestError("Invalid input for database query");
+        throw new Error("Invalid input for database query");
       }
   
       console.error("Unexpected error fetching user by ID:", error.message);
-      throw new InternalServerError(`${error.message}`);
+      throw new InternalServerError(`Error feching user :${error.message}`);
     }
   }
   
@@ -135,9 +135,9 @@ export class UserService {
       await prisma.user.delete({ where: { id: userId } });
 
       return { message: "User deleted successfully" };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting user:", error);
-      throw new InternalServerError("Unable to delete user");
+      throw new InternalServerError(`error deleting user: ${error.message}`);
     }
   }
 
@@ -207,12 +207,32 @@ export class UserService {
       });
   
       return updatedUser;
-    } catch (error) {
+    } catch (error : any) {
       console.error("Error updating user:", error);
-      throw new InternalServerError("Unable to update user");
+      throw new InternalServerError(`Unable to update user: ${error.message}`);
     }
   }
   
+ static async updateUserRole(userId: string, updates: { role?: string }) {
+    const data: Prisma.UserUpdateInput = {};
+
+    if (updates.role) {
+      data.role = updates.role as Role; 
+      
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    return updatedUser;
+  }
 
   static async updateProfileImage(userId: string, imageUrl: string) {
     return await prisma.user.update({

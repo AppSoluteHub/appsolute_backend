@@ -1,11 +1,20 @@
 import express from "express";
 import authenticate, { isAdmin } from "../../../middlewares/auth.middleware";
-import { validateLogin } from "../../../validators/userValidator";
-import { validatePost } from "../../../validators/post.validator";
-import PostController from "../../blog/controllers/blog.controller";
+import { validateUpdatePost } from "../../../validators/updatePost.validator";
+import multer from "multer";
+import PostController from "../controllers/post.admin.controller";
+
 const router = express.Router();
 
-router.post("/admin-post", authenticate, isAdmin, validatePost,PostController.createPost );
-router.post("/admin-post", authenticate, isAdmin, validatePost,PostController.updatePost );
-router.post("/admin-post", authenticate, isAdmin, validatePost,PostController.deletePost );
+const upload = multer();
+router.post("/create", authenticate, isAdmin, upload.single("file"), PostController.createPost);
+router.get("/posts", PostController.getAllPosts);
+router.get("/posts/:id", PostController.getPostById);
+router.delete("/posts/:id", authenticate, isAdmin, PostController.deletePost);
+router.patch("/posts/:id", authenticate, validateUpdatePost, isAdmin, PostController.updatePost);
+
+
 export default router;
+
+
+

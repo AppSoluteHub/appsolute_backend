@@ -41,7 +41,19 @@ export class CommentService {
     }
   }
 
-  async updateComment(commentId: string, data: UpdateCommentDto) {
+  async updateComment(commentId: string,authorId: string ,data: UpdateCommentDto) {
+      const existingComment = await prisma.comment.findUnique({
+    where: { id: commentId },
+    select: { authorId: true },
+  });
+
+  if (!existingComment) {
+    throw new Error("Comment not found");
+  }
+
+  if (existingComment.authorId !== authorId) {
+    throw new Error("Unauthorized: You can only update your own comment");
+  }
     const updatedComment = await prisma.comment.update({
       where: { id: commentId },
       data,
@@ -56,14 +68,18 @@ export class CommentService {
     return updatedComment;
   }
 
-  async deleteComment(commentId: string) {
-    const deletedComment = await prisma.comment.delete({
-      where: { id: commentId },
-    });
+  async getCommentById(commentId: string) {
+  const comment = await prisma.comment.findUnique({
+    where: { id: commentId },
+  });
+  return comment;
+}
 
- 
-    // await redisClient.publish("delete-comment", JSON.stringify({ commentId }));
+async deleteComment(commentId: string) {
+  const deletedComment = await prisma.comment.delete({
+    where: { id: commentId },
+  });
+  return deletedComment;
+}
 
-    return deletedComment;
-  }
 }

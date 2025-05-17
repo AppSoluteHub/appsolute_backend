@@ -3,65 +3,112 @@ import PostService from "../services/blog.service";
 import cloudinary from "../../../config/cloudinary";
 import { BadRequestError, UnAuthorizedError } from "../../../lib/appError";
 import appResponse from "../../../lib/appResponse";
-import { PostCategory } from "@prisma/client";
 
 class PostController {
-  static async createPost(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const userId = req.user?.id as string;
-      const { title, description, category, contributors, isPublished } = req.body;
+ 
 
-      if (!userId) throw new UnAuthorizedError("Unauthorized");
-      if (!title || !description || !category)
-        throw new BadRequestError(
-          "Title, category, and description are required"
-        );
+static async createPost(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.id as string;
 
-      let imageUrl: string = "";
+    if (!userId) throw new UnAuthorizedError("Unauthorized");
 
-      if (req.file) {
-        try {
-          const file = req.file as Express.Multer.File;
-          imageUrl = await new Promise<string>((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-              { folder: "AppSolute" },
-              (error, result) => {
-                if (error)
-                  return reject(
-                    new BadRequestError("Failed to upload image to Cloudinary")
-                  );
-                if (result) return resolve(result.secure_url);
-              }
-            );
-            uploadStream.end(file.buffer);
-          });
-        } catch (error) {
-          return next(error);
-        }
+    const {
+      title,
+      description,
+      categories,
+      tags,       
+      contributors,
+      isPublished,
+    } = req.body;
+
+  
+    let parsedCategories: string[] = [];
+    if (categories) {
+      try {
+        parsedCategories = JSON.parse(categories);
+      } catch {
+        parsedCategories = Array.isArray(categories)
+          ? categories
+          : [categories];
       }
-
-      const post = await PostService.createPost(userId, {
-        title,
-        description,
-        category: category as PostCategory,
-        isPublished,
-        contributors,
-        imageUrl,
-      });
-
-      res.status(201).json({
-        success: true,
-        message: "Post created successfully",
-        data: post,
-      });
-    } catch (error) {
-      next(error);
     }
+
+   
+    const parsedTags: string[] = tags
+      ? typeof tags === "string"
+          ? tags.split(",").map(t => t.trim()).filter(Boolean)
+          : Array.isArray(tags)
+            ? tags
+            : []
+      : [];
+
+ 
+    let parsedContributors: string[] = [];
+    if (contributors) {
+      try {
+        parsedContributors = JSON.parse(contributors);
+      } catch {
+        parsedContributors = Array.isArray(contributors)
+          ? contributors
+          : [contributors];
+      }
+    }
+
+   
+    if (
+      !title ||
+      !description ||
+      parsedCategories.length === 0
+    ) {
+      throw new BadRequestError(
+        "Title, description and at least one category are required"
+      );
+    }
+
+   
+    let imageUrl = "";
+    if (req.file) {
+      const file = req.file as Express.Multer.File;
+      imageUrl = await new Promise<string>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "AppSolute" },
+          (err, result) => {
+            if (err) return reject(new BadRequestError("Image upload failed"));
+            resolve(result!.secure_url);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+    }
+
+  
+    const post = await PostService.createPost(userId, {
+      title,
+      description,
+      categories: parsedCategories,
+      tags: parsedTags,
+      contributors: parsedContributors,
+      isPublished: Boolean(isPublished),
+      imageUrl,
+    });
+
+     res.status(201).json({
+      success: true,
+      message: "Post created successfully",
+      data: post,
+    });
+    return;
+  } catch (err) {
+    return next(err);
   }
+}
+
+
 
   static async getAllPosts(
     req: Request,
@@ -83,38 +130,51 @@ class PostController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const { id } = req.params;
-      const post = await PostService.getPostById(id);
+      const { postId } = req.params;
+      const post = await PostService.getPostById(postId);
       res.send(appResponse("Post fetched successfully", post));
     } catch (error: any) {
       next(error);
     }
   }
 
-  static async updatePost(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> {
-    try {
-      const userId = req.user?.id as string;
-      const { id } = req.params;
-      const { title, description, imageUrl, isPublished } = req.body;
+static async updatePost(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user?.id as string;
+    const { postId } = req.params;
+    const {
+      title,
+      description,
+      imageUrl,
+      isPublished,
+      tags,
+      categories,
+      contributors,
+    } = req.body;
+ 
+    if (!userId) throw new UnAuthorizedError("You are not Authenticated");
 
-      if (!userId) throw new UnAuthorizedError("You are not Authenticated");
-      const updatedPost = await PostService.updatePost(id, userId, {
-        title,
-        description,
-        imageUrl,
-        isPublished,
-      });
+    const updatedPost = await PostService.updatePost(postId, userId, {
+      title,
+      description,
+      imageUrl,
+      isPublished,
+      tags,
+      categories,
+      contributors,
+    });
 
-      if (!updatedPost) throw new BadRequestError("Post not found");
-      res.send(appResponse("Post updated successfully", updatedPost));
-    } catch (error: any) {
-      next(error);
-    }
+    res.send(appResponse("Post updated successfully", updatedPost));
+  } catch (error: any) {
+    next(error);
   }
+}
+
+
 
   static async deletePost(
     req: Request,
@@ -123,11 +183,11 @@ class PostController {
   ): Promise<void> {
     try {
       const userId = req.user?.id as string;
-      const { id } = req.params;
+      const { postId } = req.params;
 
       if (!userId) throw new UnAuthorizedError("You are not Authenticated");
 
-      await PostService.deletePost(id, userId);
+      await PostService.deletePost(postId, userId);
 
       res.send(appResponse("Post deleted successfully"));
     } catch (error: any) {
