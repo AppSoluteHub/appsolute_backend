@@ -5,7 +5,7 @@ const commentService = new CommentService();
 
 export class CommentController {
   async createComment(req: Request, res: Response): Promise<void> {
-    console.log("here")
+  
     try {
       const { postId } = req.params;
       const { body } = req.body;
@@ -43,34 +43,74 @@ export class CommentController {
       const comments = await commentService.getCommentsByPostId(postId);
       res.status(200).json(comments);
     } catch (error) {
-      // res.status(500).json({ error: "Failed to fetch comments" });
+      res.status(500).json({ error: "Failed to fetch comments" });
       console.log(error);
       next(error);
     }
   }
 
-  async updateComment(req: Request, res: Response) {
-    try {
-      const { commentId } = req.params;
-      const { body } = req.body;
-      console.log(body, "body");
-      console.log(commentId, "commentId");
-      const updatedComment = await commentService.updateComment(commentId, {
-        body,
-      });
-      res.status(200).json(updatedComment);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to update comment" });
-    }
-  }
+ 
+  async updateComment(req: Request, res: Response): Promise<void> {
+  try {
+    const { commentId } = req.params;
+    const { body } = req.body;
+    const authorId = req.user?.id as string;
 
-  async deleteComment(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      await commentService.deleteComment(id);
-      res.status(204).send("Successfully deleted comment");
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete comment" });
+    if (!body) {
+       res.status(400).json({ error: "Comment body is required" });
+      return;
     }
+
+    const updatedComment = await commentService.updateComment(commentId, authorId, { body });
+     res.status(200).json(updatedComment);
+    return;
+
+  } catch (error: any) {
+    if (error.message === "Unauthorized: You can only update your own comment") {
+       res.status(403).json({ error: error.message });
+       return;
+    }
+
+    if (error.message === "Comment not found") {
+       res.status(404).json({ error: error.message });
+        return;
+    }
+
+     res.status(500).json({ error: "Failed to update comment" });
+     return;
   }
+}
+
+
+
+  async deleteComment(req: Request, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const currentUser = req.user;
+
+    if (!currentUser) {
+       res.status(401).json({ error: "Unauthorized" });
+       return;
+    }
+
+    // Fetch the comment first to check ownership
+    const comment = await commentService.getCommentById(id);
+    if (!comment) {
+       res.status(404).json({ error: "Comment not found" });
+        return;
+    }
+
+    // Check if current user is admin or owner of the comment
+    if (currentUser.role !== "ADMIN" && comment.authorId !== currentUser.id) {
+       res.status(403).json({ error: "Forbidden: You can only delete your own comments" });
+        return;
+    }
+
+    await commentService.deleteComment(id);
+    res.status(200).json("Successfully deleted comment");
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete comment" });
+  }
+}
+
 }

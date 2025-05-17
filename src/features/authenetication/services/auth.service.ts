@@ -72,8 +72,8 @@ static async register({
       });
     }
 
-    const verifyLink = `http://localhost:3001/verify-email?token=${verificationToken}`;
-
+    const verifyLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
+  console.log(verifyLink)
     const emailTemplate = `
       <html>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
@@ -202,7 +202,7 @@ static async register({
       },
     });
 
-    const verifyLink = `https://appsolutehub.vercel.app/verify-email?token=${verificationToken}`;
+    const verifyLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
 
     const emailTemplate = `
       <html>
@@ -284,7 +284,7 @@ static async register({
       data: { resetToken: resetTokenHash, resetTokenExpires },
     });
 
-    const resetLink = `https://appsolutehub.vercel.app/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_BASE_URL}/reset-password?token=${resetToken}`;
     const emailTemplate = `<p>Click <a href="${resetLink}">here</a> to reset your password.</p>`;
 
     await sendEmail({

@@ -115,7 +115,7 @@ export default async function authenticate(
 ): Promise<void> {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    res.status(401).json({ success: false, message: "No token provided or malformed token" });
+    res.status(401).json({ success: false, message: "No token provided or malformed token please login" });
     return;
   }
 

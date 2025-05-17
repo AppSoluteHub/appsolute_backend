@@ -21,7 +21,7 @@
     }
   },
   "paths": {
-    "/users": {
+    "/api/v1/users": {
       "get": {
         "summary": "Get all users",
         "tags": ["user"],
@@ -80,7 +80,7 @@
         }
       }
     },
-    "/register": {
+    "/api/v1/register": {
       "post": {
         "summary": "Register a new user",
         "tags": [
@@ -138,7 +138,7 @@
         }
       }
     },
-   "/users/login": {
+   "/api/v1/users/login": {
   "post": {
     "summary": "Login a user",
     "tags": ["auth"],
@@ -351,229 +351,174 @@
         }
       }
     },
-    "/leaderboard": {
-  "get": {
-    "summary": "Get leaderboard",
-    "tags": ["leaderboard"],
-    "description": "Retrieve the leaderboard with top users based on their scores. Includes user fullname.",
-    "parameters": [
-      {
-        "name": "limit",
-        "in": "query",
-        "description": "Number of top users to retrieve",
-        "required": false,
-        "type": "integer",
-        "default": 10
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "List of top users in the leaderboard",
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "userId": { "type": "string", "example": "12345" },
-              "fullname": { "type": "string", "example": "John Doe" },
-              "score": { "type": "integer", "example": 1500 },
-              "answered": { "type": "integer", "example": 100 },
-              "rank": { "type": "integer", "example": 1 }
+
+
+ 
+  "/api/v1/posts": {
+    "post": {
+      "summary": "Create a new blog post",
+      "tags": ["Posts"],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "imageUrl": { "type": "string" },
+                "categories": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "tags": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "contributors": {
+                  "type": "array",
+                  "items": { "type": "string", "format": "email" }
+                },
+                "isPublished": { "type": "boolean" }
+              },
+              "required": ["title", "description"]
+            },
+            "example": {
+              "title": "The Art & Science of Design",
+              "description": "Design is more than just aesthetics...",
+              "imageUrl": "https://example.com/image.jpg",
+              "categories": ["tech", "database"],
+              "tags": ["prisma", "orm", "nodejs"],
+              "contributors": ["alice@example.com", "bob@example.com"],
+              "isPublished": true
             }
           }
         }
       },
-      "400": { "description": "Invalid input" }
-    }
-  },
-  "post": {
-    "summary": "Add a leaderboard entry",
-    "tags": ["leaderboard"],
-    "description": "Create a new leaderboard entry for a user.",
-    "parameters": [
-      {
-        "name": "leaderboardData",
-        "in": "body",
-        "description": "Leaderboard entry details",
-        "required": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "userId": { "type": "string", "example": "12345", "format": "uuid" },
-            "score": { "type": "number", "example": 1200, "minimum": 0 },
-            "answered": { "type": "integer", "example": 50, "minimum": 0 }
-          },
-          "required": ["userId", "score"]
+      "responses": {
+        "201": {
+          "description": "Post created successfully"
         }
       }
-    ],
-    "responses": {
-      "201": { "description": "Leaderboard entry created successfully" },
-      "400": { "description": "Invalid input" }
-    }
-  },
-  "put": {
-    "summary": "Update leaderboard entry",
-    "tags": ["leaderboard"],
-    "description": "Update the leaderboard score for a user.",
-    "parameters": [
-      {
-        "name": "userId",
-        "in": "body",
-        "description": "User ID and updated score",
-        "required": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "userId": { "type": "string", "example": "12345" },
-            "score": { "type": "number", "example": 1600, "minimum": 0 },
-            "answered": { "type": "integer", "example": 75, "minimum": 0 }
-          },
-          "required": ["userId", "score"]
+    },
+    "get": {
+      "summary": "Get all posts",
+      "tags": ["Posts"],
+      "responses": {
+        "200": {
+          "description": "A list of posts"
         }
       }
-    ],
-    "responses": {
-      "200": { "description": "Leaderboard entry updated successfully" },
-      "404": { "description": "User not found" },
-      "400": { "description": "Invalid input" }
     }
-  }
-},
-"/posts": {
-  "get": {
-    "summary": "Get all blog posts",
-    "tags": ["blog Post"],
-    "description": "Retrieve a list of all blog posts. Optionally, filter by category or published status.",
-    "parameters": [
-      {
-        "name": "category",
-        "in": "query",
-        "description": "Filter posts by category",
-        "required": false,
-        "type": "string",
-        "enum": ["AI", "TECHNOLOGY", "MARKETING", "DESIGN", "SOFTWARE"]
-      },
-      {
-        "name": "isPublished",
-        "in": "query",
-        "description": "Filter posts by publication status",
-        "required": false,
-        "type": "boolean"
+  },
+
+  "/api/v1/posts/{postId}": {
+    "get": {
+      "summary": "Get a single post by ID",
+      "tags": ["Posts"],
+      "parameters": [
+        {
+          "name": "postId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "65b2a3df29fa0e001f586011"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Post found"
+        },
+        "404": {
+          "description": "Post not found"
+        }
       }
-    ],
-    "responses": {
-      "200": {
-        "description": "List of blog posts",
-        "schema": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string", "example": "12345" },
-              "title": { "type": "string", "example": "Exploring AI" },
-              "description": { "type": "string", "example": "A comprehensive guide to AI" },
-              "isPublished": { "type": "boolean", "example": true },
-              "imageUrl": { "type": "string", "example": "https://example.com/image.jpg" },
-              "category": { "type": "string", "example": "AI" }
+    },
+    "delete": {
+      "summary": "Delete a post by ID",
+      "tags": ["Posts"],
+      "parameters": [
+        {
+          "name": "postId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "65b2a3df29fa0e001f586011"
+        }
+      ],
+      "responses": {
+        "200": {
+          "description": "Post deleted successfully"
+        },
+        "404": {
+          "description": "Post not found"
+        }
+      }
+    },
+    "patch": {
+      "summary": "Update a post by ID",
+      "tags": ["Posts"],
+      "parameters": [
+        {
+          "name": "postId",
+          "in": "path",
+          "required": true,
+          "schema": { "type": "string" },
+          "example": "65b2a3df29fa0e001f586011"
+        }
+      ],
+      "requestBody": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "description": { "type": "string" },
+                "imageUrl": { "type": "string" },
+                "categories": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "tags": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "contributors": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "isPublished": { "type": "boolean" }
+              }
+            },
+            "example": {
+              "title": "Updated Post Title",
+              "description": "Updated post description",
+              "imageUrl": "https://example.com/updated.jpg",
+              "categories": ["design"],
+              "tags": ["ux", "ui"],
+              "contributors": ["new@example.com"],
+              "isPublished": false
             }
           }
         }
       },
-      "400": { "description": "Invalid input" }
-    }
-  },
-  "post": {
-    "summary": "Create a new blog post",
-    "tags": ["blog Post"],
-    "description": "Create a new blog post with the provided details.",
-    "parameters": [
-      {
-        "name": "postData",
-        "in": "body",
-        "description": "Details of the blog post to create",
-        "required": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "title": { "type": "string", "example": "Exploring AI" },
-            "description": { "type": "string", "example": "A comprehensive guide to AI" },
-            "isPublished": { "type": "boolean", "example": true },
-            "imageUrl": { "type": "string", "example": "https://example.com/image.jpg" },
-            "category": {
-              "type": "string",
-              "enum": ["AI", "TECHNOLOGY", "MARKETING", "DESIGN", "SOFTWARE"],
-              "example": "AI"
-            }
-          },
-          "required": ["title", "description", "imageUrl"]
+      "responses": {
+        "200": {
+          "description": "Post updated successfully"
+        },
+        "404": {
+          "description": "Post not found"
         }
       }
-    ],
-    "responses": {
-      "201": { "description": "Blog post created successfully" },
-      "400": { "description": "Invalid input" }
-    }
-  },
-  "put": {
-    "summary": "Update a blog post",
-    "tags": ["blog Post"],
-    "description": "Update an existing blog post by ID.",
-    "parameters": [
-      {
-        "name": "postId",
-        "in": "path",
-        "description": "ID of the blog post to update",
-        "required": true,
-        "type": "string"
-      },
-      {
-        "name": "postData",
-        "in": "body",
-        "description": "Updated blog post details",
-        "required": true,
-        "schema": {
-          "type": "object",
-          "properties": {
-            "title": { "type": "string", "example": "Updated AI Guide" },
-            "description": { "type": "string", "example": "An updated guide to AI" },
-            "isPublished": { "type": "boolean", "example": true },
-            "imageUrl": { "type": "string", "example": "https://example.com/new-image.jpg" },
-            "category": {
-              "type": "string",
-              "enum": ["AI", "TECHNOLOGY", "MARKETING", "DESIGN", "SOFTWARE"],
-              "example": "TECHNOLOGY"
-            }
-          },
-          "required": ["title", "description"]
-        }
-      }
-    ],
-    "responses": {
-      "200": { "description": "Blog post updated successfully" },
-      "404": { "description": "Blog post not found" },
-      "400": { "description": "Invalid input" }
-    }
-  },
-  "delete": {
-    "summary": "Delete a blog post",
-    "tags": ["blog post"],
-    "description": "Delete an existing blog post by ID.",
-    "parameters": [
-      {
-        "name": "postId",
-        "in": "path",
-        "description": "ID of the blog post to delete",
-        "required": true,
-        "type": "string"
-      }
-    ],
-    "responses": {
-      "200": { "description": "Blog post deleted successfully" },
-      "404": { "description": "Blog post not found" }
     }
   }
-}
+
+
+
+
        
   }
 }
