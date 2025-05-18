@@ -92,8 +92,8 @@ export class UserController {
 
   static async updateUserRole(req: Request, res: Response): Promise<void> {
     try {
-      const { userId } = req.params;
-      const { role } = req.body;
+      
+      const { role, fullName,email } = req.body;
 
       // Validate role presence
       if (!role) {
@@ -144,7 +144,7 @@ export class UserController {
       // Update user role only
       const updates = { role };
 
-      const updatedUser = await UserService.updateUserRole(userId, updates);
+      const updatedUser = await UserService.updateUserRole(email, fullName, updates);
 
       res.status(200).json({
         message: "User role updated successfully",
