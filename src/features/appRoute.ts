@@ -24,7 +24,7 @@ export default (appRouter :any) => {
   appRouter.use("/contents",contentRoute);
   appRouter.use("/leaderborad",leaderboardRoute);
   appRouter.use("/subscribers",contactRoute);
-  // appRouter.use("/admin", userPageRoute);
+  appRouter.use("/admin", userPageRoute);
   // appRouter.use("/admin",adminUserRoute);
   // appRouter.use("/admin",adminTaskRoute);
   // appRouter.use("/admin",adminCommentRoute);

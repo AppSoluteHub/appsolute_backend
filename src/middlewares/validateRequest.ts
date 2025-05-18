@@ -1,8 +1,21 @@
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
+import Joi from 'joi';
+import { BadRequestError } from '../lib/appError';
 
-const validateRequest = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.body) return res.status(400).json({ error: "Invalid request data" });
-  next();
+export const validateRequest = (schema: Joi.ObjectSchema) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const { error } = schema.validate(req.body, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      const errorMessage = error.details
+        .map((detail) => detail.message)
+        .join(', ');
+      throw new BadRequestError(errorMessage);
+    }
+
+    next();
+  };
 };
-
-export default validateRequest;

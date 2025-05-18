@@ -1,6 +1,6 @@
 import { Request, Router } from "express";
 import PostController from "../controllers/blog.controller";
-import authenticate, { isAdmin, isSuperAdmin } from "../../../middlewares/auth.middleware";
+import authenticate, { isAdmin } from "../../../middlewares/auth.middleware";
 import { validatePost } from "../../../validators/post.validator";
 import multer from 'multer';
 import { CommentController } from "../../comments/comment.controller";
@@ -15,7 +15,7 @@ const router = Router();
 
 const upload = multer();
 
-router.post("/", authenticate,isAdmin,isSuperAdmin, upload.single("file"), PostController.createPost);
+router.post("/", authenticate,isAdmin, upload.single("file"), PostController.createPost);
 router.get("/", PostController.getAllPosts);
 router.get("/:postId", PostController.getPostById);
 router.delete("/:postId", authenticate, PostController.deletePost);

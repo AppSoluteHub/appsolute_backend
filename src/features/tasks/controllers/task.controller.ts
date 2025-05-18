@@ -4,40 +4,6 @@ import { use } from "passport";
 import { BadRequestError } from "../../../lib/appError";
 
 
-// export const createTaskHandler = async (req: Request, res: Response): Promise<void> => {
-//   try {
-//     const { title, tags, url, points, questions } = req.body;
-
-   
-//     if (!title || !tags || !url || !points || !questions || !Array.isArray(questions)) {
-//       res.status(400).json({ error: "All fields are required and 'questions' must be an array" });
-//       return;
-//     }
-
-//     if (!Array.isArray(tags)) {
-//       res.status(400).json({ error: "Tags must be an array" });
-//       return;
-//     }
-
-   
-//     for (const question of questions) {
-//       if (!question.questionText || !question.options || !question.correctAnswer || !Array.isArray(question.options)) {
-//         res.status(400).json({ error: "Each question must have a questionText, options (array), and a correctAnswer" });
-//         return;
-//       }
-//     }
-
-//     const task = await createTaskWithQuestions(title, tags, url, points, questions);
-//     res.status(201).json(task);
-//   } catch (error) {
-//     console.error("Error creating task:", error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// };
-
-
-// controllers/taskController.ts
-
 
 export async function createTaskHandler(
   req: Request,

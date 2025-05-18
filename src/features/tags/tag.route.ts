@@ -1,12 +1,13 @@
 import express from 'express';
 import * as tagController from '../tags/tag.controller';
+import authenticate, { isAdmin, isSuperAdmin } from '../../middlewares/auth.middleware';
 
 const router = express.Router();
 
-router.post('/', tagController.createTagController);
+router.post('/',authenticate,isAdmin, tagController.createTagController);
 router.get('/', tagController.getAllTags);
 router.get('/:id', tagController.getTagById);
-router.put('/:id', tagController.updateTag);
-router.delete('/:id', tagController.deleteTag);
+router.patch('/:id',authenticate,isAdmin,tagController.updateTag);
+router.delete('/:id',authenticate,isAdmin,tagController.deleteTag);
 
 export default router;
