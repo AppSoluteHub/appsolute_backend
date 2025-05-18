@@ -8,6 +8,7 @@ import {
 } from "../../lib/appError";
 import bcrypt from "bcryptjs";
 import cloudinary from "../../config/cloudinary";
+import e from "express";
 
 const prisma = new PrismaClient();
 
@@ -213,16 +214,28 @@ export class UserService {
     }
   }
   
- static async updateUserRole(userId: string, updates: { role?: string }) {
+ static async updateUserRole(email:string,fullName:string, updates: { role?: string }) {
     const data: Prisma.UserUpdateInput = {};
 
     if (updates.role) {
       data.role = updates.role as Role; 
       
     }
+const existingUser = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+      },
+    });
+    if (!existingUser) {
+      throw new NotFoundError("User not found");
+    }
 
+    const existUserId = existingUser?.id;
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: existUserId },
       data,
       select: {
         id: true,
