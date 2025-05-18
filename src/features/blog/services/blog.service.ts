@@ -1,5 +1,5 @@
-import {  PrismaClient } from "@prisma/client";
-import {  UpdatePostData } from "../../../interfaces/post.interface";
+import { PrismaClient } from "@prisma/client";
+import { UpdatePostData } from "../../../interfaces/post.interface";
 
 import {
   AppError,
@@ -25,12 +25,12 @@ export interface PostData {
 function normalizeToArray(input?: string | string[]): string[] {
   if (!input) return [];
 
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     try {
       const parsed = JSON.parse(input);
       return Array.isArray(parsed) ? parsed : [parsed];
     } catch {
-      return input.split(',').map((item) => item.trim());
+      return input.split(",").map((item) => item.trim());
     }
   }
 
@@ -38,44 +38,127 @@ function normalizeToArray(input?: string | string[]): string[] {
 }
 
 class PostService {
- 
- static async createPost(userId: string, postData: PostData) {
-  const {
-    title,
-    description,
-    imageUrl,
-    categories,
-    tags,
-    contributors, // expected to be array of emails
-    isPublished,
-  } = postData;
+  //  static async createPost(userId: string, postData: PostData) {
+  //   const {
+  //     title,
+  //     description,
+  //     imageUrl,
+  //     categories,
+  //     tags,
+  //     contributors,
+  //     isPublished,
+  //   } = postData;
 
-  if (!title || !description) {
-    throw new BadRequestError("Title and description are required");
-  }
+  //   if (!title || !description) {
+  //     throw new BadRequestError("Title and description are required");
+  //   }
 
-  // Step 1: Fetch users from contributors emails
-  let contributorUsers :any = [];
-  if (contributors.length) {
-    contributorUsers = await prisma.user.findMany({
-      where: { email: { in: contributors } },
-    });
+  //   let contributorUsers :any = [];
+  //   if (contributors.length) {
+  //     contributorUsers = await prisma.user.findMany({
+  //       where: { email: { in: contributors } },
+  //     });
 
-    const foundEmails = contributorUsers.map((user : any) => user.email);
-    const missingEmails = contributors.filter(
-      (email) => !foundEmails.includes(email)
-    );
+  //     const foundEmails = contributorUsers.map((user : any) => user.email);
+  //     const missingEmails = contributors.filter(
+  //       (email) => !foundEmails.includes(email)
+  //     );
 
-    if (missingEmails.length > 0) {
+  //     if (missingEmails.length > 0) {
+  //       throw new BadRequestError(
+  //         `Contributor(s) not found: ${missingEmails.join(", ")}`
+  //       );
+  //     }
+  //   }
+
+  //   const contributorIds = contributorUsers.map((user :any) => user.id);
+
+  //   try {
+  //     const post = await prisma.post.create({
+  //       data: {
+  //         title,
+  //         description,
+  //         imageUrl,
+  //         isPublished,
+  //         authorId: userId,
+
+  //         contributorsList: {
+  //           create: contributorIds.map((uid :any) => ({ userId: uid })),
+  //         },
+
+  //         tags: {
+  //           create: tags.map((tagName) => ({
+  //             tag: {
+  //               connectOrCreate: {
+  //                 where: { name: tagName },
+  //                 create: { name: tagName },
+  //               },
+  //             },
+  //           })),
+  //         },
+
+  //         categories: {
+  //           create: categories.map((catName) => ({
+  //             category: {
+  //               connectOrCreate: {
+  //                 where: { name: catName },
+  //                 create: { name: catName },
+  //               },
+  //             },
+  //           })),
+  //         },
+  //       },
+
+  //       include: {
+  //         contributorsList: { include: { user: true } },
+  //         tags: { include: { tag: true } },
+  //         categories: { include: { category: true } },
+  //       },
+  //     });
+
+  //     return post;
+  //   } catch (err: any) {
+  //     console.error("Error in PostService.createPost:", err);
+  //     if (err instanceof BadRequestError) throw err;
+  //     throw new InternalServerError("Failed to create post");
+  //   }
+  // }
+
+  static async createPost(
+    userId: string,
+    editorRole: string,
+    postData: PostData
+  ) {
+    const {
+      title,
+      description,
+      imageUrl,
+      categories,
+      tags,
+      contributors: contributorEmails,
+      isPublished,
+    } = postData;
+
+    if (!title || !description) {
+      throw new BadRequestError("Title and description are required");
+    }
+
+    const existingUsers = contributorEmails.length
+      ? await prisma.user.findMany({
+          where: { email: { in: contributorEmails } },
+        })
+      : [];
+
+    const foundEmails = existingUsers.map((u) => u.email);
+    const missing = contributorEmails.filter((e) => !foundEmails.includes(e));
+    if (missing.length) {
       throw new BadRequestError(
-        `Contributor(s) not found: ${missingEmails.join(", ")}`
+        `Contributor(s) not found: ${missing.join(", ")}`
       );
     }
-  }
 
-  const contributorIds = contributorUsers.map((user :any) => user.id);
+    const contributorNames = existingUsers.map((u) => u.fullName);
 
-  try {
     const post = await prisma.post.create({
       data: {
         title,
@@ -83,28 +166,31 @@ class PostService {
         imageUrl,
         isPublished,
         authorId: userId,
+        editorRole,
+
+        contributors: contributorNames,
 
         contributorsList: {
-          create: contributorIds.map((uid :any) => ({ userId: uid })),
+          create: existingUsers.map((u) => ({ userId: u.id })),
         },
 
         tags: {
-          create: tags.map((tagName) => ({
+          create: tags.map((t) => ({
             tag: {
               connectOrCreate: {
-                where: { name: tagName },
-                create: { name: tagName },
+                where: { name: t },
+                create: { name: t },
               },
             },
           })),
         },
 
         categories: {
-          create: categories.map((catName) => ({
+          create: categories.map((c) => ({
             category: {
               connectOrCreate: {
-                where: { name: catName },
-                create: { name: catName },
+                where: { name: c },
+                create: { name: c },
               },
             },
           })),
@@ -119,143 +205,139 @@ class PostService {
     });
 
     return post;
-  } catch (err: any) {
-    console.error("Error in PostService.createPost:", err);
-    if (err instanceof BadRequestError) throw err;
-    throw new InternalServerError("Failed to create post");
   }
-}
-
-  
 
   static async getAllPosts(publishedOnly: boolean = true) {
     try {
       return await prisma.post.findMany({
         where: publishedOnly ? { isPublished: true } : undefined,
         include: {
-          author: { select: { id: true, fullName: true, email: true ,profileImage :true} },
+          author: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              profileImage: true,
+            },
+          },
         },
       });
     } catch (error) {
       console.log(error);
-    if (error instanceof AppError) throw error; 
+      if (error instanceof AppError) throw error;
       throw new InternalServerError("Unable to fetch posts");
     }
   }
-
-  
 
   static async getPostById(postId: string) {
     try {
       const post = await prisma.post.findUnique({
         where: { id: postId },
         include: {
-          author: { 
-            select: { id: true, fullName: true, email: true } 
+          author: {
+            select: { id: true, fullName: true, email: true },
           },
           comments: {
             include: {
-              author: { select: { id: true, fullName: true, profileImage: true } }
-            }
+              author: {
+                select: { id: true, fullName: true, profileImage: true },
+              },
+            },
           },
           likes: {
             include: {
-              user: { select: { id: true, fullName: true, email: true } }
-            }
-          }
+              user: { select: { id: true, fullName: true, email: true } },
+            },
+          },
         },
       });
-  
+
       if (!post) throw new NotFoundError("Post not found");
-  
+
       return post;
     } catch (error) {
       console.error("Error fetching post:", error);
-      if (error instanceof AppError) throw error; 
+      if (error instanceof AppError) throw error;
       throw new InternalServerError("Unable to fetch post");
     }
   }
-  
-static async updatePost(
-  postId: string,
-  userId: string,
-  updateData: {
-    title?: string;
-    description?: string;
-    imageUrl?: string;
-    isPublished?: boolean;
-    tags?: string[] | string;
-    categories?: string[] | string;
-    contributors?: string[] | string;
-  }
-) {
-  // 1) normalize inputs (as before)
-  const tags = normalizeToArray(updateData.tags);
-  const categories = normalizeToArray(updateData.categories);
-  const contributors = normalizeToArray(updateData.contributors);
 
-  // 2) fetch & auth
-  const post = await prisma.post.findUnique({ where: { id: postId } });
-  if (!post) throw new NotFoundError("Post not found");
-  if (post.authorId !== userId) throw new UnAuthorizedError("Not authorized");
+  static async updatePost(
+    postId: string,
+    userId: string,
+    updateData: {
+      title?: string;
+      description?: string;
+      imageUrl?: string;
+      isPublished?: boolean;
+      tags?: string[] | string;
+      categories?: string[] | string;
+      contributors?: string[] | string;
+    }
+  ) {
+    // 1) normalize inputs (as before)
+    const tags = normalizeToArray(updateData.tags);
+    const categories = normalizeToArray(updateData.categories);
+    const contributors = normalizeToArray(updateData.contributors);
 
-  // 3) minimal transaction: update & clear joins
-  await prisma.$transaction([
-    prisma.post.update({
+    // 2) fetch & auth
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) throw new NotFoundError("Post not found");
+    if (post.authorId !== userId) throw new UnAuthorizedError("Not authorized");
+
+    // 3) minimal transaction: update & clear joins
+    await prisma.$transaction([
+      prisma.post.update({
+        where: { id: postId },
+        data: {
+          title: updateData.title,
+          description: updateData.description,
+          imageUrl: updateData.imageUrl,
+          isPublished: updateData.isPublished,
+        },
+      }),
+      prisma.postTag.deleteMany({ where: { postId } }),
+      prisma.postCategoryLink.deleteMany({ where: { postId } }),
+      prisma.contributor.deleteMany({ where: { postId } }),
+    ]);
+
+    // 4) outside transaction: re-create tags
+    for (const name of tags) {
+      const tag = await prisma.tag.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      });
+      await prisma.postTag.create({ data: { postId, tagId: tag.id } });
+    }
+
+    // 5) re-create categories
+    for (const name of categories) {
+      const cat = await prisma.category.upsert({
+        where: { name },
+        update: {},
+        create: { name },
+      });
+      await prisma.postCategoryLink.create({
+        data: { postId, categoryId: cat.id },
+      });
+    }
+
+    // 6) re-create contributors
+    for (const uid of contributors) {
+      await prisma.contributor.create({ data: { postId, userId: uid } });
+    }
+
+    // 7) return the fully updated post
+    return prisma.post.findUnique({
       where: { id: postId },
-      data: {
-        title: updateData.title,
-        description: updateData.description,
-        imageUrl: updateData.imageUrl,
-        isPublished: updateData.isPublished,
+      include: {
+        tags: { include: { tag: true } },
+        categories: { include: { category: true } },
+        contributorsList: { include: { user: true } },
       },
-    }),
-    prisma.postTag.deleteMany({ where: { postId } }),
-    prisma.postCategoryLink.deleteMany({ where: { postId } }),
-    prisma.contributor.deleteMany({ where: { postId } }),
-  ]);
-
-  // 4) outside transaction: re-create tags
-  for (const name of tags) {
-    const tag = await prisma.tag.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    await prisma.postTag.create({ data: { postId, tagId: tag.id } });
-  }
-
-  // 5) re-create categories
-  for (const name of categories) {
-    const cat = await prisma.category.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    await prisma.postCategoryLink.create({
-      data: { postId, categoryId: cat.id },
     });
   }
-
-  // 6) re-create contributors
-  for (const uid of contributors) {
-    await prisma.contributor.create({ data: { postId, userId: uid } });
-  }
-
-  // 7) return the fully updated post
-  return prisma.post.findUnique({
-    where: { id: postId },
-    include: {
-      tags: { include: { tag: true } },
-      categories: { include: { category: true } },
-      contributorsList: { include: { user: true } },
-    },
-  });
-}
-
-
-
-
 
   static async deletePost(postId: string, userId: string) {
     try {
@@ -295,13 +377,11 @@ static async updatePost(
       return { message: "Post deleted successfully" };
     } catch (err: any) {
       console.error("Error deleting post:", err);
-      if (err instanceof NotFoundError || err instanceof ForbiddenError) throw err;
+      if (err instanceof NotFoundError || err instanceof ForbiddenError)
+        throw err;
       throw new InternalServerError("Unable to delete post");
     }
   }
-
-
-  
 }
 
 export default PostService;

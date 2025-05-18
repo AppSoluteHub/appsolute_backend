@@ -14,7 +14,7 @@ static async createPost(
 ): Promise<void> {
   try {
     const userId = req.user?.id as string;
-
+   const editorRole = req.user?.role as string;
     if (!userId) throw new UnAuthorizedError("Unauthorized");
 
     const {
@@ -87,7 +87,7 @@ static async createPost(
     }
 
   
-    const post = await PostService.createPost(userId, {
+    const post = await PostService.createPost(userId,editorRole, {
       title,
       description,
       categories: parsedCategories,
