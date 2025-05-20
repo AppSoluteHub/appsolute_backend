@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { createTaskWithQuestions, deleteTaskById, getAllTasks, getTaskById, getTasks, updateTaskWithQuestions  } from "../services/task.service";
-import { use } from "passport";
-import { BadRequestError } from "../../../lib/appError";
+import { BadRequestError, NotFoundError } from "../../../lib/appError";
 
 
 
@@ -83,17 +82,23 @@ export async function createTaskHandler(
   }
 }
 
+export const getTasksHandler = async (req: Request, res: Response):Promise<void> => {
+  const { userId } = req.params;
 
-export const getTasksHandler = async (req: Request, res: Response) => {
-  const {userId} = req.params;
   try {
     const tasks = await getAllTasks(userId);
-    res.json(tasks);
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
+     res.status(200).json(tasks);
+     return;
+  } catch (error: any) {
+    console.error("Error in getTasksHandler:", error);
+    if (error instanceof NotFoundError) {
+       res.status(404).json({ error: error.message });
+       return;
+    }
 
-  
+     res.status(500).json({ error: error.message || "Internal error" });
+     return;
+  }
 };
 
 
@@ -108,6 +113,7 @@ export const getAllTaskHandler = async (req:Request, res: Response) => {
   }
 };
 
+
 export const getTaskByIdHandler = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id as string;
@@ -119,8 +125,6 @@ export const getTaskByIdHandler = async (req: Request, res: Response) => {
     res.status(500).json({ error: error });
   }
 }
-
-
 
 export async function deleteTaskHandler(
   req: Request,
