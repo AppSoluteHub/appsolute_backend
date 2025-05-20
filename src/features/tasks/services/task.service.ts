@@ -89,6 +89,24 @@ export async function createTaskWithQuestions(
 
 
 export const getAllTasks = async (userId: string) => {
+  console.log(userId) 
+ 
+   try {
+    const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      userTasks: true,
+    },
+  });
+  if (!user) {
+    throw new Error("User with this id not found");
+  }
+   } catch (error:any) {
+    console.error("Error fetching user:", error);
+    throw new Error(`${error}`);
+   }
+
+
   return await prisma.task.findMany({
     where: {
       NOT: {
@@ -99,7 +117,8 @@ export const getAllTasks = async (userId: string) => {
         },
       },
     },
-    include: { questions: true },
+    include: { questions: true, tags: true, categories: true , },
+
   });
 };
 
@@ -107,7 +126,7 @@ export const getAllTasks = async (userId: string) => {
 
 export const getTasks = async () => {
   return await prisma.task.findMany({
-    include: { questions: true },
+    include: { questions: true ,tags:true, categories:true},
   });
 };
 
