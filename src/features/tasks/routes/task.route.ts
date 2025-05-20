@@ -6,9 +6,10 @@ import { createTaskSchema, updateTaskSchema, validate } from "../../../validator
 const router = Router();
 
 router.post("/", authenticate,isAdmin,validate(createTaskSchema) ,createTaskHandler);
-router.get("/:userId",getTasksHandler);
-router.get("/allTasks", getAllTaskHandler);
+router.get("/undoneTasks/:userId",getTasksHandler);
 router.get("/:id", getTaskByIdHandler);
+router.get("/", getAllTaskHandler);
+
 router.delete("/:taskId",authenticate,deleteTaskHandler);
 router.patch("/:taskId", authenticate,validate(updateTaskSchema) ,updateTaskHandler);
 

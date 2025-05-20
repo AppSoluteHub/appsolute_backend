@@ -89,7 +89,7 @@ export async function createTaskWithQuestions(
 
 
 export const getAllTasks = async (userId: string) => {
-  console.log(userId) 
+ 
  
    try {
     const user = await prisma.user.findUnique({
