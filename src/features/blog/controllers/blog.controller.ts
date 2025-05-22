@@ -149,15 +149,28 @@ static async updatePost(
     const {
       title,
       description,
-      imageUrl,
       isPublished,
       tags,
       categories,
       contributors,
     } = req.body;
- 
-    if (!userId) throw new UnAuthorizedError("You are not Authenticated");
 
+    if (!userId) throw new UnAuthorizedError("You are not Authenticated");
+     
+     let imageUrl = "";
+    if (req.file) {
+      const file = req.file as Express.Multer.File;
+      imageUrl = await new Promise<string>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "AppSolute" },
+          (err, result) => {
+            if (err) return reject(new BadRequestError("Image upload failed"));
+            resolve(result!.secure_url);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+    }
     const updatedPost = await PostService.updatePost(postId, userId, {
       title,
       description,
@@ -173,6 +186,7 @@ static async updatePost(
     next(error);
   }
 }
+
 
 
 
