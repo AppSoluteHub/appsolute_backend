@@ -57,9 +57,7 @@ export const deleteTagController = async (req: Request, res: Response, next: Nex
   try {
     const deletedTag = await tagService.deleteTag(id);
      res.status(200).json({
-      message: 'Tag deleted successfully',
-      data: deletedTag,
-
+      message: 'Tag deleted successfully'
     });
     return;
   } catch (error) {

@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { NotFoundError } from '../../lib/appError';
 const prisma = new PrismaClient();
 
 export const createCategory = async (data: { name: string }) => {
@@ -20,6 +21,20 @@ export const updateCategory = async (id: string, data: { name?: string }) => {
   });
 };
 
+// export const deleteCategory = async (id: string) => {
+//   return await prisma.category.delete({ where: { id } });
+// };
+
 export const deleteCategory = async (id: string) => {
-  return await prisma.category.delete({ where: { id } });
+  const cat = await prisma.category.findUnique({ where: { id } });
+
+  if (!cat) {
+    throw new NotFoundError(`Tag with id ${id} not found`);
+  }
+
+  const deletedCat = await prisma.category.delete({
+    where: { id },
+  });
+
+  return deletedCat;
 };
