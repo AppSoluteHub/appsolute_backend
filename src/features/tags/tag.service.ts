@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
+import { NotFoundError } from '../../lib/appError';
 const prisma = new PrismaClient();
 
 export const createTag = async (data: { name: string }) => {
@@ -39,5 +40,15 @@ export const updateTag = async (id: string, data: { name?: string }) => {
 };
 
 export const deleteTag = async (id: string) => {
-  return await prisma.tag.delete({ where: { id } });
+  const tag = await prisma.tag.findUnique({ where: { id } });
+
+  if (!tag) {
+    throw new NotFoundError(`Tag with id ${id} not found`);
+  }
+
+  const deletedTag = await prisma.tag.delete({
+    where: { id },
+  });
+
+  return deletedTag;
 };
