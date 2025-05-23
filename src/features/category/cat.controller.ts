@@ -1,5 +1,5 @@
 import * as categoryService from '../category/cat.service';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 export const createCategory = async (req: Request, res: Response) => {
   const { name } = req.body;
@@ -26,7 +26,21 @@ export const updateCategory = async (req: Request, res: Response) => {
   res.json(category);
 };
 
-export const deleteCategory = async (req: Request, res: Response) => {
-  await categoryService.deleteCategory(req.params.id);
-  res.status(204).send();
+// export const deleteCategory = async (req: Request, res: Response) => {
+//   await categoryService.deleteCategory(req.params.id);
+//   res.status(204).send();
+// };
+
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) :Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const deletedCat = await categoryService.deleteCategory(id);
+     res.status(200).json({
+      message: 'Tag deleted successfully'
+    });
+    return;
+  } catch (error) {
+    next(error); 
+  }
 };
