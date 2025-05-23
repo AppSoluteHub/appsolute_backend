@@ -1,5 +1,5 @@
 import * as tagService from '../tags/tag.service';
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 
 // export const createTagController = async (req: Request, res: Response):Promise<void> => {
 //   try {
@@ -51,7 +51,18 @@ export const updateTag = async (req: Request, res: Response) => {
   res.json(tag);
 };
 
-export const deleteTag = async (req: Request, res: Response) => {
-  await tagService.deleteTag(req.params.id);
-  res.status(204).send();
+export const deleteTagController = async (req: Request, res: Response, next: NextFunction) :Promise<void> => {
+  const { id } = req.params;
+
+  try {
+    const deletedTag = await tagService.deleteTag(id);
+     res.status(200).json({
+      message: 'Tag deleted successfully',
+      data: deletedTag,
+
+    });
+    return;
+  } catch (error) {
+    next(error); 
+  }
 };
