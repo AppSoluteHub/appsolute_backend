@@ -32,11 +32,33 @@ export const getTagById = async (id: string) => {
   return await prisma.tag.findUnique({ where: { id } });
 };
 
+// export const updateTag = async (id: string, data: { name?: string }) => {
+//   return await prisma.tag.update({
+//     where: { id },
+//     data,
+//   });
+// };
+
+
 export const updateTag = async (id: string, data: { name?: string }) => {
-  return await prisma.tag.update({
-    where: { id },
-    data,
-  });
+  try {
+    return await prisma.tag.update({
+      where: { id },
+      data,
+    });
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2002' &&
+      Array.isArray((err.meta as { target?: string[] }).target) &&
+      (err.meta as { target: string[] }).target.includes('name')
+    ) {
+      const uniqueError = new Error('A tag with that name already exists.');
+      (uniqueError as any).statusCode = 409;
+      throw uniqueError;
+    }
+    throw err;
+  }
 };
 
 

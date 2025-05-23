@@ -46,11 +46,28 @@ export const getTagById = async (req: Request, res: Response):Promise<void> => {
   res.json(tag);
 };
 
-export const updateTag = async (req: Request, res: Response) => {
-  const tag = await tagService.updateTag(req.params.id, req.body);
-  res.json(tag);
-};
+// export const updateTag = async (req: Request, res: Response) => {
+//   const tag = await tagService.updateTag(req.params.id, req.body);
+//   res.json(tag);
+// };
 
+
+export const updateTagHandler = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+  const { id } = req.params;
+  const data = { name: req.body.name };
+
+  try {
+    const tag = await tagService.updateTag(id, data);
+     res.status(200).json(tag);
+     return;
+  } catch (err: any) {
+    if (err.statusCode === 409) {
+       res.status(409).json({ error: err.message });
+       return
+    }
+    next(err);
+  }
+};
 export const deleteTagController = async (req: Request, res: Response, next: NextFunction) :Promise<void> => {
   const { id } = req.params;
 
