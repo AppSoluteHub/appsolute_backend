@@ -41,6 +41,8 @@ export async function createTaskWithQuestions(
   tags: string[],
   url: string,
   points: number,
+  imageUrl: string,
+  description : string,
   questions: { questionText: string; options: string[]; correctAnswer: string }[]
 ) {
   return prisma.task.create({
@@ -48,7 +50,8 @@ export async function createTaskWithQuestions(
       title,
       url,
       points,
-     
+      imageUrl,
+      description,
       questions: {
         create: questions.map((q) => ({
           questionText: q.questionText,
