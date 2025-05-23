@@ -21,15 +21,30 @@ export const getCategoryById = async (req: Request, res: Response):Promise<void>
   res.json(category);
 };
 
-export const updateCategory = async (req: Request, res: Response) => {
-  const category = await categoryService.updateCategory(req.params.id, req.body);
-  res.json(category);
+// export const updateCategory = async (req: Request, res: Response) => {
+//   const category = await categoryService.updateCategory(req.params.id, req.body);
+//   res.json(category);
+// };
+
+
+export const updateCategory = async (req: Request, res: Response, next: NextFunction):Promise<void> => {
+  const { id } = req.params;
+  const data = { name: req.body.name };
+
+  try {
+    const cat = await categoryService.updateCategory(id, data);
+     res.status(200).json(cat);
+     return;
+  } catch (err: any) {
+    if (err.statusCode === 409) {
+       res.status(409).json({ error: err.message });
+       return
+    }
+    next(err);
+  }
 };
 
-// export const deleteCategory = async (req: Request, res: Response) => {
-//   await categoryService.deleteCategory(req.params.id);
-//   res.status(204).send();
-// };
+
 
 export const deleteCategory = async (req: Request, res: Response, next: NextFunction) :Promise<void> => {
   const { id } = req.params;

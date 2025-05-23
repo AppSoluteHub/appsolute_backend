@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/',authenticate,isAdmin, tagController.createTagController);
 router.get('/', tagController.getAllTags);
 router.get('/:id', tagController.getTagById);
-router.patch('/:id',authenticate,isAdmin,tagController.updateTag);
+router.patch('/:id',authenticate,isAdmin,tagController.updateTagHandler);
 router.delete('/:id',authenticate,isAdmin,tagController.deleteTagController);
 
 export default router;
