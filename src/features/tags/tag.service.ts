@@ -32,12 +32,6 @@ export const getTagById = async (id: string) => {
   return await prisma.tag.findUnique({ where: { id } });
 };
 
-// export const updateTag = async (id: string, data: { name?: string }) => {
-//   return await prisma.tag.update({
-//     where: { id },
-//     data,
-//   });
-// };
 
 
 export const updateTag = async (id: string, data: { name?: string }) => {
