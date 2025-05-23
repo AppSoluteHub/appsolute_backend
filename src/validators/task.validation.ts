@@ -20,7 +20,8 @@ export const createTaskSchema: ObjectSchema = Joi.object({
   url: Joi.string().uri().required(),
 
   points: Joi.number().integer().min(0).required(),
-
+  imageUrl :Joi.string().uri().required(),
+  description: Joi.string().trim().required(),
   questions: Joi.array()
     .items(
       Joi.object({

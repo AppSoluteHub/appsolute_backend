@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { createTaskWithQuestions, deleteTaskById, getAllTasks, getTaskById, getTasks, updateTaskWithQuestions  } from "../services/task.service";
 import { BadRequestError, NotFoundError } from "../../../lib/appError";
+import cloudinary from "../../../config/cloudinary";
 
 
 
@@ -10,7 +11,7 @@ export async function createTaskHandler(
   next: NextFunction
 ) {
   try {
-    const { title, categories, tags, url, points, questions } = req.body;
+    const { title, description, categories, tags, url, points, questions } = req.body;
 
     // — parse categories (JSON string or array or single string)
     let parsedCategories: string[] = [];
@@ -61,7 +62,20 @@ export async function createTaskHandler(
         );
       }
     }
-
+ let imageUrl = "";
+    if (req.file) {
+      const file = req.file as Express.Multer.File;
+      imageUrl = await new Promise<string>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "AppSolute" },
+          (err, result) => {
+            if (err) return reject(new BadRequestError("Image upload failed"));
+            resolve(result!.secure_url);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+    }
     // — call service
     const task = await createTaskWithQuestions(
       title,
@@ -69,6 +83,8 @@ export async function createTaskHandler(
       parsedTags,
       url,
       points,
+      imageUrl,
+      description,
       questions
     );
 
