@@ -21,20 +21,21 @@ export const updateCategory = async (id: string, data: { name?: string }) => {
   });
 };
 
-// export const deleteCategory = async (id: string) => {
-//   return await prisma.category.delete({ where: { id } });
-// };
+
 
 export const deleteCategory = async (id: string) => {
-  const cat = await prisma.category.findUnique({ where: { id } });
-
-  if (!cat) {
-    throw new NotFoundError(`Tag with id ${id} not found`);
+  const category = await prisma.category.findUnique({ where: { id } });
+  if (!category) {
+    throw new NotFoundError(`Category with id ${id} not found`);
   }
 
-  const deletedCat = await prisma.category.delete({
-    where: { id },
-  });
+  try {
+    // Delete associated PostCategoryLink records first
+    await prisma.postCategoryLink.deleteMany({ where: { categoryId: id } });
 
-  return deletedCat;
+    // Now delete the category
+    return await prisma.category.delete({ where: { id } });
+  } catch (err) {
+    throw new Error('Cannot delete category. Please try again later.');
+  }
 };
