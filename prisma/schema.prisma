@@ -148,6 +148,7 @@ model UserBehavior {
   id           String          @id @default(uuid())
   userId       String
   interaction  InteractionType
+  metadata     Json? 
   timestamp    DateTime        @default(now())
   user         User            @relation(fields: [userId], references: [id])
 }

@@ -78,6 +78,27 @@ export class UserService {
       throw new InternalServerError(`Unable to fetch admins ${error.message}`);
     }
   }
+
+   static async getRoles({ search = "" }: { search?: string }) {
+    try {
+      const admins = await prisma.user.findMany({
+        where: {
+          role: {
+            in: ["ADMIN", "SUPERADMIN", "GUEST", "EDITOR", "CONTRIBUTOR"],
+          },
+          OR: [
+            { fullName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
+        },
+      });
+  
+      return admins;
+    } catch (error : any) {
+      console.error("Error fetching admins:", error);
+      throw new InternalServerError(`Unable to fetch admins ${error.message}`);
+    }
+  }
   
 
   static async getUserById(userId: string) {
