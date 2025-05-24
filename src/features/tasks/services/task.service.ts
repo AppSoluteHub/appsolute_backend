@@ -197,6 +197,8 @@ export async function updateTaskWithQuestions(
  
   const updatePayload: any = {};
   if (data.title !== undefined) updatePayload.title = data.title;
+  if (data.description !== undefined) updatePayload.description = data.description;
+  if (data.imageUrl !== undefined) updatePayload.imageUrl = data.imageUrl;
   if (data.url !== undefined)   updatePayload.url = data.url;
   if (data.points !== undefined) updatePayload.points = data.points;
 
