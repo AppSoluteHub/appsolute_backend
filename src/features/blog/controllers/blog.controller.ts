@@ -61,11 +61,10 @@ static async createPost(
    
     if (
       !title ||
-      !description ||
       parsedCategories.length === 0
     ) {
       throw new BadRequestError(
-        "Title, description and at least one category are required"
+        "Title, and at least one category are required"
       );
     }
 
