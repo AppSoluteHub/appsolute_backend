@@ -7,12 +7,12 @@ import multer from "multer";
 const router = Router();
 const upload = multer();
 
-router.post("/", authenticate,isAdmin,validate(createTaskSchema) ,upload.single("file"),createTaskHandler);
+router.post("/", authenticate,isAdmin ,upload.single("file"),createTaskHandler);
 router.get("/undoneTasks/:userId",getTasksHandler);
 router.get("/:id", getTaskByIdHandler);
 router.get("/", getAllTaskHandler);
 
 router.delete("/:taskId",authenticate,deleteTaskHandler);
-router.patch("/:taskId", authenticate,validate(updateTaskSchema) ,updateTaskHandler);
+router.patch("/:taskId", authenticate,upload.single("file"),updateTaskHandler);
 
 export default router;

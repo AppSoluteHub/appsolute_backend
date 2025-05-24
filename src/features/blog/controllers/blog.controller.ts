@@ -25,7 +25,6 @@ static async createPost(
       contributors,
       isPublished,
     } = req.body;
-
   
     let parsedCategories: string[] = [];
     if (categories) {

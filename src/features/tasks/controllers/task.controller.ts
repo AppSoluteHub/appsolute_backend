@@ -11,9 +11,19 @@ export async function createTaskHandler(
   next: NextFunction
 ) {
   try {
-    const { title, description, categories, tags, url, points, questions } = req.body;
 
-    // — parse categories (JSON string or array or single string)
+      // normalize any keys with extra whitespace
+  Object.keys(req.body).forEach((key) => {
+    const trimmed = key.trim();
+    if (trimmed !== key) {
+      req.body[trimmed] = req.body[key];
+      delete req.body[key];
+    }
+  });
+
+    const { title, description, categories, tags, url, points, questions } = req.body;
+    
+    // Parse categories (JSON string or array or single string)
     let parsedCategories: string[] = [];
     if (categories) {
       try {
@@ -25,32 +35,46 @@ export async function createTaskHandler(
       }
     }
 
-    // — parse tags (CSV string or array)
-    const parsedTags: string[] = tags
-      ? typeof tags === "string"
-          ? tags.split(",").map((t) => t.trim()).filter(Boolean)
-          : Array.isArray(tags)
+    // Parse tags (JSON string or array)
+    let parsedTags: string[] = [];
+    if (tags) {
+      try {
+        parsedTags = JSON.parse(tags);
+      } catch {
+        parsedTags = Array.isArray(tags)
           ? tags
-          : []
-      : [];
-    // — validate core fields
+          : [tags];
+      }
+    }
+
+    // Parse questions (JSON string or array)
+    let parsedQuestions: any[] = [];
+    if (questions) {
+      try {
+        parsedQuestions = JSON.parse(questions);
+      } catch {
+        parsedQuestions = Array.isArray(questions)
+          ? questions
+          : [questions];
+      }
+    }
+
+    // Validate core fields
     if (
       !title ||
       parsedCategories.length === 0 ||
       parsedTags.length === 0 ||
       !url ||
       !points ||
-      !questions ||
-      !Array.isArray(questions) ||
-      questions.length === 0
+      parsedQuestions.length === 0
     ) {
       throw new BadRequestError(
         "Title, categories, tags, url, points and questions are all required"
       );
     }
 
-    // — validate questions array shape
-    for (const q of questions) {
+    // Validate questions array shape
+    for (const q of parsedQuestions) {
       if (
         !q.questionText ||
         !q.options ||
@@ -62,7 +86,8 @@ export async function createTaskHandler(
         );
       }
     }
- let imageUrl = "";
+    
+    let imageUrl = "";
     if (req.file) {
       const file = req.file as Express.Multer.File;
       imageUrl = await new Promise<string>((resolve, reject) => {
@@ -76,16 +101,17 @@ export async function createTaskHandler(
         uploadStream.end(file.buffer);
       });
     }
-    // — call service
+
+    // Call service
     const task = await createTaskWithQuestions(
       title,
       parsedCategories,
       parsedTags,
       url,
-      points,
+      Number(points),
       imageUrl,
       description,
-      questions
+      parsedQuestions
     );
 
     res.status(201).json({
@@ -164,128 +190,70 @@ export async function deleteTaskHandler(
 }
 
 
-
-
-// export async function updateTaskHandler(
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) {
-//   try {
-//     const taskId = req.params.taskId;
-//     const { title, categories, tags, url, points, questions } = req.body;
-
-//     if (!taskId) throw new BadRequestError("Task ID is required");
-
-//     let parsedCategories: string[] = [];
-//     if (categories) {
-//       try {
-//         parsedCategories = JSON.parse(categories);
-//       } catch {
-//         parsedCategories = Array.isArray(categories)
-//           ? categories
-//           : [categories];
-//       }
-//     }
-
-//     const parsedTags: string[] = tags
-//       ? typeof tags === "string"
-//         ? tags.split(",").map((t) => t.trim()).filter(Boolean)
-//         : Array.isArray(tags)
-//         ? tags
-//         : []
-//       : [];
-
-//     if (
-//       !title ||
-//       parsedCategories.length === 0 ||
-//       parsedTags.length === 0 ||
-//       !url ||
-//       !points ||
-//       !questions ||
-//       !Array.isArray(questions) ||
-//       questions.length === 0
-//     ) {
-//       throw new BadRequestError(
-//         "Title, categories, tags, url, points and questions are all required"
-//       );
-//     }
-
-//     for (const q of questions) {
-//       if (
-//         !q.questionText ||
-//         !q.options ||
-//         !Array.isArray(q.options) ||
-//         !q.correctAnswer
-//       ) {
-//         throw new BadRequestError(
-//           "Each question must have questionText, options (array), and correctAnswer"
-//         );
-//       }
-//     }
-
-//     const updatedTask = await updateTaskWithQuestions(
-//       taskId,
-//       title,
-//       parsedCategories,
-//       parsedTags,
-//       url,
-//       points,
-//       questions
-//     );
-
-//     res.status(200).json({
-//       success: true,
-//       message: "Task updated successfully",
-//       data: updatedTask,
-//     });
-//   } catch (err) {
-//     next(err);
-//   }
-// }
-
 export async function updateTaskHandler(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
+   
+    Object.keys(req.body).forEach((key) => {
+      const trimmed = key.trim();
+      if (trimmed !== key) {
+        req.body[trimmed] = req.body[key];
+        delete req.body[key];
+      }
+    });
+
     const taskId = req.params.taskId;
-    const { title, categories, tags, url, points, questions } = req.body;
+    if (!taskId) throw new BadRequestError("Task ID is required");
 
-    if (!taskId) {
-      throw new BadRequestError("Task ID is required");
-    }
+    // 2) Destructure raw values
+    const { title, description, categories, tags, url, points, questions } = req.body;
 
+    // 3) Parse categories JSON if needed
     let parsedCategories: string[] | undefined;
     if (categories !== undefined) {
       try {
         parsedCategories = JSON.parse(categories);
       } catch {
-        parsedCategories = Array.isArray(categories)
-          ? categories
-          : [categories];
+        parsedCategories = Array.isArray(categories) ? categories : [categories];
       }
     }
 
-    const parsedTags: string[] | undefined =
-      tags !== undefined
-        ? typeof tags === "string"
-          ? tags.split(",").map((t) => t.trim()).filter(Boolean)
-          : Array.isArray(tags)
-          ? tags
-          : []
-        : undefined;
+    // 4) Parse tags (comma-list or array)
+    let parsedTags: string[] | undefined;
+    if (tags !== undefined) {
+      if (typeof tags === "string" && tags.includes(",")) {
+        parsedTags = tags.split(",").map(t => t.trim()).filter(Boolean);
+      } else if (Array.isArray(tags)) {
+        parsedTags = tags;
+      } else {
+        parsedTags = [tags as string];
+      }
+    }
 
+    // 5) **Parse questions JSON** or wrap in an array
+    let parsedQuestions: any[] | undefined;
     if (questions !== undefined) {
-      if (!Array.isArray(questions) || questions.length === 0) {
-        throw new BadRequestError("Questions must be a non-empty array");
+      try {
+        parsedQuestions = JSON.parse(questions);
+      } catch {
+        // if it wasn’t valid JSON, but is already an array
+        if (Array.isArray(questions)) {
+          parsedQuestions = questions;
+        } else {
+          throw new BadRequestError("Questions must be a JSON array or an actual array");
+        }
       }
 
-      for (const q of questions) {
+      // 6) Validate shape
+      if (!Array.isArray(parsedQuestions) || parsedQuestions.length === 0) {
+        throw new BadRequestError("Questions must be a non-empty array");
+      }
+      for (const q of parsedQuestions) {
         if (
           !q.questionText ||
-          !q.options ||
           !Array.isArray(q.options) ||
           !q.correctAnswer
         ) {
@@ -296,20 +264,38 @@ export async function updateTaskHandler(
       }
     }
 
-    const updatePayload: any = {};
+    // 7) Handle image upload (unchanged)
+    let imageUrl: string | undefined;
+    if (req.file) {
+      const file = req.file as Express.Multer.File;
+      imageUrl = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          { folder: "AppSolute" },
+          (err, result) => {
+            if (err) return reject(new BadRequestError("Image upload failed"));
+            resolve(result!.secure_url);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+    }
 
+    // 8) Build payload
+    const updatePayload: any = {};
     if (title !== undefined) updatePayload.title = title;
-    if (parsedCategories !== undefined)
-      updatePayload.categories = parsedCategories;
+    if (description !== undefined) updatePayload.description = description;
+    if (parsedCategories !== undefined) updatePayload.categories = parsedCategories;
     if (parsedTags !== undefined) updatePayload.tags = parsedTags;
     if (url !== undefined) updatePayload.url = url;
-    if (points !== undefined) updatePayload.points = points;
-    if (questions !== undefined) updatePayload.questions = questions;
+    if (imageUrl !== undefined) updatePayload.imageUrl = imageUrl;
+    if (points !== undefined) updatePayload.points = Number(points);
+    if (parsedQuestions !== undefined) updatePayload.questions = parsedQuestions;
 
     if (Object.keys(updatePayload).length === 0) {
       throw new BadRequestError("No valid fields provided to update");
     }
 
+    // 9) Call your service
     const updatedTask = await updateTaskWithQuestions(taskId, updatePayload);
 
     res.status(200).json({
@@ -321,3 +307,4 @@ export async function updateTaskHandler(
     next(err);
   }
 }
+
