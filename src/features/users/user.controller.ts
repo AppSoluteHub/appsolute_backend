@@ -42,6 +42,25 @@ export class UserController {
     }
   }
 
+   static async getRoles(req: Request, res: Response): Promise<void> {
+    try {
+      const { search } = req.query;
+
+      const admins = await UserService.getAdmins({
+        search: search as string,
+      });
+
+      res.status(200).json({ success: true, data: admins });
+      return;
+    } catch (error) {
+      console.error("Error in getAdmins controller:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+      return;
+    }
+  }
+
   static async getUserById(req: Request, res: Response) {
     try {
       const { userId } = req.params;
