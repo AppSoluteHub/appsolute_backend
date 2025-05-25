@@ -174,7 +174,7 @@ export class UserController {
     }
   }
 
-  static async updateProfileImage(
+static async updateProfileImage(
     req: Request,
     res: Response,
     next: NextFunction
