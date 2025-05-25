@@ -4,36 +4,63 @@ import { UpdateTaskData } from '../../../interfaces/task.interface';
 const prisma = new PrismaClient();
 
 
-// export const createTaskWithQuestions = async (
+
+
+
+// export async function createTaskWithQuestions(
 //   title: string,
-//    categories: string[],
+//   categories: string[],
 //   tags: string[],
 //   url: string,
 //   points: number,
+//   imageUrl: string,
+//   description : string,
 //   questions: { questionText: string; options: string[]; correctAnswer: string }[]
-// ) => {
-//   return await prisma.task.create({
+// ) {
+//   return prisma.task.create({
 //     data: {
 //       title,
-//       categories,
-//       tags,
 //       url,
 //       points,
+//       imageUrl,
+//       description,
 //       questions: {
-//         create: questions.map(q => ({
+//         create: questions.map((q) => ({
 //           questionText: q.questionText,
 //           options: q.options,
 //           correctAnswer: q.correctAnswer,
 //         })),
 //       },
+    
+//       tags: {
+//         create: tags.map((name) => ({
+//           tag: {
+//             connectOrCreate: {
+//               where: { name },
+//               create: { name },
+//             },
+//           },
+//         })),
+//       },
+   
+//       categories: {
+//         create: categories.map((name) => ({
+//           category: {
+//             connectOrCreate: {
+//               where: { name },
+//               create: { name },
+//             },
+//           },
+//         })),
+//       },
 //     },
 //     include: {
 //       questions: true,
+//       tags: { include: { tag: true } },
+//       categories: { include: { category: true } },
 //     },
 //   });
-// };
-
-
+// }
 
 export async function createTaskWithQuestions(
   title: string,
@@ -42,52 +69,55 @@ export async function createTaskWithQuestions(
   url: string,
   points: number,
   imageUrl: string,
-  description : string,
+  description: string,
   questions: { questionText: string; options: string[]; correctAnswer: string }[]
 ) {
-  return prisma.task.create({
-    data: {
-      title,
-      url,
-      points,
-      imageUrl,
-      description,
-      questions: {
-        create: questions.map((q) => ({
-          questionText: q.questionText,
-          options: q.options,
-          correctAnswer: q.correctAnswer,
-        })),
-      },
-    
-      tags: {
-        create: tags.map((name) => ({
-          tag: {
-            connectOrCreate: {
-              where: { name },
-              create: { name },
+  try {
+    return await prisma.task.create({
+      data: {
+        title,
+        url,
+        points,
+        imageUrl,
+        description,
+        questions: {
+          create: questions.map((q) => ({
+            questionText: q.questionText,
+            options: q.options,
+            correctAnswer: q.correctAnswer,
+          })),
+        },
+        tags: {
+          create: tags.map((name) => ({
+            tag: {
+              connectOrCreate: {
+                where: { name },
+                create: { name },
+              },
             },
-          },
-        })),
-      },
-   
-      categories: {
-        create: categories.map((name) => ({
-          category: {
-            connectOrCreate: {
-              where: { name },
-              create: { name },
+          })),
+        },
+        categories: {
+          create: categories.map((name) => ({
+            category: {
+              connectOrCreate: {
+                where: { name },
+                create: { name },
+              },
             },
-          },
-        })),
+          })),
+        },
       },
-    },
-    include: {
-      questions: true,
-      tags: { include: { tag: true } },
-      categories: { include: { category: true } },
-    },
-  });
+      include: {
+        questions: true,
+        tags: { include: { tag: true } },
+        categories: { include: { category: true } },
+      },
+    });
+  } catch (error) {
+    console.error("Error creating task with questions:", error);
+    throw error; 
+  }
 }
 
 

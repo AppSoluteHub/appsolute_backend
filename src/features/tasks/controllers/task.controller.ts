@@ -5,61 +5,165 @@ import cloudinary from "../../../config/cloudinary";
 
 
 
+// export async function createTaskHandler(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ) {
+//   try {
+//   console.log("Request body:", req.body);
+//       // normalize any keys with extra whitespace
+//   Object.keys(req.body).forEach((key) => {
+//     const trimmed = key.trim();
+//     if (trimmed !== key) {
+//       req.body[trimmed] = req.body[key];
+//       delete req.body[key];
+//     }
+//   });
+
+//     const { title, description, categories, tags, url, points, questions } = req.body;
+    
+//     // Parse categories (JSON string or array or single string)
+//     let parsedCategories: string[] = [];
+//     if (categories) {
+//       try {
+//         parsedCategories = JSON.parse(categories);
+//       } catch {
+//         parsedCategories = Array.isArray(categories)
+//           ? categories
+//           : [categories];
+//       }
+//     }
+
+//     // Parse tags (JSON string or array)
+//     let parsedTags: string[] = [];
+//     if (tags) {
+//       try {
+//         parsedTags = JSON.parse(tags);
+//       } catch {
+//         parsedTags = Array.isArray(tags)
+//           ? tags
+//           : [tags];
+//       }
+//     }
+
+//     // Parse questions (JSON string or array)
+//     let parsedQuestions: any[] = [];
+//     if (questions) {
+//       try {
+//         parsedQuestions = JSON.parse(questions);
+//       } catch {
+//         parsedQuestions = Array.isArray(questions)
+//           ? questions
+//           : [questions];
+//       }
+//     }
+
+//     // Validate core fields
+//     if (
+//       !title ||
+//       parsedCategories.length === 0 ||
+//       parsedTags.length === 0 ||
+//       !url ||
+//       !points ||
+//       parsedQuestions.length === 0
+//     ) {
+//       throw new BadRequestError(
+//         "Title, categories, tags, url, points and questions are all required"
+//       );
+//     }
+
+//     // Validate questions array shape
+//     for (const q of parsedQuestions) {
+//       if (
+//         !q.questionText ||
+//         !q.options ||
+//         !Array.isArray(q.options) ||
+//         !q.correctAnswer
+//       ) {
+//         throw new BadRequestError(
+//           "Each question must have questionText, options (array), and correctAnswer"
+//         );
+//       }
+//     }
+    
+//     let imageUrl = "";
+//     if (req.file) {
+//       const file = req.file as Express.Multer.File;
+//       imageUrl = await new Promise<string>((resolve, reject) => {
+//         const uploadStream = cloudinary.uploader.upload_stream(
+//           { folder: "AppSolute" },
+//           (err, result) => {
+//             if (err) return reject(new BadRequestError("Image upload failed"));
+//             resolve(result!.secure_url);
+//           }
+//         );
+//         uploadStream.end(file.buffer);
+//       });
+//     }
+
+//     // Call service
+//     const task = await createTaskWithQuestions(
+//       title,
+//       parsedCategories,
+//       parsedTags,
+//       url,
+//       Number(points),
+//       imageUrl,
+//       description,
+//       parsedQuestions
+//     );
+
+//     res.status(201).json({
+//       success: true,
+//       message: "Task created successfully",
+//       data: task,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// }
+
+
 export async function createTaskHandler(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
+    console.log("Request body:", req.body);
 
-      // normalize any keys with extra whitespace
-  Object.keys(req.body).forEach((key) => {
-    const trimmed = key.trim();
-    if (trimmed !== key) {
-      req.body[trimmed] = req.body[key];
-      delete req.body[key];
-    }
-  });
+    Object.keys(req.body).forEach((key) => {
+      const trimmed = key.trim();
+      if (trimmed !== key) {
+        req.body[trimmed] = req.body[key];
+        delete req.body[key];
+      }
+    });
 
     const { title, description, categories, tags, url, points, questions } = req.body;
-    
-    // Parse categories (JSON string or array or single string)
+
     let parsedCategories: string[] = [];
-    if (categories) {
-      try {
-        parsedCategories = JSON.parse(categories);
-      } catch {
-        parsedCategories = Array.isArray(categories)
-          ? categories
-          : [categories];
-      }
+    try {
+      parsedCategories = JSON.parse(categories);
+    } catch (e) {
+      parsedCategories = Array.isArray(categories) ? categories : [categories];
     }
 
-    // Parse tags (JSON string or array)
     let parsedTags: string[] = [];
-    if (tags) {
-      try {
-        parsedTags = JSON.parse(tags);
-      } catch {
-        parsedTags = Array.isArray(tags)
-          ? tags
-          : [tags];
-      }
+    try {
+      parsedTags = JSON.parse(tags);
+    } catch (e) {
+      parsedTags = Array.isArray(tags) ? tags : [tags];
     }
 
-    // Parse questions (JSON string or array)
     let parsedQuestions: any[] = [];
-    if (questions) {
-      try {
-        parsedQuestions = JSON.parse(questions);
-      } catch {
-        parsedQuestions = Array.isArray(questions)
-          ? questions
-          : [questions];
-      }
+    try {
+      parsedQuestions = JSON.parse(questions);
+    } catch (e) {
+      parsedQuestions = Array.isArray(questions) ? questions : [questions];
     }
 
-    // Validate core fields
     if (
       !title ||
       parsedCategories.length === 0 ||
@@ -68,41 +172,56 @@ export async function createTaskHandler(
       !points ||
       parsedQuestions.length === 0
     ) {
+      console.error("Missing required fields", {
+        title,
+        parsedCategories,
+        parsedTags,
+        url,
+        points,
+        parsedQuestions,
+      });
       throw new BadRequestError(
         "Title, categories, tags, url, points and questions are all required"
       );
     }
 
-    // Validate questions array shape
-    for (const q of parsedQuestions) {
+    for (const [index, q] of parsedQuestions.entries()) {
       if (
         !q.questionText ||
         !q.options ||
         !Array.isArray(q.options) ||
         !q.correctAnswer
       ) {
+        console.error(`Invalid question at index ${index}:`, q);
         throw new BadRequestError(
           "Each question must have questionText, options (array), and correctAnswer"
         );
       }
     }
-    
+
     let imageUrl = "";
     if (req.file) {
-      const file = req.file as Express.Multer.File;
-      imageUrl = await new Promise<string>((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-          { folder: "AppSolute" },
-          (err, result) => {
-            if (err) return reject(new BadRequestError("Image upload failed"));
-            resolve(result!.secure_url);
-          }
-        );
-        uploadStream.end(file.buffer);
-      });
+      try {
+        const file = req.file as Express.Multer.File;
+        imageUrl = await new Promise<string>((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            { folder: "AppSolute" },
+            (err, result) => {
+              if (err || !result) {
+                console.error("Cloudinary upload failed:", err);
+                return reject(new BadRequestError("Image upload failed"));
+              }
+              resolve(result.secure_url);
+            }
+          );
+          uploadStream.end(file.buffer);
+        });
+      } catch (uploadError) {
+        console.error("Error during image upload:", uploadError);
+        throw uploadError;
+      }
     }
 
-    // Call service
     const task = await createTaskWithQuestions(
       title,
       parsedCategories,
@@ -119,8 +238,9 @@ export async function createTaskHandler(
       message: "Task created successfully",
       data: task,
     });
-  } catch (err) {
-    next(err);
+  } catch (err: any) {
+    console.error("Unhandled error in createTaskHandler:", err);
+    next(err); // Send to centralized error handler
   }
 }
 
@@ -196,7 +316,8 @@ export async function updateTaskHandler(
   next: NextFunction
 ) {
   try {
-   
+   console.log("Req",req)
+   console.log("Req",req.body)
     Object.keys(req.body).forEach((key) => {
       const trimmed = key.trim();
       if (trimmed !== key) {
@@ -207,10 +328,10 @@ export async function updateTaskHandler(
 
     const taskId = req.params.taskId;
     if (!taskId) throw new BadRequestError("Task ID is required");
-
+     
     // 2) Destructure raw values
     const { title, description, categories, tags, url, points, questions } = req.body;
-
+      
     // 3) Parse categories JSON if needed
     let parsedCategories: string[] | undefined;
     if (categories !== undefined) {
