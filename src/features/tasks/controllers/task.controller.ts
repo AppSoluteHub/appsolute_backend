@@ -151,6 +151,7 @@ export async function createTaskHandler(
     }
 
     let parsedTags: string[] = [];
+    
     try {
       parsedTags = JSON.parse(tags);
     } catch (e) {
