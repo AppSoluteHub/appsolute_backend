@@ -51,6 +51,7 @@ model Task {
   categories       TaskCategory[] // many-to-many with Category
 }
 
+
 model Question {
  id             Int         @id @default(autoincrement())
   taskId         String
@@ -111,25 +112,33 @@ model Contributor {
   @@unique([postId, userId])
 }
 
+
 model Comment {
   id        String   @id @default(uuid())
   body      String
   authorId  String
   postId    String
   createdAt DateTime @default(now())
+  
+  parentId  String?  
+  replies   Comment[] @relation("CommentReplies") 
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   author    User     @relation("UserComments", fields: [authorId], references: [id])
   post      Post     @relation("PostComments", fields: [postId], references: [id])
+  likes     Like[]   @relation("CommentLikes") // Likes on this comment
 }
 
 model Like {
   id        String   @id @default(uuid())
   userId    String
-  postId    String
+  postId    String?
+  commentId String?  
   createdAt DateTime @default(now())
-  post      Post     @relation("PostLikes", fields: [postId], references: [id])
+  post      Post?    @relation("PostLikes", fields: [postId], references: [id])
   user      User     @relation("UserLikes", fields: [userId], references: [id])
-
-  @@unique([userId, postId])
+  comment   Comment? @relation("CommentLikes", fields: [commentId], references: [id])
+  @@unique([userId, commentId]) 
+  @@unique([userId, postId])  
 }
 
 model Content {
