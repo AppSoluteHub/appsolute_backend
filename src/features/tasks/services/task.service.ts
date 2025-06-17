@@ -5,63 +5,6 @@ const prisma = new PrismaClient();
 
 
 
-
-
-// export async function createTaskWithQuestions(
-//   title: string,
-//   categories: string[],
-//   tags: string[],
-//   url: string,
-//   points: number,
-//   imageUrl: string,
-//   description : string,
-//   questions: { questionText: string; options: string[]; correctAnswer: string }[]
-// ) {
-//   return prisma.task.create({
-//     data: {
-//       title,
-//       url,
-//       points,
-//       imageUrl,
-//       description,
-//       questions: {
-//         create: questions.map((q) => ({
-//           questionText: q.questionText,
-//           options: q.options,
-//           correctAnswer: q.correctAnswer,
-//         })),
-//       },
-    
-//       tags: {
-//         create: tags.map((name) => ({
-//           tag: {
-//             connectOrCreate: {
-//               where: { name },
-//               create: { name },
-//             },
-//           },
-//         })),
-//       },
-   
-//       categories: {
-//         create: categories.map((name) => ({
-//           category: {
-//             connectOrCreate: {
-//               where: { name },
-//               create: { name },
-//             },
-//           },
-//         })),
-//       },
-//     },
-//     include: {
-//       questions: true,
-//       tags: { include: { tag: true } },
-//       categories: { include: { category: true } },
-//     },
-//   });
-// }
-
 export async function createTaskWithQuestions(
   title: string,
   categories: string[],
