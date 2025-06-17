@@ -51,18 +51,10 @@ export class CommentService {
         orderBy: { createdAt: 'desc' },
       });
 
-      const comments = rawComments.map((comment) => ({
-      body: comment.body,
-      author: {
-        fullName: comment.author?.fullName || '',
-        profileImage: comment.author?.profileImage || null,
-      },
-    }));
-   
       // Return comments with count, even if empty
       return {
-        comments,
-        count: comments.length,
+        rawComments,
+        count: rawComments.length,
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
