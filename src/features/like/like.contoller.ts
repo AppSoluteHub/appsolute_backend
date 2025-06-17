@@ -1,36 +1,71 @@
-import { Request, Response } from "express";
-import { LikeService } from "./like.services";
+import { Request, Response, NextFunction } from 'express';
+import { LikeService } from './like.services'; 
+import { z } from 'zod';
+import { BadRequestError, NotFoundError } from '../../lib/appError'; 
 
+// Input validation schema
+const toggleLikeSchema = z.object({
+  commentId: z.string().uuid('Invalid comment ID'),
+});
+
+// Instantiate service
 const likeService = new LikeService();
-export class LikeController {
 
-
-  constructor() {
-
-}
-
-  async like(req: Request, res: Response) {
-    try {
-      const userId = req.user?.id as string; 
-      const { postId } = req.params; 
-      const newLike = await likeService.likePost(userId, postId);
-      res.status(201).json(newLike); 
-    } catch (error) {
-      console.error("Error liking post:", error);
-      res.status(500).json({ error: "Failed to like post" });
+export const toggleCommentLike = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // Get userId from authenticated user
+    const userId = req.user?.id; 
+    if (!userId) {
+      throw new BadRequestError('Unauthorized: User not authenticated');
     }
-  }
 
- 
-  async unlike(req: Request, res: Response) {
-    try {
-      const userId = req.user?.id as string; 
-      const { postId } = req.params; 
-      const response = await likeService.unlikePost(userId, postId);
-      res.status(200).json(response); 
-    } catch (error) {
-      console.error("Error unliking post:", error);
-      res.status(500).json({ error: "Failed to unlike post" });
+    // Validate commentId
+    const { commentId } = toggleLikeSchema.parse({
+      commentId: req.params.commentId,
+    });
+
+    // Call service method
+    const result = await likeService.toggleCommentLike(userId, commentId);
+
+    // Return response
+    res.status(result.action === 'liked' ? 201 : 200).json({
+      status: 'success',
+      data: {
+        action: result.action,
+        like: result.like || null,
+        likeCount: result.likeCount,
+        message: result.message || null,
+      },
+    });
+  } catch (error : any) {
+    // Handle specific errors
+    if (error instanceof BadRequestError) {
+       res.status(400).json({
+        status: 'error',
+        message: error.message,
+      });
+      return
     }
+    if (error instanceof NotFoundError) {
+       res.status(404).json({
+        status: 'error',
+        message: error.message,
+      });
+      return;
+    }
+    if (error instanceof z.ZodError) {
+       res.status(400).json({
+        status: 'error',
+        message: 'Validation error',
+        errors: error.errors,
+      });
+      return;
+    }
+
+    next(error);
   }
-}
+};

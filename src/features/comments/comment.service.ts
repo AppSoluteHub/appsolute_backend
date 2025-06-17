@@ -20,24 +20,53 @@ export class CommentService {
     return newComment;
   }
 
+
+
   async getCommentsByPostId(postId: string) {
     try {
-      const comments = await prisma.comment.findMany({
-        where: { postId },
-        include: {
-          author: { select: { fullName: true, profileImage: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-
-      if (comments.length === 0) {
-        throw new NotFoundError("No comments found for this post");
+      // Validate input
+      if (!postId) {
+        throw new AppError('postId is required', 400);
       }
 
-      return comments;
+      // Check if post exists
+      const postExists = await prisma.post.findUnique({
+        where: { id: postId },
+      });
+      if (!postExists) {
+        throw new NotFoundError('Post not found');
+      }
+
+      // Fetch comments
+      const rawComments = await prisma.comment.findMany({
+        where: { postId },
+        include: {
+          author: {
+            select: {
+              fullName: true,
+              profileImage: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const comments = rawComments.map((comment) => ({
+      body: comment.body,
+      author: {
+        fullName: comment.author?.fullName || '',
+        profileImage: comment.author?.profileImage || null,
+      },
+    }));
+   
+      // Return comments with count, even if empty
+      return {
+        comments,
+        count: comments.length,
+      };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      throw new Error("Failed to fetch comments");
+      throw new AppError('Failed to fetch comments', 500);
     }
   }
 
