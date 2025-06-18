@@ -26,6 +26,7 @@ model User {
   comments          Comment[]      @relation("UserComments")
   contributors      Contributor[]  @relation("UserContributors")
   likes             Like[]         @relation("UserLikes")
+   unlikes           Unlike[]       @relation("UserunLikes")
   posts             Post[]         @relation("UserPosts")
   behavioralData    UserBehavior[]
   userTasks         UserTask[]
@@ -97,6 +98,7 @@ model Post {
   comments         Comment[]     @relation("PostComments")
   contributorsList Contributor[] @relation("PostContributors")
   likes            Like[]        @relation("PostLikes")
+  unlikes            Unlike[]        @relation("PostunLikes")
   author           User          @relation("UserPosts", fields: [authorId], references: [id])
   tags             PostTag[]     // many-to-many with Tag
   categories       PostCategoryLink[] // many-to-many with Category
@@ -126,6 +128,7 @@ model Comment {
   author    User     @relation("UserComments", fields: [authorId], references: [id])
   post      Post     @relation("PostComments", fields: [postId], references: [id])
   likes     Like[]   @relation("CommentLikes") // Likes on this comment
+   unlikes   Unlike[]   @relation("CommentunLikes") 
 }
 
 model Like {
@@ -137,6 +140,20 @@ model Like {
   post      Post?    @relation("PostLikes", fields: [postId], references: [id])
   user      User     @relation("UserLikes", fields: [userId], references: [id])
   comment   Comment? @relation("CommentLikes", fields: [commentId], references: [id])
+  @@unique([userId, commentId]) 
+  @@unique([userId, postId])  
+}
+model Unlike {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String?
+  commentId String?  
+  createdAt DateTime @default(now())
+
+  post      Post?    @relation("PostunLikes", fields: [postId], references: [id])
+  user      User     @relation("UserunLikes", fields: [userId], references: [id])
+  comment   Comment? @relation("CommentunLikes", fields: [commentId], references: [id])
+
   @@unique([userId, commentId]) 
   @@unique([userId, postId])  
 }
