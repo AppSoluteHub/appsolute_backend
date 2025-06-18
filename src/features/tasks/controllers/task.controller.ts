@@ -195,8 +195,7 @@ export async function updateTaskHandler(
   next: NextFunction
 ) {
   try {
-   console.log("Req",req)
-   console.log("Req",req.body)
+   
     Object.keys(req.body).forEach((key) => {
       const trimmed = key.trim();
       if (trimmed !== key) {

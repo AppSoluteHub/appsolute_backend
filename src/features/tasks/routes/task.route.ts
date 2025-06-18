@@ -13,6 +13,6 @@ router.get("/:id", getTaskByIdHandler);
 router.get("/", getAllTaskHandler);
 
 router.delete("/:taskId",authenticate,deleteTaskHandler);
-router.patch("/:taskId", authenticate, updateTaskHandler);
+router.patch("/:taskId", authenticate, upload.single("file"),updateTaskHandler);
 
 export default router;
