@@ -23,44 +23,56 @@ export class CommentService {
 
 
   async getCommentsByPostId(postId: string) {
-    try {
-      // Validate input
-      if (!postId) {
-        throw new AppError('postId is required', 400);
-      }
+  try {
+    if (!postId) {
+      throw new AppError('postId is required', 400);
+    }
 
-      // Check if post exists
-      const postExists = await prisma.post.findUnique({
-        where: { id: postId },
-      });
-      if (!postExists) {
-        throw new NotFoundError('Post not found');
-      }
+    // Check if post exists
+    const postExists = await prisma.post.findUnique({
+      where: { id: postId },
+    });
 
-      // Fetch comments
-      const rawComments = await prisma.comment.findMany({
-        where: { postId },
-        include: {
-          author: {
-            select: {
-              fullName: true,
-              profileImage: true,
-            },
+    if (!postExists) {
+      throw new NotFoundError('Post not found');
+    }
+
+    // Fetch comments with likes and author
+    const rawComments = await prisma.comment.findMany({
+      where: { postId },
+      include: {
+        author: {
+          select: {
+            fullName: true,
+            profileImage: true,
           },
         },
-        orderBy: { createdAt: 'desc' },
-      });
+        likes: true, 
+        unlikes: true
+      },
+      orderBy: { createdAt: 'desc' },
+    });
 
-      // Return comments with count, even if empty
-      return {
-        rawComments,
-        count: rawComments.length,
-      };
-    } catch (error) {
-      if (error instanceof AppError) throw error;
-      throw new AppError('Failed to fetch comments', 500);
-    }
+    // Map comments to include number of likes
+    const commentsWithLikeCount = rawComments.map(comment => ({
+      ...comment,
+      numberOfLikes: comment.likes.length,
+    }));
+ const commentsWithunLikeCount = rawComments.map(comment => ({
+      ...comment,
+      numberOfLikes: comment.unlikes.length,
+    }));
+    return {
+      comments: commentsWithLikeCount,
+      count: commentsWithLikeCount.length,
+      countUnlike: commentsWithunLikeCount.length,
+    };
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError('Failed to fetch comments', 500);
   }
+}
+
 
   async updateComment(commentId: string,authorId: string ,data: UpdateCommentDto) {
       const existingComment = await prisma.comment.findUnique({
