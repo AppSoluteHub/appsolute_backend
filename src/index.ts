@@ -31,7 +31,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(
   cors({
-    origin: ["http://localhost:3001","http://localhost:3002","http://localhost:3000","https://appsolutehub.vercel.app"],
+    origin: ["http://localhost:3001","http://localhost:3002","http://localhost:3000","https://appsolutehub.vercel.app","https://app-solute-hub-app.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
