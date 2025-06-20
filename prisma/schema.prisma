@@ -202,6 +202,7 @@ model Tag {
   name   String @unique
   posts  PostTag[]
   tasks  TaskTag[]
+  createdAt  DateTime @default(now())
 }
 
 model Category {
@@ -209,6 +210,7 @@ model Category {
   name   String @unique
   posts  PostCategoryLink[]
   tasks  TaskCategory[]
+  createdAt DateTime @default(now())
 }
 
 model PostTag {

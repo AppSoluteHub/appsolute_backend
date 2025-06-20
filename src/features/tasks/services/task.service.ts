@@ -94,7 +94,9 @@ export const getAllTasks = async (userId: string) => {
       },
     },
     include: { questions: true, tags: true, categories: true , },
-
+    orderBy: {
+        createdAt: "desc", 
+      },
   });
 };
 
@@ -102,7 +104,32 @@ export const getAllTasks = async (userId: string) => {
 
 export const getTasks = async () => {
   return await prisma.task.findMany({
-    include: { questions: true ,tags:true, categories:true},
+    include: {
+      questions: true,
+      tags: {
+        include: {
+          tag: {
+            select: {
+                id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      categories: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
   });
 };
 

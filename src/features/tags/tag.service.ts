@@ -25,7 +25,11 @@ export const createTag = async (data: { name: string }) => {
 }
 
 export const getAllTags = async () => {
-  return await prisma.tag.findMany();
+  return await prisma.tag.findMany({
+    orderBy:{
+      createdAt: 'desc'
+    }
+  });
 };
 
 export const getTagById = async (id: string) => {
