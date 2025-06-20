@@ -2,9 +2,6 @@ import { PrismaClient } from '@prisma/client';
 import { UpdateTaskData } from '../../../interfaces/task.interface';
 
 const prisma = new PrismaClient();
-
-
-
 export async function createTaskWithQuestions(
   title: string,
   categories: string[],
@@ -169,7 +166,67 @@ export const getTaskById = async (taskId: string, userId: string) => {
   });
 }
 
+export const getUserTaskProgressService = async (userId: string) => {
+  const totalTasks = await prisma.task.count();
 
+  const completedTasks = await prisma.userTask.count({
+    where: { userId },
+  });
+
+  return {
+    completedTasks,
+    totalTasks,
+    progressPercent: totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100),
+  };
+};
+
+
+export const getLeaderboardProgressService = async (userId: string) => {
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { totalScore: true },
+  });
+
+  if (!currentUser) throw new Error("User not found");
+
+  const userScore = currentUser.totalScore;
+
+  const usersAhead = await prisma.user.findMany({
+    where: {
+      totalScore: {
+        gt: userScore,
+      },
+    },
+    orderBy: {
+      totalScore: 'asc',
+    },
+    select: {
+      totalScore: true,
+    },
+  });
+
+  const aheadCount = usersAhead.length;
+
+  if (aheadCount === 0) {
+    return {
+      message: "You're currently ahead of everyone 🎉",
+      peopleToBypass: 0,
+      pointsToBypass: 0,
+    };
+  }
+
+  const percentToBypass = 0.2;
+  const peopleToBypass = Math.max(1, Math.floor(aheadCount * percentToBypass));
+  const targetUser = usersAhead[peopleToBypass - 1];
+
+  const pointsToBypass = targetUser.totalScore - userScore;
+    const personLabel = peopleToBypass === 1 ? "person" : "people";
+  return {
+    message: `Earn ${pointsToBypass} more points to bypass ${peopleToBypass} ${personLabel}`,
+    peopleToBypass,
+    pointsToBypass,
+  };
+};
 
 export async function deleteTaskById(taskId: string) {
   return prisma.$transaction(async (tx) => {

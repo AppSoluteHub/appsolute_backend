@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { createTaskWithQuestions, deleteTaskById, getAllTasks, getTaskById, getTasks, updateTaskWithQuestions  } from "../services/task.service";
+import { createTaskWithQuestions, deleteTaskById, getAllTasks, getLeaderboardProgressService, getTaskById, getTasks, getUserTaskProgressService, updateTaskWithQuestions  } from "../services/task.service";
 import { BadRequestError, NotFoundError } from "../../../lib/appError";
 import cloudinary from "../../../config/cloudinary";
 
@@ -119,7 +119,7 @@ export async function createTaskHandler(
     });
   } catch (err: any) {
     console.error("Unhandled error in createTaskHandler:", err);
-    next(err); // Send to centralized error handler
+    next(err); 
   }
 }
 
@@ -188,6 +188,26 @@ export async function deleteTaskHandler(
   }
 }
 
+
+export const getUserTaskProgress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id as string;
+    const result = await getUserTaskProgressService(userId);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLeaderboardProgress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id as string;
+    const result = await getLeaderboardProgressService(userId);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export async function updateTaskHandler(
   req: Request,
