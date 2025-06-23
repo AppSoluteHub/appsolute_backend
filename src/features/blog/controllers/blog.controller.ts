@@ -185,9 +185,6 @@ static async updatePost(
   }
 }
 
-
-
-
   static async deletePost(
     req: Request,
     res: Response,

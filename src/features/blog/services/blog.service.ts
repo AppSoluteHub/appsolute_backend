@@ -18,7 +18,7 @@ export interface PostData {
   imageUrl: string;
   categories: string[];
   tags: string[];
-  contributors: string[]; // array of userIds
+  contributors: string[]; 
   isPublished: boolean;
 }
 

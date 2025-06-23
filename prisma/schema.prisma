@@ -256,3 +256,9 @@ model TaskCategory {
 
   @@unique([taskId, categoryId])
 }
+
+model Image{
+  id       String @id @default(uuid())  
+  imageUrl String
+ 
+}
