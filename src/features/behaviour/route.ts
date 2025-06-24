@@ -1,10 +1,13 @@
-import express from 'express';
-import { BehaviorController } from './controller';
-import authenticate from '../../middlewares/auth.middleware';
+import express from "express";
+import { UserBehaviorController } from "./controller";
+import authenticate from "../../middlewares/auth.middleware";
 
-const userBahaviourRoutes = express.Router();
-const behaviorController = new BehaviorController();
+const userBehaviourRoutes = express.Router();
 
-userBahaviourRoutes.post('/track-view',authenticate, behaviorController.trackHomepageView.bind(behaviorController));
+userBehaviourRoutes.post(
+  "/track",
+  authenticate,
+  UserBehaviorController.trackInteraction
+);
 
-export default userBahaviourRoutes;
+export default userBehaviourRoutes;

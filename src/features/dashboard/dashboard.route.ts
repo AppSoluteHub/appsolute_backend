@@ -1,4 +1,3 @@
-// src/routes/dashboard.ts
 import { Router } from 'express';
 import { getDashboardSummary } from '../dashboard/dashboard.controller.';
 

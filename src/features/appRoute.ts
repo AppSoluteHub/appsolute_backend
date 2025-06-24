@@ -11,12 +11,6 @@ import likeRoute from './like/like.route';
 import tagRoute from './tags/tag.route';
 import catRoute from './category/cat.route';
 import taskRoute from './tasks/routes/task.route'
-import adminTagRoute from './admin/routes/tag.admin.route'
-import adminCategoryRoute from './admin/routes/category.admin.route'
-import adminPostRoute from './admin/routes/post.admin.route'
-import adminTaskRoute from './admin/routes/task.admin.route'
-import adminUserRoute from './admin/routes/auth.admin.route'
-import adminCommentRoute from './admin/routes/comment.admin.route'
 import userBahaviourRoutes from './behaviour/route';
 
 export default (appRouter :any) => {
@@ -29,12 +23,6 @@ export default (appRouter :any) => {
   appRouter.use("/admin", userPageRoute);
   appRouter.use("/dashboard",dashboardRoute );
   appRouter.use("/bahaviour", userBahaviourRoutes );
-  // appRouter.use("/admin",adminUserRoute);
-  // appRouter.use("/admin",adminTaskRoute);
-  // appRouter.use("/admin",adminCommentRoute);
-  // appRouter.use("/admin",adminTagRoute);
-  // appRouter.use("/admin",adminCategoryRoute);
-  // appRouter.use("/admin",adminPostRoute);
   appRouter.use("/tasks",taskRoute);
   appRouter.use("/doTasks",userTaskRoute);
   appRouter.use("/coments",commentRoute);
