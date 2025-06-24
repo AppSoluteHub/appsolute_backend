@@ -1,28 +1,40 @@
 import { Request, Response, NextFunction } from 'express';
-import { BehaviorService } from './service';
-import { BadRequestError } from '../../lib/appError';
+import { userBehaviorService } from './service';
 
-export class BehaviorController {
-  private behaviorService: BehaviorService;
+const VALID_INTERACTIONS = ['VIEW', 'CLICK', 'LIKE', 'SHARE'];
 
-  constructor() {
-    this.behaviorService = new BehaviorService();
-  }
-
-  async trackHomepageView(req: Request, res: Response, next: NextFunction): Promise<void> {
+export class UserBehaviorController {
+  static async trackInteraction(req: Request, res: Response, next: NextFunction) {
     try {
-      const userId = req.user?.id as string  
-      const { device } = req.body; 
+      const userId = req.user?.id || null;
+      const { interaction, page } = req.body;
 
-      if (!device) {
-        throw new BadRequestError('Device type is required');
+      if (!interaction || !VALID_INTERACTIONS.includes(interaction.toUpperCase())) {
+         res.status(400).json({
+          message: `Invalid or missing interaction. Must be one of: ${VALID_INTERACTIONS.join(', ')}`
+          
+        });
+        return;
       }
 
-      await this.behaviorService.logHomepageView(userId, device);
+      if (!page) {
+         res.status(400).json({ message: 'Page is required' });
+         return;
+      }
 
-      res.status(200).json({
+      const device = req.headers['user-agent'] || 'unknown';
+
+      const record = await userBehaviorService.trackInteraction(
+        userId,
+        interaction.toUpperCase(),
+        page,
+        device
+      );
+
+      res.status(201).json({
         success: true,
-        message: 'Homepage view tracked successfully',
+        message: `${interaction} recorded successfully`,
+        data: record,
       });
     } catch (err) {
       next(err);
