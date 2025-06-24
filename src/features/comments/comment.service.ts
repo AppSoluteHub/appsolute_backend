@@ -1,7 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { CreateCommentDto, UpdateCommentDto } from "../../interfaces/comment.interface";
+import {
+  CreateCommentDto,
+  UpdateCommentDto,
+} from "../../interfaces/comment.interface";
 import { AppError, NotFoundError } from "../../lib/appError";
-// import { redisClient } from "../../config/redis"; 
+// import { redisClient } from "../../config/redis";
 
 const prisma = new PrismaClient();
 
@@ -14,79 +17,81 @@ export class CommentService {
       },
     });
 
-  
     // await redisClient.publish("new-comment", JSON.stringify(newComment));
 
     return newComment;
   }
 
+  async getCommentsByPostId(postId: string, currentUserId: string) {
+    try {
+      if (!postId) {
+        throw new AppError("postId is required", 400);
+      }
 
+      // Check if post exists
+      const postExists = await prisma.post.findUnique({
+        where: { id: postId },
+      });
 
-  async getCommentsByPostId(postId: string) {
-  try {
-    if (!postId) {
-      throw new AppError('postId is required', 400);
-    }
+      if (!postExists) {
+        throw new NotFoundError("Post not found");
+      }
 
-    // Check if post exists
-    const postExists = await prisma.post.findUnique({
-      where: { id: postId },
-    });
-
-    if (!postExists) {
-      throw new NotFoundError('Post not found');
-    }
-
-    // Fetch comments with likes and author
-    const rawComments = await prisma.comment.findMany({
-      where: { postId },
-      include: {
-        author: {
-          select: {
-            fullName: true,
-            profileImage: true,
+      // Fetch comments with likes, unlikes, and author
+      const rawComments = await prisma.comment.findMany({
+        where: { postId },
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          authorId: true,
+          author: {
+            select: {
+              fullName: true,
+              profileImage: true,
+            },
           },
+          likes: true,
+          unlikes: true,
         },
-        likes: true, 
-        unlikes: true
-      },
-      orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
+      });
+
+      // Map and enrich comments
+      const comments = rawComments.map((comment) => ({
+        ...comment,
+        numberOfLikes: comment.likes.length,
+        numberOfUnlikes: comment.unlikes.length,
+        isOwner: comment.authorId === currentUserId,
+      }));
+
+      return {
+        comments,
+        count: comments.length,
+      };
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+      throw new AppError("Failed to fetch comments", 500);
+    }
+  }
+
+  async updateComment(
+    commentId: string,
+    authorId: string,
+    data: UpdateCommentDto
+  ) {
+    const existingComment = await prisma.comment.findUnique({
+      where: { id: commentId },
+      select: { authorId: true },
     });
 
-    // Map comments to include number of likes
-    const commentsWithLikeCount = rawComments.map(comment => ({
-      ...comment,
-      numberOfLikes: comment.likes.length,
-    }));
- const commentsWithunLikeCount = rawComments.map(comment => ({
-      ...comment,
-      numberOfLikes: comment.unlikes.length,
-    }));
-    return {
-      comments: commentsWithLikeCount,
-      count: commentsWithLikeCount.length,
-      countUnlike: commentsWithunLikeCount.length,
-    };
-  } catch (error) {
-    if (error instanceof AppError) throw error;
-    throw new AppError('Failed to fetch comments', 500);
-  }
-}
+    if (!existingComment) {
+      throw new Error("Comment not found");
+    }
 
-
-  async updateComment(commentId: string,authorId: string ,data: UpdateCommentDto) {
-      const existingComment = await prisma.comment.findUnique({
-    where: { id: commentId },
-    select: { authorId: true },
-  });
-
-  if (!existingComment) {
-    throw new Error("Comment not found");
-  }
-
-  if (existingComment.authorId !== authorId) {
-    throw new Error("Unauthorized: You can only update your own comment");
-  }
+    if (existingComment.authorId !== authorId) {
+      throw new Error("Unauthorized: You can only update your own comment");
+    }
     const updatedComment = await prisma.comment.update({
       where: { id: commentId },
       data,
@@ -95,24 +100,22 @@ export class CommentService {
       },
     });
 
-  
     // await redisClient.publish("new-comment", JSON.stringify(updatedComment));
 
     return updatedComment;
   }
 
   async getCommentById(commentId: string) {
-  const comment = await prisma.comment.findUnique({
-    where: { id: commentId },
-  });
-  return comment;
-}
+    const comment = await prisma.comment.findUnique({
+      where: { id: commentId },
+    });
+    return comment;
+  }
 
-async deleteComment(commentId: string) {
-  const deletedComment = await prisma.comment.delete({
-    where: { id: commentId },
-  });
-  return deletedComment;
-}
-
+  async deleteComment(commentId: string) {
+    const deletedComment = await prisma.comment.delete({
+      where: { id: commentId },
+    });
+    return deletedComment;
+  }
 }

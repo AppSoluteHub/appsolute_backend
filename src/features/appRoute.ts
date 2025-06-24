@@ -17,6 +17,7 @@ import adminPostRoute from './admin/routes/post.admin.route'
 import adminTaskRoute from './admin/routes/task.admin.route'
 import adminUserRoute from './admin/routes/auth.admin.route'
 import adminCommentRoute from './admin/routes/comment.admin.route'
+import userBahaviourRoutes from './behaviour/route';
 
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
@@ -27,6 +28,7 @@ export default (appRouter :any) => {
   appRouter.use("/subscribers",contactRoute);
   appRouter.use("/admin", userPageRoute);
   appRouter.use("/dashboard",dashboardRoute );
+  appRouter.use("/bahaviour", userBahaviourRoutes );
   // appRouter.use("/admin",adminUserRoute);
   // appRouter.use("/admin",adminTaskRoute);
   // appRouter.use("/admin",adminCommentRoute);
