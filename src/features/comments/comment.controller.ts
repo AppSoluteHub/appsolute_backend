@@ -37,17 +37,19 @@ export class CommentController {
     }
   }
 
-  async getCommentsByPostId(req: Request, res: Response, next : NextFunction) {
-    try {
-      const { postId } = req.params;
-      const comments = await commentService.getCommentsByPostId(postId);
-      res.status(200).json(comments);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch comments" });
-      console.log(error);
-      next(error);
-    }
+ async getCommentsByPostId(req: Request, res: Response, next: NextFunction) {
+  try {
+    const currentUserId = req.user?.id as string;
+    const { postId } = req.params;
+
+    const comments = await commentService.getCommentsByPostId(postId, currentUserId);
+
+    res.status(200).json(comments);
+  } catch (error) {
+    next(error); 
   }
+}
+
 
 
  
