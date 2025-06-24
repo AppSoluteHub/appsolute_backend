@@ -22,7 +22,7 @@ export default (appRouter :any) => {
   appRouter.use("/subscribers",contactRoute);
   appRouter.use("/admin", userPageRoute);
   appRouter.use("/dashboard",dashboardRoute );
-  appRouter.use("/bahaviour", userBahaviourRoutes );
+  appRouter.use("/behavior", userBahaviourRoutes );
   appRouter.use("/tasks",taskRoute);
   appRouter.use("/doTasks",userTaskRoute);
   appRouter.use("/coments",commentRoute);
