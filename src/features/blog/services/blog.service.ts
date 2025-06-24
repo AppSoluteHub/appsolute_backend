@@ -123,60 +123,176 @@ class PostService {
     return post;
   }
 
-  static async getAllPosts(publishedOnly: boolean = true) {
-    try {
-      return await prisma.post.findMany({
-        where: publishedOnly ? { isPublished: true } : undefined,
-        include: {
-          author: {
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              profileImage: true,
-            },
+
+ static async getAllPosts(publishedOnly: boolean = true) {
+  try {
+    return await prisma.post.findMany({
+      where: publishedOnly ? { isPublished: true } : undefined,
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            profileImage: true,
+            role: true,
           },
         },
-      });
-    } catch (error) {
-      console.log(error);
-      if (error instanceof AppError) throw error;
-      throw new InternalServerError("Unable to fetch posts");
-    }
-  }
-
-  static async getPostById(postId: string) {
-    try {
-      const post = await prisma.post.findUnique({
-        where: { id: postId },
-        include: {
-          author: {
-            select: { id: true, fullName: true, email: true },
+        contributorsList: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                role: true,
+              },
+            },
+           
           },
-          comments: {
-            include: {
-              author: {
-                select: { id: true, fullName: true, profileImage: true },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
               },
             },
           },
-          likes: {
-            include: {
-              user: { select: { id: true, fullName: true, email: true } },
+        },
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
-      });
-
-      if (!post) throw new NotFoundError("Post not found");
-
-      return post;
-    } catch (error) {
-      console.error("Error fetching post:", error);
-      if (error instanceof AppError) throw error;
-      throw new InternalServerError("Unable to fetch post");
-    }
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    if (error instanceof AppError) throw error;
+    throw new InternalServerError("Unable to fetch posts");
   }
+}
+
+
+
+  // static async getPostById(postId: string) {
+  //   try {
+  //     const post = await prisma.post.findUnique({
+  //       where: { id: postId },
+  //       include: {
+  //         author: {
+  //           select: { id: true, fullName: true, email: true },
+  //         },
+  //         comments: {
+  //           include: {
+  //             author: {
+  //               select: { id: true, fullName: true, profileImage: true },
+  //             },
+  //           },
+  //         },
+  //         likes: {
+  //           include: {
+  //             user: { select: { id: true, fullName: true, email: true } },
+  //           },
+  //         },
+  //       },
+  //     });
+
+  //     if (!post) throw new NotFoundError("Post not found");
+
+  //     return post;
+  //   } catch (error) {
+  //     console.error("Error fetching post:", error);
+  //     if (error instanceof AppError) throw error;
+  //     throw new InternalServerError("Unable to fetch post");
+  //   }
+  // }
+
+  static async getPostById(postId: string) {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        author: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        contributorsList: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                role: true,
+              },
+            },
+
+          },
+        },
+        comments: {
+          include: {
+            author: {
+              select: {
+                id: true,
+                fullName: true,
+                profileImage: true,
+              },
+            },
+          },
+        },
+        likes: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!post) throw new NotFoundError("Post not found");
+
+    return post;
+  } catch (error) {
+    console.error("Error fetching post:", error);
+    if (error instanceof AppError) throw error;
+    throw new InternalServerError("Unable to fetch post");
+  }
+}
+
 
   static async updatePost(
     postId: string,
