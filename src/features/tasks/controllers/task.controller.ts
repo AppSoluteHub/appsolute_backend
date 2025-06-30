@@ -145,8 +145,9 @@ export const getTasksHandler = async (req: Request, res: Response):Promise<void>
 
 
 export const getAllTaskHandler = async (req:Request, res: Response) => {
+  const userId = req.user?.id as string
   try {
-    const tasks = await getTasks();
+    const tasks = await getTasks(userId);
     res.status(200).json({ success: true, data: tasks });
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
