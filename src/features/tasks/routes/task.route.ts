@@ -12,7 +12,7 @@ router.post("/", authenticate,upload.single("file"), createTaskHandler);
 router.get("/task-progress", authenticate, getUserTaskProgress);
 router.get("/leaderboard-progress", authenticate, getLeaderboardProgress); 
 router.get("/undoneTasks/:userId",getTasksHandler);
-router.get("/:id", getTaskByIdHandler);
+router.get("/:id",authenticate, getTaskByIdHandler);
 router.get("/",authenticate, getAllTaskHandler);
 
 router.delete("/:taskId",authenticate,deleteTaskHandler);

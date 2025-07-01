@@ -118,70 +118,6 @@ export const getAllTasks = async (userId: string) => {
 };
 
 
-
-// export const getTasks = async (userId?: string) => {
-//   const tasks = await prisma.task.findMany({
-//     include: {
-//       questions: true,
-//       tags: {
-//         include: {
-//           tag: {
-//             select: {
-//               id: true,
-//               name: true,
-//             },
-//           },
-//         },
-//       },
-//       categories: {
-//         include: {
-//           category: {
-//             select: {
-//               id: true,
-//               name: true,
-//             },
-//           },
-//         },
-//       },
-//       userTasks: {
-//         include: {
-//           user: {
-//             select: {
-//               id: true,
-//               fullName: true,
-//               nickName: true,
-//               email: true,
-//               profileImage: true,
-//               role: true,
-//               totalScore: true,
-//               answered: true,
-//             },
-//           },
-//           task: true,
-//           question: {
-//             select: {
-//               id: true,
-//               questionText: true,
-//               options: true,
-//               correctAnswer: true,
-//             },
-//           },
-//         },
-//       },
-//     },
-//     orderBy: {
-//       createdAt: "desc",
-//     },
-//   });
-
-
-//   return tasks.map(task => ({
-//     ...task,
-//     isAnsweredByUser: userId ? task.userTasks.some(ut => ut.userId === userId) : false,
-//   }));
-// };
-
-
 export const getTasks = async (userId?: string) => {
   const tasks = await prisma.task.findMany({
     include: {
@@ -250,7 +186,6 @@ export const getTasks = async (userId?: string) => {
 
 
 export const getTaskById = async (taskId: string, userId: string) => {
-  console.log(userId)
   return await prisma.task.findFirst({
     where: {
       id: taskId,
