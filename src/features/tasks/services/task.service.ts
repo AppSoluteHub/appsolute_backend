@@ -189,13 +189,6 @@ export const getTaskById = async (taskId: string, userId: string) => {
   return await prisma.task.findFirst({
     where: {
       id: taskId,
-      NOT: {
-        userTasks: {
-          some: {
-            userId: userId,
-          },
-        },
-      },
     },
     include: { questions: true }, 
   });
