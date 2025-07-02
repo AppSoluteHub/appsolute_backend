@@ -185,38 +185,105 @@ export const getTasks = async (userId?: string) => {
 };
 
 
+// export const getTaskById = async (taskId: string, userId: string) => {
+//   return await prisma.task.findFirst({
+//     where: {
+//       id: taskId,
+//     },
+//     include: { questions: true }, 
+//   });
+// }
+
 export const getTaskById = async (taskId: string, userId: string) => {
-  return await prisma.task.findFirst({
+  const task = await prisma.task.findFirst({
     where: {
       id: taskId,
     },
-    include: { questions: true }, 
+    include: {
+      questions: true,
+      tags: {
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      categories: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      userTasks: userId
+        ? {
+            where: {
+              userId: userId,
+            },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  nickName: true,
+                  email: true,
+                  profileImage: true,
+                  role: true,
+                  totalScore: true,
+                  answered: true,
+                },
+              },
+              task: true,
+              question: {
+                select: {
+                  id: true,
+                  questionText: true,
+                  options: true,
+                  correctAnswer: true,
+                },
+              },
+            },
+          }
+        : false,
+    },
   });
-}
+
+  return task ? {
+    ...task,
+    isAnsweredByUser: userId ? task.userTasks.length > 0 : false,
+  } : null;
+};
+
 
 export const getUserTaskProgressService = async (userId: string) => {
   // Get total number of tasks
   const totalTasks = await prisma.task.count();
-  const totalTasksNumber = Number(totalTasks); // Convert BigInt to number
+  const totalTasksNumber = Number(totalTasks);
 
-  // Get tasks where all questions are answered by the user
-  const completedTasks = await prisma.$queryRaw<{ count: bigint }[]>`
-    SELECT COUNT(DISTINCT t.id) as count 
-    FROM "Task" t
-    LEFT JOIN "UserTask" ut ON t.id = ut."taskId" AND ut."userId" = ${userId}
-    LEFT JOIN "Question" q ON t.id = q."taskId"
-    GROUP BY t.id
-    HAVING COUNT(q.id) = COUNT(ut."questionId");
+  // Get number of distinct tasks the user has attempted (answered at least one question)
+  const attemptedTasks = await prisma.$queryRaw<{ count: bigint }[]>`
+    SELECT COUNT(DISTINCT "taskId") as count
+    FROM "UserTask"
+    WHERE "userId" = ${userId}
   `;
 
-  const completedTasksCount = completedTasks.length > 0 ? Number(completedTasks[0].count) : 0;
+  const attemptedTasksCount = attemptedTasks.length > 0 ? Number(attemptedTasks[0].count) : 0;
 
   return {
-    completedTasks: completedTasksCount,
+    completedTasks: attemptedTasksCount, 
     totalTasks: totalTasksNumber,
-    progressPercent: totalTasksNumber === 0 ? 0 : Math.round((completedTasksCount / totalTasksNumber) * 100),
+    progressPercent: totalTasksNumber === 0
+      ? 0
+      : Math.round((attemptedTasksCount / totalTasksNumber) * 100),
   };
 };
+
 
 export const getLeaderboardProgressService = async (userId: string) => {
   const currentUser = await prisma.user.findUnique({
