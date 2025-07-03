@@ -3,7 +3,6 @@ import { BadRequestError, InternalServerError } from "../../../lib/appError";
 
 const prisma = new PrismaClient();
 
-
 export const answerTask = async (
   userId: string,
   taskId: string,
@@ -18,6 +17,7 @@ export const answerTask = async (
       throw new BadRequestError("You have already attempted this task.");
     }
 
+    
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: { questions: true },
@@ -40,20 +40,23 @@ export const answerTask = async (
       const isCorrect = userAnswer === question.correctAnswer;
       if (isCorrect) correctAnswersCount++;
 
+      // Calculate score earned for this question
+      const scoreEarned = isCorrect ? Math.round(task.points / totalQuestions) : 0;
+
       return {
         userId,
         taskId,
         questionId,
         userAnswer,
         isCorrect,
+        scoreEarned, 
       };
     });
 
     await prisma.userTask.createMany({ data: userAnswers });
 
-   
     let totalScoreEarned = (task.points / totalQuestions) * correctAnswersCount;
-    totalScoreEarned = Math.round(totalScoreEarned); 
+    totalScoreEarned = Math.round(totalScoreEarned);
 
     if (totalScoreEarned > 0) {
       await prisma.user.update({
