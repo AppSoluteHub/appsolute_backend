@@ -7,7 +7,13 @@ export const createCategory = async (data: { name: string }) => {
 };
 
 export const getAllCategories = async () => {
-  return await prisma.category.findMany();
+  return await prisma.category.findMany(
+    {
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }
+  );
 };
 
 export const getCategoryById = async (id: string) => {

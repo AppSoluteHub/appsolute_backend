@@ -53,6 +53,7 @@ export async function createTaskWithQuestions(
         tags: { include: { tag: true } },
         categories: { include: { category: true } },
       },
+        
     });
   } catch (error) {
     console.error("Error creating task with questions:", error);
@@ -185,14 +186,6 @@ export const getTasks = async (userId?: string) => {
 };
 
 
-// export const getTaskById = async (taskId: string, userId: string) => {
-//   return await prisma.task.findFirst({
-//     where: {
-//       id: taskId,
-//     },
-//     include: { questions: true }, 
-//   });
-// }
 
 export const getTaskById = async (taskId: string, userId: string) => {
   const task = await prisma.task.findFirst({

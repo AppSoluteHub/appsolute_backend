@@ -171,6 +171,10 @@ class PostService {
           },
         },
       },
+      orderBy : {
+        createdAt: "desc",  
+      },
+      
     });
   } catch (error) {
     console.log(error);
