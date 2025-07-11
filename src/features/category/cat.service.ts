@@ -16,6 +16,8 @@ export const getAllCategories = async () => {
   );
 };
 
+
+
 export const getCategoryById = async (id: string) => {
   return await prisma.category.findUnique({ where: { id } });
 };

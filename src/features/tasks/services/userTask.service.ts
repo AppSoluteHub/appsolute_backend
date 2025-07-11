@@ -17,7 +17,7 @@ export const answerTask = async (
       throw new BadRequestError("You have already attempted this task.");
     }
 
-    
+
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: { questions: true },
