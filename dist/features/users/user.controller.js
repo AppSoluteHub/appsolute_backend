@@ -36,7 +36,26 @@ class UserController {
         }
         catch (error) {
             console.error("Error in getAdmins controller:", error);
-            res.status(500).json({ success: false, message: "Internal Server Error" });
+            res
+                .status(500)
+                .json({ success: false, message: "Internal Server Error" });
+            return;
+        }
+    }
+    static async getRoles(req, res) {
+        try {
+            const { search } = req.query;
+            const admins = await user_service_1.UserService.getAdmins({
+                search: search,
+            });
+            res.status(200).json({ success: true, data: admins });
+            return;
+        }
+        catch (error) {
+            console.error("Error in getAdmins controller:", error);
+            res
+                .status(500)
+                .json({ success: false, message: "Internal Server Error" });
             return;
         }
     }
@@ -76,6 +95,64 @@ class UserController {
             const updatedUser = await user_service_1.UserService.updateUser(userId, updates);
             res.status(200).json({
                 message: "User updated successfully",
+                data: updatedUser,
+            });
+        }
+        catch (error) {
+            res.status(error.statusCode || 500).json({ error: error.message });
+        }
+    }
+    static async updateUserRole(req, res) {
+        try {
+            const { role, fullName, email } = req.body;
+            // Validate role presence
+            if (!role) {
+                res.status(400).json({ error: "Role is required" });
+                return;
+            }
+            // Validate role value
+            const allowedRoles = [
+                "ADMIN",
+                "SUPERADMIN",
+                "GUEST",
+                "EDITOR",
+                "CONTRIBUTOR",
+            ];
+            if (!allowedRoles.includes(role)) {
+                res
+                    .status(400)
+                    .json({ error: `Role must be one of: ${allowedRoles.join(", ")}` });
+                return;
+            }
+            if (role === "ADMIN" && req.user?.role !== "SUPERADMIN") {
+                res
+                    .status(403)
+                    .json({ error: "Forbidden: Only superadmin can assign admin role" });
+                return;
+            }
+            if (role === "SUPERADMIN" && req.user?.role !== "SUPERADMIN") {
+                res
+                    .status(403)
+                    .json({
+                    error: "Forbidden: Only superadmin can assign superadmin role",
+                });
+                return;
+            }
+            // Optionally check if current user has permission (e.g., is admin or superadmin)
+            const currentUser = req.user;
+            if (!currentUser || !["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
+                res
+                    .status(403)
+                    .json({
+                    error: "Forbidden: You don't have permission to update roles",
+                });
+                return;
+            }
+            // Update user role only
+            const updates = { role };
+            const updatedUser = await user_service_1.UserService.updateUserRole(email, fullName, updates);
+            res.status(200).json({
+                message: "User role updated successfully",
                 data: updatedUser,
             });
         }

@@ -1,8 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const validateRequest = (req, res, next) => {
-    if (!req.body)
-        return res.status(400).json({ error: "Invalid request data" });
-    next();
+exports.validateRequest = void 0;
+const appError_1 = require("../lib/appError");
+const validateRequest = (schema) => {
+    return (req, res, next) => {
+        const { error } = schema.validate(req.body, {
+            abortEarly: false,
+            stripUnknown: true,
+        });
+        if (error) {
+            const errorMessage = error.details
+                .map((detail) => detail.message)
+                .join(', ');
+            throw new appError_1.BadRequestError(errorMessage);
+        }
+        next();
+    };
 };
-exports.default = validateRequest;
+exports.validateRequest = validateRequest;

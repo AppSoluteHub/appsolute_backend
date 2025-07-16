@@ -32,7 +32,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-      callbackURL: "https://appsolute-api-1.onrender.com/auth/google/callback", 
+      callbackURL: "https://appsolutehub.com/auth/google/callback", 
     },
     async (accessToken: string, refreshToken: string, profile: Profile, done) => {
       try {
@@ -112,7 +112,7 @@ router.get(
   passport.authenticate("google", { failureRedirect: "/" }),
   (req: Request, res: Response) => {
     if (!req.user) {
-      return res.redirect("https://appsolutehub.vercel.app/login?error=AuthenticationFailed");
+      return res.redirect("https://appsolutehub.com/login?error=AuthenticationFailed");
     }
 
     const user = req.user as User;
@@ -120,7 +120,7 @@ router.get(
     const token = generateToken(user.id);
 
     
-    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}&userId=${user.id}`);
+    res.redirect(`https://appsolutehub.com/dashboard?token=${token}&userId=${user.id}`);
   }
 );
 

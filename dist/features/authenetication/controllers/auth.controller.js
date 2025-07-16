@@ -1,31 +1,4 @@
 "use strict";
-// import { Request, Response, NextFunction } from "express";
-// import AuthService from "../services/auth.service";
-// import { generateRefreshToken, generateToken } from "../../../utils/jwt";
-// import appResponse from "../../../lib/appResponse";
-// import { BadRequestError } from "../../../lib/appError";
-// class AuthController {
-//   static async register(
-//     req: Request,
-//     res: Response,
-//     next: NextFunction
-//   ): Promise<void> {
-//     try {
-//       const { fullName, email, password, profileImage } = req.body;
-//       const lowercaseEmail = email.toLowerCase();
-//       const newUser = await AuthService.register({
-//         fullName,
-//         email,
-//         profileImage,
-//         password,
-//       });
-//       const { password: _, resetToken, resetTokenExpires, ...rest } = newUser;
-//       res.status(201).json(appResponse("User registered successfully", rest));
-//     } catch (error) {
-//       console.error("Error in register controller:", error);
-//       next(error);
-//     }
-//   }
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -45,6 +18,7 @@ class AuthController {
     static async verifyEmail(req, res, next) {
         try {
             const { token } = req.query;
+            console.log(token);
             if (!token || typeof token !== "string") {
                 res.status(400).json({ message: "Invalid verification token" });
                 return;

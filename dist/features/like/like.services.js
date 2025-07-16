@@ -5,40 +5,113 @@ const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
 const prisma = new client_1.PrismaClient();
 class LikeService {
-    async likePost(userId, postId) {
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_postId: { userId, postId },
-            },
-        });
-        if (existingLike) {
-            throw new appError_1.DuplicateError("You have already liked this post.");
+    async toggleCommentLike(userId, commentId) {
+        // Validate inputs
+        if (!userId || !commentId) {
+            throw new appError_1.BadRequestError("userId and commentId are required");
         }
-        const newLike = await prisma.like.create({
-            data: {
-                userId,
-                postId,
-            },
+        // Check if the comment exists
+        const commentExists = await prisma.comment.findUnique({
+            where: { id: commentId },
         });
-        return newLike;
-    }
-    async unlikePost(userId, postId) {
-        // Check if the like exists
+        if (!commentExists) {
+            throw new appError_1.NotFoundError("Comment not found");
+        }
+        // Check for existing like
         const existingLike = await prisma.like.findUnique({
             where: {
-                userId_postId: { userId, postId },
+                userId_commentId: { userId, commentId },
             },
         });
         if (!existingLike) {
-            throw new appError_1.BadRequestError("You have not liked this post yet.");
+            // Like the comment
+            const newLike = await prisma.like.create({
+                data: {
+                    userId,
+                    commentId,
+                },
+            });
+            // Get updated like count
+            const likeCount = await prisma.like.count({
+                where: { commentId },
+            });
+            return {
+                action: "liked",
+                like: newLike,
+                likeCount,
+            };
         }
-        // Delete the like
-        await prisma.like.delete({
+        else {
+            // Unlike the comment
+            await prisma.like.delete({
+                where: {
+                    userId_commentId: { userId, commentId },
+                },
+            });
+            // Get updated like count
+            const likeCount = await prisma.like.count({
+                where: { commentId },
+            });
+            return {
+                action: "unliked",
+                message: "Like removed successfully",
+                likeCount,
+            };
+        }
+    }
+    async toggleCommentUnLike(userId, commentId) {
+        // Validate inputs
+        if (!userId || !commentId) {
+            throw new appError_1.BadRequestError("userId and commentId are required");
+        }
+        // Check if the comment exists
+        const commentExists = await prisma.comment.findUnique({
+            where: { id: commentId },
+        });
+        if (!commentExists) {
+            throw new appError_1.NotFoundError("Comment not found");
+        }
+        // Check for existing like
+        const existingLike = await prisma.unlike.findUnique({
             where: {
-                userId_postId: { userId, postId },
+                userId_commentId: { userId, commentId },
             },
         });
-        return { message: "Like removed successfully." };
+        if (!existingLike) {
+            // Like the comment
+            const newLike = await prisma.unlike.create({
+                data: {
+                    userId,
+                    commentId,
+                },
+            });
+            // Get updated like count
+            const likeCount = await prisma.unlike.count({
+                where: { commentId },
+            });
+            return {
+                action: "unliked",
+                like: newLike,
+                likeCount,
+            };
+        }
+        else {
+            // Unlike the comment
+            await prisma.unlike.delete({
+                where: {
+                    userId_commentId: { userId, commentId },
+                },
+            });
+            // Get updated like count
+            const likeCount = await prisma.unlike.count({
+                where: { commentId },
+            });
+            return {
+                action: "liked",
+                message: "unLike removed successfully",
+                likeCount,
+            };
+        }
     }
 }
 exports.LikeService = LikeService;

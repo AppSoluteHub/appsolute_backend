@@ -35,7 +35,7 @@ class UserService {
         }
         catch (error) {
             console.error("Error fetching users:", error);
-            throw new appError_1.InternalServerError("Unable to fetch users");
+            throw new appError_1.InternalServerError(`Unable to fetch users ${error.message}`);
         }
     }
     static async getAdmins({ search = "" }) {
@@ -55,13 +55,34 @@ class UserService {
         }
         catch (error) {
             console.error("Error fetching admins:", error);
-            throw new appError_1.InternalServerError("Unable to fetch admins");
+            throw new appError_1.InternalServerError(`Unable to fetch admins ${error.message}`);
+        }
+    }
+    static async getRoles({ search = "" }) {
+        try {
+            const admins = await prisma.user.findMany({
+                where: {
+                    role: {
+                        in: ["ADMIN", "SUPERADMIN", "GUEST", "EDITOR", "CONTRIBUTOR"],
+                    },
+                    OR: [
+                        { fullName: { contains: search, mode: "insensitive" } },
+                        { email: { contains: search, mode: "insensitive" } },
+                    ],
+                },
+            });
+            return admins;
+        }
+        catch (error) {
+            console.error("Error fetching admins:", error);
+            throw new appError_1.InternalServerError(`Unable to fetch admins ${error.message}`);
         }
     }
     static async getUserById(userId) {
+        if (!userId) {
+            throw new appError_1.BadRequestError("User ID is required");
+        }
         try {
-            if (!userId)
-                throw new appError_1.BadRequestError("User ID is required");
             const user = await prisma.user.findUnique({
                 where: { id: userId },
                 select: {
@@ -78,13 +99,22 @@ class UserService {
                     answered: true,
                 },
             });
-            if (!user)
+            if (!user) {
                 throw new appError_1.NotFoundError("User not found");
+            }
             return user;
         }
         catch (error) {
-            console.error("Error fetching user by ID:", error);
-            throw new appError_1.InternalServerError("Unable to fetch user");
+            if (error instanceof client_1.Prisma.PrismaClientKnownRequestError) {
+                console.error("Prisma known error:", error.message);
+                throw new Error("Invalid request to the database");
+            }
+            if (error instanceof client_1.Prisma.PrismaClientValidationError) {
+                console.error("Prisma validation error:", error.message);
+                throw new Error("Invalid input for database query");
+            }
+            console.error("Unexpected error fetching user by ID:", error.message);
+            throw new appError_1.InternalServerError(`Error feching user :${error.message}`);
         }
     }
     static async deleteUser(userId) {
@@ -99,7 +129,7 @@ class UserService {
         }
         catch (error) {
             console.error("Error deleting user:", error);
-            throw new appError_1.InternalServerError("Unable to delete user");
+            throw new appError_1.InternalServerError(`error deleting user: ${error.message}`);
         }
     }
     static async updateUser(userId, updates) {
@@ -156,8 +186,36 @@ class UserService {
         }
         catch (error) {
             console.error("Error updating user:", error);
-            throw new appError_1.InternalServerError("Unable to update user");
+            throw new appError_1.InternalServerError(`Unable to update user: ${error.message}`);
         }
+    }
+    static async updateUserRole(email, fullName, updates) {
+        const data = {};
+        if (updates.role) {
+            data.role = updates.role;
+        }
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+            },
+        });
+        if (!existingUser) {
+            throw new appError_1.NotFoundError("User not found");
+        }
+        const existUserId = existingUser?.id;
+        const updatedUser = await prisma.user.update({
+            where: { id: existUserId },
+            data,
+            select: {
+                id: true,
+                email: true,
+                role: true,
+            },
+        });
+        return updatedUser;
     }
     static async updateProfileImage(userId, imageUrl) {
         return await prisma.user.update({

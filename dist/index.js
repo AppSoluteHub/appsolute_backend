@@ -29,7 +29,7 @@ const server = http_1.default.createServer(app);
 app.use(body_parser_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cors_1.default)({
-    origin: ["http://localhost:3001", "https://appsolutehub.vercel.app"],
+    origin: ["http://localhost:3001", "http://localhost:3002", "http://localhost:3000", "https://appsolutehub.vercel.app", "https://app-solute-hub-app.vercel.app"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,

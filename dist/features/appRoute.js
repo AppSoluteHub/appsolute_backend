@@ -11,12 +11,12 @@ const leaderBoard_route_1 = __importDefault(require("./leaderBoard/routes/leader
 const subscriber_route_1 = __importDefault(require("./subscribers/routes/subscriber.route"));
 const userTask_route_1 = __importDefault(require("./tasks/routes/userTask.route"));
 const comment_route_1 = __importDefault(require("./comments/comment.route"));
+const dashboard_route_1 = __importDefault(require("./dashboard/dashboard.route"));
 const like_route_1 = __importDefault(require("./like/like.route"));
+const tag_route_1 = __importDefault(require("./tags/tag.route"));
+const cat_route_1 = __importDefault(require("./category/cat.route"));
 const task_route_1 = __importDefault(require("./tasks/routes/task.route"));
-// import adminCommentRoute from './admin/routes/comments.Admin'
-// import adminPostRoute from './admin/routes/post.Admin'
-// import adminTaskRoute from './admin/routes/task.route'
-// import adminUserRoute from './admin/routes/usersAdmin'
+const route_1 = __importDefault(require("./behaviour/route"));
 exports.default = (appRouter) => {
     appRouter.use("/users", auth_route_1.default);
     appRouter.use("/userPage", user_route_1.default);
@@ -24,13 +24,14 @@ exports.default = (appRouter) => {
     appRouter.use("/contents", content_route_1.default);
     appRouter.use("/leaderborad", leaderBoard_route_1.default);
     appRouter.use("/subscribers", subscriber_route_1.default);
-    // appRouter.use("/admin",adminPostRoute);
-    // appRouter.use("/admin",adminUserRoute);
-    // appRouter.use("/admin",adminTaskRoute);
-    // appRouter.use("/admin",adminCommentRoute);
+    appRouter.use("/admin", user_route_1.default);
+    appRouter.use("/dashboard", dashboard_route_1.default);
+    appRouter.use("/behavior", route_1.default);
     appRouter.use("/tasks", task_route_1.default);
-    appRouter.use("/tasks", userTask_route_1.default);
+    appRouter.use("/doTasks", userTask_route_1.default);
     appRouter.use("/coments", comment_route_1.default);
     appRouter.use("/likes", like_route_1.default);
+    appRouter.use("/tags", tag_route_1.default);
+    appRouter.use("/categories", cat_route_1.default);
     return appRouter;
 };

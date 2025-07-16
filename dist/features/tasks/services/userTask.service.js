@@ -30,12 +30,15 @@ const answerTask = async (userId, taskId, answers) => {
             const isCorrect = userAnswer === question.correctAnswer;
             if (isCorrect)
                 correctAnswersCount++;
+            // Calculate score earned for this question
+            const scoreEarned = isCorrect ? Math.round(task.points / totalQuestions) : 0;
             return {
                 userId,
                 taskId,
                 questionId,
                 userAnswer,
                 isCorrect,
+                scoreEarned,
             };
         });
         await prisma.userTask.createMany({ data: userAnswers });

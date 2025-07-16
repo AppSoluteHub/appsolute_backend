@@ -11,35 +11,62 @@ class PostController {
     static async createPost(req, res, next) {
         try {
             const userId = req.user?.id;
-            const { title, description, category, contributors, isPublished } = req.body;
+            const editorRole = req.user?.role;
             if (!userId)
                 throw new appError_1.UnAuthorizedError("Unauthorized");
-            if (!title || !description || !category)
-                throw new appError_1.BadRequestError("Title, category, and description are required");
-            let imageUrl = "";
-            if (req.file) {
+            const { title, description, categories, tags, contributors, isPublished, } = req.body;
+            let parsedCategories = [];
+            if (categories) {
                 try {
-                    const file = req.file;
-                    imageUrl = await new Promise((resolve, reject) => {
-                        const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute" }, (error, result) => {
-                            if (error)
-                                return reject(new appError_1.BadRequestError("Failed to upload image to Cloudinary"));
-                            if (result)
-                                return resolve(result.secure_url);
-                        });
-                        uploadStream.end(file.buffer);
-                    });
+                    parsedCategories = JSON.parse(categories);
                 }
-                catch (error) {
-                    return next(error);
+                catch {
+                    parsedCategories = Array.isArray(categories)
+                        ? categories
+                        : [categories];
                 }
             }
-            const post = await blog_service_1.default.createPost(userId, {
+            const parsedTags = tags
+                ? typeof tags === "string"
+                    ? tags.split(",").map(t => t.trim()).filter(Boolean)
+                    : Array.isArray(tags)
+                        ? tags
+                        : []
+                : [];
+            let parsedContributors = [];
+            if (contributors) {
+                try {
+                    parsedContributors = JSON.parse(contributors);
+                }
+                catch {
+                    parsedContributors = Array.isArray(contributors)
+                        ? contributors
+                        : [contributors];
+                }
+            }
+            if (!title ||
+                parsedCategories.length === 0) {
+                throw new appError_1.BadRequestError("Title, and at least one category are required");
+            }
+            let imageUrl = "";
+            if (req.file) {
+                const file = req.file;
+                imageUrl = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute" }, (err, result) => {
+                        if (err)
+                            return reject(new appError_1.BadRequestError("Image upload failed"));
+                        resolve(result.secure_url);
+                    });
+                    uploadStream.end(file.buffer);
+                });
+            }
+            const post = await blog_service_1.default.createPost(userId, editorRole, {
                 title,
                 description,
-                category: category,
-                isPublished,
-                contributors,
+                categories: parsedCategories,
+                tags: parsedTags,
+                contributors: parsedContributors,
+                isPublished: Boolean(isPublished),
                 imageUrl,
             });
             res.status(201).json({
@@ -47,9 +74,10 @@ class PostController {
                 message: "Post created successfully",
                 data: post,
             });
+            return;
         }
-        catch (error) {
-            next(error);
+        catch (err) {
+            return next(err);
         }
     }
     static async getAllPosts(req, res, next) {
@@ -64,8 +92,8 @@ class PostController {
     }
     static async getPostById(req, res, next) {
         try {
-            const { id } = req.params;
-            const post = await blog_service_1.default.getPostById(id);
+            const { postId } = req.params;
+            const post = await blog_service_1.default.getPostById(postId);
             res.send((0, appResponse_1.default)("Post fetched successfully", post));
         }
         catch (error) {
@@ -75,18 +103,31 @@ class PostController {
     static async updatePost(req, res, next) {
         try {
             const userId = req.user?.id;
-            const { id } = req.params;
-            const { title, description, imageUrl, isPublished } = req.body;
+            const { postId } = req.params;
+            const { title, description, isPublished, tags, categories, contributors, } = req.body;
             if (!userId)
                 throw new appError_1.UnAuthorizedError("You are not Authenticated");
-            const updatedPost = await blog_service_1.default.updatePost(id, userId, {
+            let imageUrl = "";
+            if (req.file) {
+                const file = req.file;
+                imageUrl = await new Promise((resolve, reject) => {
+                    const uploadStream = cloudinary_1.default.uploader.upload_stream({ folder: "AppSolute" }, (err, result) => {
+                        if (err)
+                            return reject(new appError_1.BadRequestError("Image upload failed"));
+                        resolve(result.secure_url);
+                    });
+                    uploadStream.end(file.buffer);
+                });
+            }
+            const updatedPost = await blog_service_1.default.updatePost(postId, userId, {
                 title,
                 description,
                 imageUrl,
                 isPublished,
+                tags,
+                categories,
+                contributors,
             });
-            if (!updatedPost)
-                throw new appError_1.BadRequestError("Post not found");
             res.send((0, appResponse_1.default)("Post updated successfully", updatedPost));
         }
         catch (error) {
@@ -96,10 +137,10 @@ class PostController {
     static async deletePost(req, res, next) {
         try {
             const userId = req.user?.id;
-            const { id } = req.params;
+            const { postId } = req.params;
             if (!userId)
                 throw new appError_1.UnAuthorizedError("You are not Authenticated");
-            await blog_service_1.default.deletePost(id, userId);
+            await blog_service_1.default.deletePost(postId, userId);
             res.send((0, appResponse_1.default)("Post deleted successfully"));
         }
         catch (error) {

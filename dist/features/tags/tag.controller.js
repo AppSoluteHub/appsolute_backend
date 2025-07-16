@@ -1,0 +1,104 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteTagController = exports.updateTagHandler = exports.getTagById = exports.getAllTags = exports.createTagController = void 0;
+const tagService = __importStar(require("../tags/tag.service"));
+// export const createTagController = async (req: Request, res: Response):Promise<void> => {
+//   try {
+//     const { name } = req.body;
+//   console.log(name)
+//     if (!name || typeof name !== 'string') {
+//        res.status(400).json({ message: 'Invalid or missing tag name' });
+//         return;
+//     }
+//     const tag = await tagService.createTag({ name });
+//      res.status(201).json({ message: 'Tag created successfully', tag });
+//      return;
+//   } catch (error) {
+//     console.error('Error creating tag:', error);
+//      res.status(500).json({ message: `Internal server error ${error}` });
+//       return;
+//   }
+// };
+const createTagController = async (req, res) => {
+    const { name } = req.body;
+    const result = await tagService.createTag({ name });
+    if (!result.success) {
+        res.status(400).json({ error: result.message });
+        return;
+    }
+    res.status(201).json(result.tag);
+    return;
+};
+exports.createTagController = createTagController;
+const getAllTags = async (_req, res) => {
+    const tags = await tagService.getAllTags();
+    res.json(tags);
+};
+exports.getAllTags = getAllTags;
+const getTagById = async (req, res) => {
+    const tag = await tagService.getTagById(req.params.id);
+    if (!tag) {
+        res.status(404).json({ message: 'Tag not found' });
+        return;
+    }
+    res.json(tag);
+};
+exports.getTagById = getTagById;
+// export const updateTag = async (req: Request, res: Response) => {
+//   const tag = await tagService.updateTag(req.params.id, req.body);
+//   res.json(tag);
+// };
+const updateTagHandler = async (req, res, next) => {
+    const { id } = req.params;
+    const data = { name: req.body.name };
+    try {
+        const tag = await tagService.updateTag(id, data);
+        res.status(200).json(tag);
+        return;
+    }
+    catch (err) {
+        if (err.statusCode === 409) {
+            res.status(409).json({ error: err.message });
+            return;
+        }
+        next(err);
+    }
+};
+exports.updateTagHandler = updateTagHandler;
+const deleteTagController = async (req, res, next) => {
+    const { id } = req.params;
+    try {
+        const deletedTag = await tagService.deleteTag(id);
+        res.status(200).json({
+            message: 'Tag deleted successfully'
+        });
+        return;
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.deleteTagController = deleteTagController;
