@@ -1,8 +1,9 @@
 import express from "express";
-import { getYouTubeVideos } from "../controllers/content.controller";
+import { getYouTubeVideos, getYouTubeVideosKids } from "../controllers/content.controller";
 
 const router = express.Router();
 
 router.get("/videos", getYouTubeVideos);
+router.get("/kidsVideos", getYouTubeVideosKids);
 
 export default router;

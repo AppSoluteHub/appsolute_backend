@@ -34,12 +34,13 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       callbackURL: "https://appsolutehub.com/auth/google/callback", 
     },
+
     async (accessToken: string, refreshToken: string, profile: Profile, done) => {
       try {
         let user = await prisma.user.findUnique({
           where: { email: profile.emails?.[0].value || "" },
         });
-
+       
         if (!user) {
           user = await prisma.user.create({
             data: {
@@ -52,6 +53,7 @@ passport.use(
           });
         }
 
+        
         return done(null, {
           id: user.id,
           fullName: user.fullName,
@@ -77,35 +79,9 @@ passport.deserializeUser((obj: Express.User, done) => {
 const router = express.Router();
 
 router.get(
-  "/auth/google",
+  "api/v1/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
-
-// router.get(
-//   "/auth/google/callback",
-//   passport.authenticate("google", { failureRedirect: "/" }),
-//   (req: Request, res: Response) => {
-//     if (!req.user) {
-//        res.status(401).json({ message: "Authentication failed" });
-//        return;
-//     }
-
-//     const user = req.user as User;
-//     console.log("User", user);
-//     const token = generateToken(user.id);
-
-//     res.json({
-//       message: "Authentication successful",
-//       token,
-//       user: {
-//         id: user.id,
-//         fullName: user.fullName,
-//         email: user.email,
-//         role: user.role,
-//       },
-//     });
-//   }
-// );
 
 router.get(
   "/auth/google/callback",
@@ -124,6 +100,7 @@ router.get(
   }
 );
 
+ 
 router.get("/logout", (req: Request, res: Response) => {
   req.logout(() => {
     res.json({ message: "Logged out successfully" });

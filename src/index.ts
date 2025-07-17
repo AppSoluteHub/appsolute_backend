@@ -29,18 +29,31 @@ const server = http.createServer(app);
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "https://appsolutehub.com",
+  "https://appsolutehub.vercel.app",
+  "https://app-solute-hub-app.vercel.app",
+];
+
 app.use(
   cors({
-    origin: ["http://localhost:3001","http://localhost:3002","http://localhost:3000","https://appsolutehub.com","https://appsolutehub.vercel.app","https://app-solute-hub-app.vercel.app"],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS: " + origin));
+      }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-    
   })
 );
-
-app.options("*", cors());
-
 
 
 
