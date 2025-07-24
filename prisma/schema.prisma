@@ -36,7 +36,6 @@ model User {
 }
 
 
-
 model Task {
   id         String     @id @default(uuid())
   title      String
@@ -79,7 +78,7 @@ model UserTask {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, taskId, questionId]) // Ensure a user can answer each question only once
+  @@unique([userId, taskId, questionId])
 }
 
 

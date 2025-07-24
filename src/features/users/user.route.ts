@@ -17,7 +17,7 @@ router.delete("/:userId",authenticate, isAdmin, UserController.deleteUser);
 router.patch(
   "/role",
   authenticate,       
-       isAdmin,
+        isAdmin,
   UserController.updateUserRole
 );
 router.patch("/profile/:userId",authenticate,upload.single("file"), UserController.updateProfileImage);

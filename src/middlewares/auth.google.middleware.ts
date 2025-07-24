@@ -79,7 +79,7 @@ passport.deserializeUser((obj: Express.User, done) => {
 const router = express.Router();
 
 router.get(
-  "api/v1/auth/google",
+  "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
