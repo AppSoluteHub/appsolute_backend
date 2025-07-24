@@ -26,7 +26,6 @@ interface User {
   email: string;
   role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
 }
-
 passport.use(
   new GoogleStrategy(
     {
