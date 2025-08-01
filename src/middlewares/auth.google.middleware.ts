@@ -89,13 +89,11 @@ router.get(
     if (!req.user) {
       return res.redirect("https://appsolutehub.com/login?error=AuthenticationFailed");
     }
-
     const user = req.user as User;
-    console.log("User", user);
     const token = generateToken(user.id);
 
     
-    res.redirect(`https://appsolutehub.com/dashboard?token=${token}&userId=${user.id}`);
+    res.redirect(`https://appsolutehub.com/dashboard?token=${token}&userId=${user.id}&user=${user}`);
   }
 );
 
