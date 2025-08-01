@@ -15,7 +15,7 @@ declare global {
       id: string;
       fullName: string;
       email: string;
-      role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
+      role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR" | "VIEWER";
     }
   }
 }
@@ -24,7 +24,7 @@ interface User {
   id: string;
   fullName: string;
   email: string;
-  role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
+  role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR" | "VIEWER";
 }
 passport.use(
   new GoogleStrategy(
@@ -91,7 +91,7 @@ router.get(
     }
     const user = req.user as User;
     const token = generateToken(user.id);
-
+     
     
     res.redirect(`https://appsolutehub.com/dashboard?token=${token}&userId=${user.id}&user=${user}`);
   }

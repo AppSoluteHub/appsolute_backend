@@ -177,7 +177,7 @@ enum Role {
   SUPERADMIN
   EDITOR
   CONTRIBUTOR
-  
+  VIEWER
 }
 
 enum InteractionType {
