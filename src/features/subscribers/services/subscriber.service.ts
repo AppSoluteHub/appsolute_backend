@@ -40,7 +40,7 @@ export default class SubscriberService {
               <p style="font-size: 14px; color: #555;">If you did not subscribe, you can ignore this email.</p>
             </div>
             <div style="background: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #888;">
-              <p style="margin: 0;">For any inquiries, contact us at <a href="mailto:support@yourcompany.com" style="color: #37459C;">support@yourcompany.com</a>.</p>
+              <p style="margin: 0;">For any inquiries, contact us at <a href="mailto:support@appsolutehub.com" style="color: #37459C;">support@yourcompany.com</a>.</p>
               <p style="margin: 0;">&copy; ${new Date().getFullYear()} YourCompany. All rights reserved.</p>
             </div>
           </div>

@@ -14,7 +14,7 @@ declare global {
       user?: {
         id: string;
         email: string;
-        role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR";
+        role: "ADMIN" | "GUEST" | "SUPERADMIN" | "EDITOR" | "CONTRIBUTOR" | "VIEWER";
       };
     }
   }

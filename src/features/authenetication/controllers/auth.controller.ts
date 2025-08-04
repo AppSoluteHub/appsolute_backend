@@ -19,7 +19,6 @@ class AuthController {
   static async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { token } = req.query;
-      console.log(token);
       if (!token || typeof token !== "string") {
          res.status(400).json({ message: "Invalid verification token" });
          return;
