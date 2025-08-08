@@ -155,6 +155,8 @@ export class UserService {
         where: { id: userId },
       });
   
+
+      
       if (!user) {
         throw new NotFoundError("User not found");
       }
