@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { UserService } from "./user.service";
 import { BadRequestError, UnAuthorizedError } from "../../lib/appError";
 import cloudinary from "../../config/cloudinary";
+import { data } from "cheerio/dist/commonjs/api/attributes";
 
 export class UserController {
   static async getUsers(req: Request, res: Response) {

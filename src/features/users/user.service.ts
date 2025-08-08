@@ -101,6 +101,50 @@ export class UserService {
   }
   
 
+  // static async getUserById(userId: string) {
+  //   if (!userId) {
+  //     throw new BadRequestError("User ID is required");
+  //   }
+  
+  //   try {
+  //     const user = await prisma.user.findUnique({
+  //       where: { id: userId },
+  //       select: {
+  //         id: true,
+  //         fullName: true,
+  //         nickName: true,
+  //         country: true,
+  //         phone: true,
+  //         gender: true,
+  //         email: true,
+  //         profileImage: true,
+  //         role: true,
+  //         totalScore: true,
+  //         answered: true,
+  //       },
+  //     });
+  
+  //     if (!user) {
+  //       throw new NotFoundError("User not found");
+  //     }
+  
+  //     return user;
+  //   } catch (error : any) {
+  //     if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  //       console.error("Prisma known error:", error.message);
+  //       throw new Error("Invalid request to the database");
+  //     }
+  
+  //     if (error instanceof Prisma.PrismaClientValidationError) {
+  //       console.error("Prisma validation error:", error.message);
+  //       throw new Error("Invalid input for database query");
+  //     }
+  
+  //     console.error("Unexpected error fetching user by ID:", error.message);
+  //     throw new InternalServerError(`Error feching user :${error.message}`);
+  //   }
+  // }
+
   static async getUserById(userId: string) {
     if (!userId) {
       throw new BadRequestError("User ID is required");
@@ -109,27 +153,15 @@ export class UserService {
     try {
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: {
-          id: true,
-          fullName: true,
-          nickName: true,
-          country: true,
-          phone: true,
-          gender: true,
-          email: true,
-          profileImage: true,
-          role: true,
-          totalScore: true,
-          answered: true,
-        },
       });
   
       if (!user) {
         throw new NotFoundError("User not found");
       }
   
-      return user;
-    } catch (error : any) {
+      const { password: _, ...rest } = user;
+      return rest;
+    } catch (error: any) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         console.error("Prisma known error:", error.message);
         throw new Error("Invalid request to the database");
@@ -141,7 +173,7 @@ export class UserService {
       }
   
       console.error("Unexpected error fetching user by ID:", error.message);
-      throw new InternalServerError(`Error feching user :${error.message}`);
+      throw new InternalServerError(`Error fetching user: ${error.message}`);
     }
   }
   
