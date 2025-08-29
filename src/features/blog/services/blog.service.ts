@@ -67,11 +67,11 @@ class PostService {
 
     const foundEmails = existingUsers.map((u) => u.email);
     const missing = contributorEmails.filter((e) => !foundEmails.includes(e));
-    if (missing.length) {
-      throw new BadRequestError(
-        `Contributor(s) not found , Register the contributor in appsolute and try again: ${missing.join(", ")}`
-      );
-    }
+    // if (missing.length) {
+    //   throw new BadRequestError(
+    //     `Contributor(s) not found , Register the contributor in appsolute and try again: ${missing.join(", ")}`
+    //   );
+    // }
 
     const contributorNames = existingUsers.map((u) => u.fullName);
 
