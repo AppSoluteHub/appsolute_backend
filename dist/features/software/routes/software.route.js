@@ -24,8 +24,13 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const dashboard_controller_1 = require("../dashboard/dashboard.controller.");
-const auth_middleware_1 = __importStar(require("../../middlewares/auth.middleware"));
+const softwareController = __importStar(require("../controllers/software.controller"));
+const validateRequest_1 = require("../../middlewares/validateRequest");
+const software_dto_1 = require("../dto/software.dto");
 const router = (0, express_1.Router)();
-router.get('/summary', auth_middleware_1.default, auth_middleware_1.isAdmin, dashboard_controller_1.getDashboardSummary);
+router.post('/', (0, validateRequest_1.validateRequest)(software_dto_1.createSoftwareDto), softwareController.createSoftware);
+router.get('/', softwareController.getAllSoftware);
+router.get('/:id', softwareController.getSoftwareById);
+router.put('/:id', (0, validateRequest_1.validateRequest)(software_dto_1.updateSoftwareDto), softwareController.updateSoftware);
+router.delete('/:id', softwareController.deleteSoftware);
 exports.default = router;

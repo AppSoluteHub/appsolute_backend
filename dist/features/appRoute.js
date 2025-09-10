@@ -17,6 +17,7 @@ const tag_route_1 = __importDefault(require("./tags/tag.route"));
 const cat_route_1 = __importDefault(require("./category/cat.route"));
 const task_route_1 = __importDefault(require("./tasks/routes/task.route"));
 const route_1 = __importDefault(require("./behaviour/route"));
+const software_route_1 = __importDefault(require("./software/routes/software.route"));
 exports.default = (appRouter) => {
     appRouter.use("/users", auth_route_1.default);
     appRouter.use("/userPage", user_route_1.default);
@@ -33,5 +34,6 @@ exports.default = (appRouter) => {
     appRouter.use("/likes", like_route_1.default);
     appRouter.use("/tags", tag_route_1.default);
     appRouter.use("/categories", cat_route_1.default);
+    appRouter.use("/software", software_route_1.default);
     return appRouter;
 };

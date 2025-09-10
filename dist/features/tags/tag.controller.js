@@ -25,23 +25,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTagController = exports.updateTagHandler = exports.getTagById = exports.getAllTags = exports.createTagController = void 0;
 const tagService = __importStar(require("../tags/tag.service"));
-// export const createTagController = async (req: Request, res: Response):Promise<void> => {
-//   try {
-//     const { name } = req.body;
-//   console.log(name)
-//     if (!name || typeof name !== 'string') {
-//        res.status(400).json({ message: 'Invalid or missing tag name' });
-//         return;
-//     }
-//     const tag = await tagService.createTag({ name });
-//      res.status(201).json({ message: 'Tag created successfully', tag });
-//      return;
-//   } catch (error) {
-//     console.error('Error creating tag:', error);
-//      res.status(500).json({ message: `Internal server error ${error}` });
-//       return;
-//   }
-// };
 const createTagController = async (req, res) => {
     const { name } = req.body;
     const result = await tagService.createTag({ name });

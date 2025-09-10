@@ -12,6 +12,9 @@ import tagRoute from './tags/tag.route';
 import catRoute from './category/cat.route';
 import taskRoute from './tasks/routes/task.route'
 import userBahaviourRoutes from './behaviour/route';
+import softwareRoute from './software/routes/software.route';
+import productRoute from './product/routes/product.route';
+import reviewRoute from './review/routes/review.route';
 
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
@@ -29,6 +32,9 @@ export default (appRouter :any) => {
   appRouter.use("/likes",likeRoute);
   appRouter.use("/tags",tagRoute);
   appRouter.use("/categories",catRoute);
+  appRouter.use("/software",softwareRoute);
+  appRouter.use("/products", productRoute);
+  appRouter.use("/products", reviewRoute);
 
   return appRouter;
 };

@@ -5,26 +5,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendEmail = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const env_1 = __importDefault(require("../config/env"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 const sendEmail = async (data) => {
     try {
         const transport = nodemailer_1.default.createTransport({
-            host: 'smtp.gmail.com',
+            host: "smtp.zoho.com",
             port: 465,
             secure: true,
             auth: {
-                user: env_1.default.node_mailer_user,
-                pass: env_1.default.node_mailer_pass,
+                user: process.env.MYEMAIL_USER,
+                pass: process.env.EMAIL_PASS,
             },
         });
         const mailOptions = {
-            from: `AppSolute <${env_1.default.node_mailer_user}>`,
+            from: `AppSolute <${process.env.MYEMAIL_USER}>`,
             to: data.email,
             subject: data.subject,
             html: data.html,
         };
         const info = await transport.sendMail(mailOptions);
-        console.log(`Message sent: ${info.messageId}`);
     }
     catch (error) {
         console.error('Error sending email:', error);

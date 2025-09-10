@@ -55,7 +55,6 @@ class AuthService {
                 });
             }
             const verifyLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
-            console.log(verifyLink);
             const emailTemplate = `
       <html>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
@@ -73,7 +72,7 @@ class AuthService {
             <p style="font-size: 14px; color: #555;">If you did not create this account, you can safely ignore this email.</p>
           </div>
           <div style="background: #f9f9f9; padding: 10px 20px; text-align: center; font-size: 12px; color: #888;">
-            <p style="margin: 0;">If you have any questions, please contact us at <a href="mailto:support@appsolute.com" style="color: #4caf50;">support@appsolute.com</a>.</p>
+            <p style="margin: 0;">If you have any questions, please contact us at <a href="mailto:support@appsolute.com" style="color: #4caf50;">support@appsolutehub.com</a>.</p>
             <p style="margin: 0;">&copy; ${new Date().getFullYear()} AppSolute. All rights reserved.</p>
           </div>
         </div>

@@ -14,7 +14,7 @@ const prisma = new client_1.PrismaClient();
 passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: process.env.GOOGLE_CLIENT_ID || "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    callbackURL: "https://appsolute-api-1.onrender.com/auth/google/callback",
+    callbackURL: "https://appsolutehub.com/auth/google/callback",
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await prisma.user.findUnique({
@@ -51,37 +51,13 @@ passport_1.default.deserializeUser((obj, done) => {
 });
 const router = express_1.default.Router();
 router.get("/auth/google", passport_1.default.authenticate("google", { scope: ["profile", "email"] }));
-// router.get(
-//   "/auth/google/callback",
-//   passport.authenticate("google", { failureRedirect: "/" }),
-//   (req: Request, res: Response) => {
-//     if (!req.user) {
-//        res.status(401).json({ message: "Authentication failed" });
-//        return;
-//     }
-//     const user = req.user as User;
-//     console.log("User", user);
-//     const token = generateToken(user.id);
-//     res.json({
-//       message: "Authentication successful",
-//       token,
-//       user: {
-//         id: user.id,
-//         fullName: user.fullName,
-//         email: user.email,
-//         role: user.role,
-//       },
-//     });
-//   }
-// );
 router.get("/auth/google/callback", passport_1.default.authenticate("google", { failureRedirect: "/" }), (req, res) => {
     if (!req.user) {
-        return res.redirect("https://appsolutehub.vercel.app/login?error=AuthenticationFailed");
+        return res.redirect("https://appsolutehub.com/login?error=AuthenticationFailed");
     }
     const user = req.user;
-    console.log("User", user);
     const token = (0, jwt_1.generateToken)(user.id);
-    res.redirect(`https://appsolutehub.vercel.app/dashboard?token=${token}&userId=${user.id}`);
+    res.redirect(`https://appsolutehub.com/dashboard?token=${token}&userId=${user.id}&user=${user}`);
 });
 router.get("/logout", (req, res) => {
     req.logout(() => {
