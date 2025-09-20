@@ -14,6 +14,8 @@ import taskRoute from './tasks/routes/task.route'
 import userBahaviourRoutes from './behaviour/route';
 import softwareRoute from './software/routes/software.route';
 import productRoute from './product/routes/product.route';
+import cartRoute from './product/routes/cart.routes';
+import orderRoute from './product/routes/order.routes';
 import reviewRoute from './review/routes/review.route';
 
 export default (appRouter :any) => {
@@ -34,7 +36,9 @@ export default (appRouter :any) => {
   appRouter.use("/categories",catRoute);
   appRouter.use("/software",softwareRoute);
   appRouter.use("/products", productRoute);
-  appRouter.use("/products", reviewRoute);
+  appRouter.use("/cart", cartRoute);
+  appRouter.use("/orders", orderRoute);
+  appRouter.use("/product", reviewRoute);
 
   return appRouter;
 };

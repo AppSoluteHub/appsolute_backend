@@ -32,6 +32,8 @@ model User {
   userTasks         UserTask[]
    orders    Order[]
   reviews   Review[]
+   carts             Cart[]  
+   billingAddresses  BillingAddress[]
   joined             DateTime?    @default(now())
   updatedAt             DateTime?    @default(now())
 
@@ -279,10 +281,8 @@ model Software {
   updatedAt   DateTime @updatedAt
 }
 
-
-
 model Product {
-  id          Int       @id @default(autoincrement())
+  id          String    @id @default(uuid())
   title       String
   description String
   price       Float
@@ -291,43 +291,96 @@ model Product {
   colors      String[]
   sizes       String[]
   stock       Int
+  weight      Float
+  brand       String?
   sku         String    @unique
   category    String
   tags        String[]
   reviews     Review[]
   orderItems  OrderItem[]
+   cartItems   CartItem[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
 
 model Order {
-  id        Int         @id @default(autoincrement())
-  user      User        @relation(fields: [userId], references: [id])
+  id        String     @id @default(uuid())
   userId    String
+  user      User       @relation(fields: [userId], references: [id])
   items     OrderItem[]
   total     Float
-  status    String      @default("PENDING") 
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  shareToken    String?         @unique
+  status    String     @default("PENDING")
+  billingAddress BillingAddress?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model OrderItem {
-  id        Int      @id @default(autoincrement())
-  order     Order    @relation(fields: [orderId], references: [id])
-  orderId   Int
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  quantity  Int
-  price     Float    
+  id         String   @id @default(uuid())
+
+  // relation to Order
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // relation to Product
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity   Int
+  price      Float
 }
+
 model Review {
-  id        Int      @id @default(autoincrement())
-  rating    Int      // 1 to 5 stars
+  id        String   @id @default(uuid())
+  rating    Int
   comment   String
-  product   Product  @relation(fields: [productId], references: [id])
-  productId Int
-  user      User     @relation(fields: [userId], references: [id])
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  items     CartItem[]
+  subtotal  Float      @default(0)
+  total     Float      @default(0)
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  quantity  Int
+}
+
+model BillingAddress {
+  id        String  @id @default(uuid())
+  orderId   String  @unique
+  order     Order   @relation(fields: [orderId], references: [id])
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+  fullName  String
+  lastName  String
+  company   String?
+  country   String
+  state     String
+  zip       String
+  phone     String
+  email     String
+  address   String
 }

@@ -1,5 +1,5 @@
 // src/postValidation.ts
-import { PostCategory } from '@prisma/client';
+import { Category } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 

@@ -35,13 +35,13 @@ export default async function authenticate(
 
   try {
     const decoded = verifyToken(token);
+    
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-
+    
     if (!user) {
       res.status(401).json({ success: false, message: "Invalid user." });
       return;
     }
-
     req.user = { id: user.id, email: user.email, role: user.role };
     next();
   } catch (err) {

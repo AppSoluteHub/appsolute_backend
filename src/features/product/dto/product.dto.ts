@@ -13,17 +13,22 @@ export const createProductDto = Joi.object({
     'number.positive': 'Price must be a positive number',
     'any.required': 'Price is required'
   }),
-  image: Joi.string().uri().required().messages({
-    'string.uri': 'Image must be a valid URL',
-    'any.required': 'Image is required'
+  image: Joi.string().uri().optional().messages({
+    'string.uri': 'Image must be a valid URL'
   }),
   gallery: Joi.array().items(
     Joi.string().uri().messages({
       'string.uri': 'Gallery items must be valid URLs'
     })
   ).optional(),
-  colors: Joi.array().items(Joi.string()).optional(),
-  sizes: Joi.array().items(Joi.string()).optional(),
+  colors: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
+  sizes: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
   stock: Joi.number().integer().min(0).required().messages({
     'number.min': 'Stock cannot be negative',
     'number.integer': 'Stock must be an integer',
@@ -37,7 +42,10 @@ export const createProductDto = Joi.object({
     'string.empty': 'Category is required',
     'any.required': 'Category is required'
   }),
-  tags: Joi.array().items(Joi.string()).optional(),
+  tags: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
 });
 
 export const updateProductDto = Joi.object({
@@ -58,8 +66,14 @@ export const updateProductDto = Joi.object({
       'string.uri': 'Gallery items must be valid URLs'
     })
   ).optional(),
-  colors: Joi.array().items(Joi.string()).optional(),
-  sizes: Joi.array().items(Joi.string()).optional(),
+  colors: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
+  sizes: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
   stock: Joi.number().integer().min(0).optional().messages({
     'number.min': 'Stock cannot be negative',
     'number.integer': 'Stock must be an integer'
@@ -70,5 +84,8 @@ export const updateProductDto = Joi.object({
   category: Joi.string().min(1).optional().messages({
     'string.empty': 'Category is required'
   }),
-  tags: Joi.array().items(Joi.string()).optional(),
+  tags: Joi.alternatives().try(
+    Joi.array().items(Joi.string()),
+    Joi.string()
+  ).optional(),
 });

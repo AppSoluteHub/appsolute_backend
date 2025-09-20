@@ -6,7 +6,7 @@ import authenticate, { isAdmin } from '../../../middlewares/auth.middleware';
 
 const router = Router();
 
-router.post('/',authenticate,isAdmin, validateRequest(createSoftwareDto), softwareController.createSoftware);
+router.post('/',authenticate, validateRequest(createSoftwareDto), softwareController.createSoftware);
 router.get('/', softwareController.getAllSoftware);
 router.get('/:id', softwareController.getSoftwareById);
 router.patch('/:id', authenticate, isAdmin,validateRequest(updateSoftwareDto), softwareController.updateSoftware);

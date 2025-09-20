@@ -1,12 +1,12 @@
 import { PrismaClient } from '@prisma/client';
-import { AppError } from '../../../lib/appError';
+import { AppError, BadRequestError } from '../../../lib/appError';
 
 const prisma = new PrismaClient();
 
 export const createReview = async (data: {
   rating: number;
   comment: string;
-  productId: number;
+  productId: string;
   userId: string;
 }) => {
   // Check if product exists
@@ -18,7 +18,7 @@ export const createReview = async (data: {
   // Check if user exists
   const user = await prisma.user.findUnique({ where: { id: data.userId } });
   if (!user) {
-    throw new AppError('User not found', 404);
+    throw new BadRequestError('User not found', 404);
   }
 
   return await prisma.review.create({ data });
@@ -27,7 +27,7 @@ export const createReview = async (data: {
 export const getAllReviews = async (options: {
   page?: number;
   limit?: number;
-  productId?: number;
+  productId?: string;
   userId?: string;
 }) => {
   const { page = 1, limit = 10, productId, userId } = options;
@@ -74,7 +74,7 @@ export const getAllReviews = async (options: {
   };
 };
 
-export const getReviewById = async (id: number) => {
+export const getReviewById = async (id: string) => {
   const review = await prisma.review.findUnique({
     where: { id },
     include: {
@@ -95,19 +95,19 @@ export const getReviewById = async (id: number) => {
     },
   });
   if (!review) {
-    throw new AppError('Review not found', 404);
+    throw new BadRequestError('Review not found', 404);
   }
   return review;
 };
 
-export const updateReview = async (id: number, data: { rating?: number; comment?: string }) => {
+export const updateReview = async (id: string, data: { rating?: number; comment?: string }) => {
   return await prisma.review.update({
     where: { id },
     data,
   });
 };
 
-export const deleteReview = async (id: number) => {
+export const deleteReview = async (id: string) => {
   return await prisma.review.delete({
     where: { id },
   });

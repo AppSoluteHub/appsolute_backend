@@ -4,8 +4,9 @@ import { AppError } from '../../../lib/appError';
 
 export const createReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { productId } = req.params; // Get productId from params
-    const userId = req.user?.id; // Get userId from authenticated user
+    const { productId } = req.params; 
+  const userId = req.user?.id as string;
+    
 
     if (!userId) {
       throw new AppError('User not authenticated', 401);
@@ -30,7 +31,7 @@ export const getAllReviews = async (req: Request, res: Response, next: NextFunct
     const options = {
       page: page ? parseInt(page as string) : undefined,
       limit: limit ? parseInt(limit as string) : undefined,
-      productId: productId ? parseInt(productId as string) : undefined,
+      productId: productId ? productId as string : undefined,
       userId: userId as string,
     };
     const reviews = await reviewService.getAllReviews(options);
@@ -42,7 +43,7 @@ export const getAllReviews = async (req: Request, res: Response, next: NextFunct
 
 export const getReviewById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const review = await reviewService.getReviewById(parseInt(req.params.id));
+    const review = await reviewService.getReviewById(req.params.id);
     res.status(200).json({ success: true, data: review });
   } catch (error) {
     next(error);
@@ -51,7 +52,7 @@ export const getReviewById = async (req: Request, res: Response, next: NextFunct
 
 export const updateReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const review = await reviewService.updateReview(parseInt(req.params.id), req.body);
+    const review = await reviewService.updateReview(req.params.id, req.body);
     res.status(200).json({ success: true, data: review });
   } catch (error) {
     next(error);
@@ -60,7 +61,7 @@ export const updateReview = async (req: Request, res: Response, next: NextFuncti
 
 export const deleteReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await reviewService.deleteReview(parseInt(req.params.id));
+    await reviewService.deleteReview(req.params.id);
     res.status(204).json({ success: true, data: null });
   } catch (error) {
     next(error);
