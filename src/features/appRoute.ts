@@ -17,6 +17,7 @@ import productRoute from './product/routes/product.route';
 import cartRoute from './product/routes/cart.routes';
 import orderRoute from './product/routes/order.routes';
 import reviewRoute from './review/routes/review.route';
+import paymentRoute from './payment/payment.route';
 
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
@@ -38,9 +39,8 @@ export default (appRouter :any) => {
   appRouter.use("/products", productRoute);
   appRouter.use("/cart", cartRoute);
   appRouter.use("/orders", orderRoute);
-  appRouter.use("/product", reviewRoute);
+  appRouter.use("/productReviews", reviewRoute);
+  appRouter.use("/payments", paymentRoute);
 
   return appRouter;
 };
-
-

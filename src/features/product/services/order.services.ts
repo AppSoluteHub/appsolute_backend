@@ -63,22 +63,17 @@ export const getOrderById = async (userId: string, orderId: string) => {
   return order;
 };
 
+
 export const createOrder = async (userId: string, billingAddress: BillingAddressInput) => {
   const cart = await prisma.cart.findFirst({
-    where: {
-      userId,
-    },
+    where: { userId },
     include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
+      items: { include: { product: true } },
     },
   });
 
   if (!cart || cart.items.length === 0) {
-    throw new BadRequestError('Cart is empty', 400);
+    throw new BadRequestError("Cart is empty", 400);
   }
 
   const total = cart.items.reduce(
@@ -86,11 +81,13 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
     0
   );
 
+  const { userId: _ignore, ...billingData } = billingAddress; 
+
   const order = await prisma.order.create({
     data: {
       userId,
       total,
-      status: 'CONFIRMED',
+      status: "CONFIRMED",
       items: {
         create: cart.items.map((item) => ({
           productId: item.productId,
@@ -99,27 +96,25 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
         })),
       },
       billingAddress: {
-        create: billingAddress,
+        create: {
+          ...billingData,
+          user: {
+            connect: { id: userId },
+          },
+        },
       },
     },
     include: {
-      items: {
-        include: {
-          product: true,
-        },
-      },
+      items: { include: { product: true } },
       billingAddress: true,
     },
   });
 
-  await prisma.cartItem.deleteMany({
-    where: {
-      cartId: cart.id,
-    },
-  });
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
 
   return order;
 };
+
 
 export const generateShareableOrderLink = async (userId: string, orderId: string) => {
   // Find the order

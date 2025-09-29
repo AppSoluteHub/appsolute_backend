@@ -9,16 +9,25 @@ export const createReview = async (data: {
   productId: string;
   userId: string;
 }) => {
-  // Check if product exists
   const product = await prisma.product.findUnique({ where: { id: data.productId } });
   if (!product) {
     throw new AppError('Product not found', 404);
   }
 
-  // Check if user exists
   const user = await prisma.user.findUnique({ where: { id: data.userId } });
   if (!user) {
     throw new BadRequestError('User not found', 404);
+  }
+  
+const existingReview = await prisma.review.findFirst({
+    where: {
+      userId: data.userId,
+      productId: data.productId
+    }
+  });
+
+  if (existingReview) {
+    throw new BadRequestError('You have already reviewed this product. You can update your existing review instead.', 409);
   }
 
   return await prisma.review.create({ data });

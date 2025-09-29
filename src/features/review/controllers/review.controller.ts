@@ -5,6 +5,7 @@ import { AppError } from '../../../lib/appError';
 export const createReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { productId } = req.params; 
+    console.log(productId)
   const userId = req.user?.id as string;
     
 
@@ -14,7 +15,7 @@ export const createReview = async (req: Request, res: Response, next: NextFuncti
 
     const reviewData = {
       ...req.body,
-      productId: parseInt(productId),
+      productId,
       userId,
     };
 
