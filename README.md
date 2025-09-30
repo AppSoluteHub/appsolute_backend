@@ -90,7 +90,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## API Documentation
 
-The API is documented using Swagger. Once the server is running, you can access the Swagger UI at `http://localhost:3000/api-docs`.
+The API is documented using Swagger. Once the server is running, you can access the Swagger UI , you can test on postman  .
 
 ## Project Structure
 

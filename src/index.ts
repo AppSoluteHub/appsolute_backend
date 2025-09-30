@@ -13,18 +13,13 @@ import googleRoute from "./middlewares/auth.google.middleware";
 import dotenv from "dotenv";
 import { errorHandler } from "./middlewares/error.middleware";
 import http from "http";
-// import { initializeSocket } from "./config/websocket";
-// import { connectRedis } from "./config/redis";
+
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 const server = http.createServer(app); 
-
-
-// connectRedis();
-// initializeSocket(server);
 
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
@@ -82,7 +77,7 @@ app.use(errorHandler);
 
 setupSwagger(app);
 
-// Start Server
+
 server.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
 
 export default app;
