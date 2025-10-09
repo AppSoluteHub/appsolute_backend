@@ -18,7 +18,7 @@ export class PayStackService {
                 {
                     amount: amount * 100, // Convert to kobo/cents
                     email,
-                    callback_url: 'https://etsapsfrica.com/success'
+                    callback_url: 'http://localhost:3000/success'
                 },
                 {
                     headers: {

@@ -10,7 +10,7 @@ const router = Router();
 
 router.post(
   '/',
-  authenticate,
+  // authenticate,
   // isAdmin,
   upload.fields([{ name: 'image', maxCount: 1 }, { name: 'gallery', maxCount: 10 }]),
   validateFile, 
