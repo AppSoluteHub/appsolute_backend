@@ -10,7 +10,7 @@ export class PaymentController {
 
     async initiatePayment(req: Request, res: Response): Promise<void> {
         try {
-            const { userId, amount, email } = req.body;
+             const {userId, amount, email } = req.body;
             const paymentUrl = await this.paystackService.initiatePayment(userId, amount, email);
             res.json({ paymentUrl });
         } catch (error: any) {
