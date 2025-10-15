@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
 import * as productService from "../services/product.service";
-import { AppError } from "../../../lib/appError";
 import {
   uploadImageToCloudinary,
   uploadMultipleImagesToCloudinary,

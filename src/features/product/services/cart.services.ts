@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 type CartWithExtras = Cart & {
   items: (CartItem & { product: Product })[];
   relatedProducts: Product[];
+  vat: number;
+  discount: number;
 };
 
 export const getCart = async (userId: string): Promise<CartWithExtras | null> => {
@@ -32,12 +34,23 @@ export const getCart = async (userId: string): Promise<CartWithExtras | null> =>
     0
   );
 
+  const discount = cart.items.reduce(
+    (acc, item) => acc + (item.product.price * (item.product.discount || 0) / 100 * item.quantity),
+    0
+  );
+
+  const totalBeforeVat = subtotal - discount;
+  const vat = totalBeforeVat * 0.075;
+  const total = totalBeforeVat + vat;
+
   // Update cart totals in database
   await prisma.cart.update({
     where: { id: cart.id },
     data: {
       subtotal,
-      total: subtotal, 
+      total,
+      vat,
+      discount,
     },
   });
 
@@ -60,7 +73,9 @@ export const getCart = async (userId: string): Promise<CartWithExtras | null> =>
   return {
     ...cart,
     subtotal,
-    total: subtotal,
+    total,
+    vat,
+    discount,
     relatedProducts,
   };
 };
@@ -73,6 +88,8 @@ export const addToCart = async (userId: string, productId: string, quantity: num
         userId,
         subtotal: 0,
         total: 0,
+        vat: 0,
+        discount: 0,
       },
     });
   }
@@ -87,11 +104,18 @@ export const addToCart = async (userId: string, productId: string, quantity: num
   });
 
   if (existingItem) {
+    const newQuantity = existingItem.quantity + quantity;
+    if (newQuantity > 5) {
+      throw new BadRequestError('You can only add up to 5 items of the same product to your cart.', 400);
+    }
     await prisma.cartItem.update({
       where: { id: existingItem.id },
-      data: { quantity: existingItem.quantity + quantity },
+      data: { quantity: newQuantity },
     });
   } else {
+    if (quantity > 5) {
+      throw new BadRequestError('You can only add up to 5 items of the same product to your cart.', 400);
+    }
     await prisma.cartItem.create({
       data: {
         cartId: cart.id,
@@ -121,15 +145,17 @@ export const removeFromCart = async (userId: string, cartItemId: string) => {
   return getCart(userId);
 };
 
-// Additional helper functions you might need:
-
 export const updateCartItemQuantity = async (
   userId: string, 
-  cartItemId: string, 
+cartItemId: string, 
   quantity: number
 ) => {
   if (quantity <= 0) {
     return removeFromCart(userId, cartItemId);
+  }
+
+  if (quantity > 5) {
+    throw new BadRequestError('You can only have up to 5 items of the same product in your cart.', 400);
   }
 
   const cart = await prisma.cart.findFirst({ where: { userId } });
@@ -164,6 +190,8 @@ export const clearCart = async (userId: string) => {
     data: {
       subtotal: 0,
       total: 0,
+      vat: 0,
+      discount: 0,
     },
   });
 

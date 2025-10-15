@@ -247,10 +247,10 @@ static async register({
       });
       if (!user) throw new UnAuthorizedError("Invalid credentials");
 
-      // if (!user.verified)
-      //   throw new UnAuthorizedError(
-      //     "Email not verified. Please check your email."
-      //   );
+      if (!user.verified)
+        throw new UnAuthorizedError(
+          "Email not verified. Please check your email."
+        );
 
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) throw new UnAuthorizedError("Invalid credentials");

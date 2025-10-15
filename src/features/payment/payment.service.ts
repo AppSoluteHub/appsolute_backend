@@ -11,7 +11,7 @@ export class PayStackService {
         this.paystackSecretKey = secretKey;
     }
 
-    async initiatePayment(userId: string, amount: number, email: string): Promise<string> {
+    async initiatePayment(userId: string,orderId: string, amount: number, email: string): Promise<string> {
         try {
             const response: any = await axios.post(
                 'https://api.paystack.co/transaction/initialize',
@@ -33,6 +33,7 @@ export class PayStackService {
             await prisma.payment.create({
                 data: {
                     userId,
+                    orderId,
                     email,
                     amount,
                     reference,
@@ -47,28 +48,77 @@ export class PayStackService {
         }
     }
 
+    // async verifyPayment(reference: string): Promise<boolean> {
+    //     try {
+    //         const response: any = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
+    //             headers: {
+    //                 Authorization: `Bearer ${this.paystackSecretKey}`
+    //             }
+    //         });
+
+    //         const { status } = response.data.data;
+    //         const isSuccessful = status === 'success';
+
+    //         await prisma.payment.update({
+    //             where: { reference },
+    //             data: { status: isSuccessful ? PaymentStatus.SUCCESS : PaymentStatus.FAILED },
+    //                include: { order: true },
+    //         });
+          
+
+    //           if (isSuccessful && payment.orderId) {
+    //   await prisma.order.update({
+    //     where: { id: payment.orderId },
+    //     data: { status: "CONFIRMED" },
+    //   });
+    // }
+    //         return isSuccessful;
+
+
+    //     } catch (error) {
+    //         console.error('Payment verification failed:', error);
+    //         return false;
+    //     }
+    // }
+
     async verifyPayment(reference: string): Promise<boolean> {
-        try {
-            const response: any = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-                headers: {
-                    Authorization: `Bearer ${this.paystackSecretKey}`
-                }
-            });
+  try {
+    const response: any = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.paystackSecretKey}`,
+        },
+      }
+    );
 
-            const { status } = response.data.data;
-            const isSuccessful = status === 'success';
+    const { status } = response.data.data;
+    const isSuccessful = status === 'success';
 
-            await prisma.payment.update({
-                where: { reference },
-                data: { status: isSuccessful ? PaymentStatus.SUCCESS : PaymentStatus.FAILED }
-            });
+    // Update the payment and get its related order
+    const payment = await prisma.payment.update({
+      where: { reference },
+      data: {
+        status: isSuccessful ? PaymentStatus.SUCCESS : PaymentStatus.FAILED,
+      },
+      include: { order: true },
+    });
 
-            return isSuccessful;
-        } catch (error) {
-            console.error('Payment verification failed:', error);
-            return false;
-        }
+    // If successful and linked to an order, mark order as CONFIRMED
+    if (isSuccessful && payment.orderId) {
+      await prisma.order.update({
+        where: { id: payment.orderId },
+        data: { status: "CONFIRMED" },
+      });
     }
+
+    return isSuccessful;
+  } catch (error: any) {
+    console.error('Payment verification failed:', error.message);
+    return false;
+  }
+}
+
 
     async handleWebhook(payload: any): Promise<void> {
         const { event, data } = payload;

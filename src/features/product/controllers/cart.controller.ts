@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import * as cartService from '../services/cart.services';
-import { AppError, BadRequestError } from '../../../lib/appError';
+import { AppError, BadRequestError, UnAuthorizedError } from '../../../lib/appError';
 import { catchAsync } from '../../../utils/catchAsync';
 
 export const getCartController = async (req: Request, res: Response, next: NextFunction) => {
@@ -26,8 +26,11 @@ export const getCartController = async (req: Request, res: Response, next: NextF
 export const addToCartController = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user?.id as string;
-    const { productId } = req.params;
-    const { quantity = 1 } = req.body;
+    if (!userId) {
+      throw new UnAuthorizedError('User not authenticated', 401);
+    }
+   
+    const { quantity = 1 , productId} = req.body;
 
     if (!userId) {
       throw new BadRequestError('User not authenticated', 401);
@@ -41,6 +44,7 @@ export const addToCartController = async (req: Request, res: Response, next: Nex
       throw new BadRequestError('Quantity must be at least 1');
     }
 
+    
     const cart = await cartService.addToCart(userId, productId, Number(quantity));
 
     res.status(200).json({
@@ -59,7 +63,7 @@ export const removeFromCartController = async (req: Request, res: Response, next
     const { cartItemId } = req.params;
 
     if (!userId) {
-      throw new AppError('User not authenticated', 401);
+      throw new UnAuthorizedError('User not authenticated', 401);
     }
 
     if (!cartItemId) {

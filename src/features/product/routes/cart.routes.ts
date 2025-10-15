@@ -6,7 +6,7 @@ import authenticate from '../../../middlewares/auth.middleware';
 const router = Router();
 
 router.get('/', authenticate, cartController.getCartController);
-router.post('/:productId', authenticate, cartController.addToCartController);
+router.post('/', authenticate, cartController.addToCartController);
 router.delete('/:cartItemId',authenticate , cartController.removeFromCartController);
 
 export default router;

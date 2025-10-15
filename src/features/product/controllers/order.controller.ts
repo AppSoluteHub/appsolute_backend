@@ -2,7 +2,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order.services';
 import { createOrderSchema } from '../../../validators/order.validator';
-import { AppError } from '../../../lib/appError';
+import { AppError, BadRequestError, UnAuthorizedError } from '../../../lib/appError';
 
 export const getOrdersController = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -21,7 +21,7 @@ export const getOrderByIdController = async (req: Request, res: Response, next: 
   try {
     const userId = req.user?.id as string;
     if (!userId) {
-      throw new AppError('User not authenticated', 401);
+      throw new UnAuthorizedError('User not authenticated', 401);
     }
     const { orderId } = req.params;
     const order = await orderService.getOrderById(userId, orderId);
@@ -35,12 +35,12 @@ export const createOrderController = async (req: Request, res: Response, next: N
   try {
     const userId = req.user?.id as string;
     if (!userId) {
-      throw new AppError('User not authenticated', 401);
+      throw new UnAuthorizedError('User not authenticated', 401);
     }
 
     const { error, value } = createOrderSchema.validate(req.body);
     if (error) {
-      throw new AppError(error.details[0].message, 400);
+      throw new BadRequestError(error.details[0].message, 400);
     }
 
     const order = await orderService.createOrder(userId, value.billingAddress);

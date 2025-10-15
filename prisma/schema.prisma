@@ -293,6 +293,7 @@ model Product {
   cartItems   CartItem[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
+  discount    Float?      @default(0)
 }
 
 model Order {
@@ -303,9 +304,12 @@ model Order {
   total          Float
   shareToken     String?         @unique
   status         String          @default("PENDING")
+  payment        Payment?        @relation("OrderPayment")
   billingAddress BillingAddress?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
+  vat            Float?
+  discount       Float?
 }
 
 model OrderItem {
@@ -343,6 +347,8 @@ model Cart {
   items    CartItem[]
   subtotal Float      @default(0)
   total    Float      @default(0)
+  vat      Float      @default(0)
+  discount Float      @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -374,12 +380,15 @@ model BillingAddress {
   zip      String
   phone    String
   email    String
+  address  String
 }
 
 model Payment {
   id        String        @id @default(uuid())
   userId    String
   user      User          @relation(fields: [userId], references: [id])
+    orderId   String        @unique
+  order     Order         @relation("OrderPayment", fields: [orderId], references: [id])
   email     String
   amount    Float
   reference String        @unique
