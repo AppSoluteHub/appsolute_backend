@@ -10,12 +10,12 @@ export class PaymentController {
 
     async initiatePayment(req: Request, res: Response): Promise<void> {
         try {
-             const { userId,orderId, amount, email } = req.body;
-
+            const userId = req.user?.id as string;
             if (!userId) {
                 res.status(401).json({ error: 'User not authenticated' });
                 return;
             }
+             const { orderId, amount, email } = req.body;
             const paymentUrl = await this.paystackService.initiatePayment(userId, orderId,amount, email);
             res.json({ paymentUrl });
         } catch (error: any) {
