@@ -124,7 +124,7 @@ model Comment {
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   author   User      @relation("UserComments", fields: [authorId], references: [id])
   post     Post      @relation("PostComments", fields: [postId], references: [id])
-  likes    Like[]    @relation("CommentLikes") // Likes on this comment
+  likes    Like[]    @relation("CommentLikes") 
   unlikes  Unlike[]  @relation("CommentunLikes")
 }
 
@@ -381,13 +381,14 @@ model BillingAddress {
   phone    String
   email    String
   address  String
+  note     String?
 }
 
 model Payment {
   id        String        @id @default(uuid())
   userId    String
   user      User          @relation(fields: [userId], references: [id])
-    orderId   String        @unique
+  orderId   String        @unique
   order     Order         @relation("OrderPayment", fields: [orderId], references: [id])
   email     String
   amount    Float
