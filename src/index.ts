@@ -1,5 +1,5 @@
 
-import express from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { Router } from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -21,10 +21,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 const server = http.createServer(app); 
 
-app.use(bodyParser.json());
-app.use(express.urlencoded({ extended: true }));
 
-
+app.use(bodyParser.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+app.use(express.json({ limit: "20mb" }));
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -56,7 +56,10 @@ app.use(cookieParser());
 app.use(express.json());
 
 const storage = multer.memoryStorage();
-export const upload = multer({ storage });
+export const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+});
 
 app.use(
   session({
@@ -73,6 +76,7 @@ app.use("/", googleRoute);
 const router = Router();
 const rootRouter = baseRoutes(router);
 app.use("/api/v1", rootRouter);
+
 app.use(errorHandler);
 
 setupSwagger(app);
