@@ -11,5 +11,6 @@ export const createOrderSchema = Joi.object({
     phone: Joi.string().required(),
     email: Joi.string().email().required(),
     address: Joi.string().required(),
+    note: Joi.string().optional(),
   }).required(),
 });
