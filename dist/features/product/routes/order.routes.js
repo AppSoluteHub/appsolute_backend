@@ -33,4 +33,6 @@ const router = (0, express_1.Router)();
 router.get('/', auth_middleware_1.default, orderController.getOrdersController);
 router.get('/:orderId', auth_middleware_1.default, orderController.getOrderByIdController);
 router.post('/', auth_middleware_1.default, orderController.createOrderController);
+router.post("/:orderId/share-link", auth_middleware_1.default, orderController.shareOrderLink);
+router.get("/shared/:token", orderController.viewSharedOrder);
 exports.default = router;

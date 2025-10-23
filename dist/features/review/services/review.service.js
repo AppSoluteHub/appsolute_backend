@@ -5,15 +5,22 @@ const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
 const prisma = new client_1.PrismaClient();
 const createReview = async (data) => {
-    // Check if product exists
     const product = await prisma.product.findUnique({ where: { id: data.productId } });
     if (!product) {
         throw new appError_1.AppError('Product not found', 404);
     }
-    // Check if user exists
     const user = await prisma.user.findUnique({ where: { id: data.userId } });
     if (!user) {
         throw new appError_1.BadRequestError('User not found', 404);
+    }
+    const existingReview = await prisma.review.findFirst({
+        where: {
+            userId: data.userId,
+            productId: data.productId
+        }
+    });
+    if (existingReview) {
+        throw new appError_1.BadRequestError('You have already reviewed this product. You can update your existing review instead.', 409);
     }
     return await prisma.review.create({ data });
 };

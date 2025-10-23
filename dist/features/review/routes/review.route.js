@@ -32,16 +32,9 @@ const validateRequest_1 = require("../../../middlewares/validateRequest");
 const review_dto_1 = require("../dto/review.dto");
 const auth_middleware_1 = __importDefault(require("../../../middlewares/auth.middleware"));
 const router = (0, express_1.Router)();
-// Route to create a review for a specific product
 router.post('/:productId/reviews', auth_middleware_1.default, (0, validateRequest_1.validateRequest)(review_dto_1.createReviewDto), reviewController.createReview);
-// Route to get all reviews (with optional filtering by productId or userId)
 router.get('/reviews', reviewController.getAllReviews);
-// Route to get a single review by ID
 router.get('/reviews/:id', reviewController.getReviewById);
-// Route to update a review (only the creator or admin should be able to update)
-// For simplicity, I'm adding authenticate here. Further authorization logic (creator/admin) can be added in controller/middleware.
 router.patch('/reviews/:id', auth_middleware_1.default, (0, validateRequest_1.validateRequest)(review_dto_1.updateReviewDto), reviewController.updateReview);
-// Route to delete a review (only the creator or admin should be able to delete)
-// For simplicity, I'm adding authenticate here. Further authorization logic (creator/admin) can be added in controller/middleware.
 router.delete('/reviews/:id', auth_middleware_1.default, reviewController.deleteReview);
 exports.default = router;

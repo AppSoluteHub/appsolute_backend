@@ -29,13 +29,14 @@ const appError_1 = require("../../../lib/appError");
 const createReview = async (req, res, next) => {
     try {
         const { productId } = req.params;
+        console.log(productId);
         const userId = req.user?.id;
         if (!userId) {
             throw new appError_1.AppError('User not authenticated', 401);
         }
         const reviewData = {
             ...req.body,
-            productId: parseInt(productId),
+            productId,
             userId,
         };
         const review = await reviewService.createReview(reviewData);

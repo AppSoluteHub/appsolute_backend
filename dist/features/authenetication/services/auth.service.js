@@ -204,10 +204,8 @@ class AuthService {
             });
             if (!user)
                 throw new appError_1.UnAuthorizedError("Invalid credentials");
-            // if (!user.verified)
-            //   throw new UnAuthorizedError(
-            //     "Email not verified. Please check your email."
-            //   );
+            if (!user.verified)
+                throw new appError_1.UnAuthorizedError("Email not verified. Please check your email.");
             const passwordMatch = await bcryptjs_1.default.compare(password, user.password);
             if (!passwordMatch)
                 throw new appError_1.UnAuthorizedError("Invalid credentials");

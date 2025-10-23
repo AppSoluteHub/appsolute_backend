@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createOrderController = exports.getOrderByIdController = exports.getOrdersController = void 0;
+exports.viewSharedOrder = exports.shareOrderLink = exports.createOrderController = exports.getOrderByIdController = exports.getOrdersController = void 0;
 const orderService = __importStar(require("../services/order.services"));
 const order_validator_1 = require("../../../validators/order.validator");
 const appError_1 = require("../../../lib/appError");
@@ -33,7 +33,7 @@ const getOrdersController = async (req, res, next) => {
         if (!userId) {
             throw new appError_1.AppError('User not authenticated', 401);
         }
-        const orders = await orderService.getOrders(userId);
+        const orders = await orderService.getUsersOrders(userId);
         res.json(orders);
     }
     catch (error) {
@@ -45,7 +45,7 @@ const getOrderByIdController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
-            throw new appError_1.AppError('User not authenticated', 401);
+            throw new appError_1.UnAuthorizedError('User not authenticated', 401);
         }
         const { orderId } = req.params;
         const order = await orderService.getOrderById(userId, orderId);
@@ -60,11 +60,11 @@ const createOrderController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
-            throw new appError_1.AppError('User not authenticated', 401);
+            throw new appError_1.UnAuthorizedError('User not authenticated', 401);
         }
         const { error, value } = order_validator_1.createOrderSchema.validate(req.body);
         if (error) {
-            throw new appError_1.AppError(error.details[0].message, 400);
+            throw new appError_1.BadRequestError(error.details[0].message, 400);
         }
         const order = await orderService.createOrder(userId, value.billingAddress);
         res.json(order);
@@ -74,3 +74,26 @@ const createOrderController = async (req, res, next) => {
     }
 };
 exports.createOrderController = createOrderController;
+const shareOrderLink = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const { orderId } = req.params;
+        const result = await orderService.generateShareableOrderLink(userId, orderId);
+        res.status(200).json(result);
+    }
+    catch (err) {
+        next(err);
+    }
+};
+exports.shareOrderLink = shareOrderLink;
+const viewSharedOrder = async (req, res, next) => {
+    try {
+        const { token } = req.params;
+        const order = await orderService.getOrderByShareToken(token);
+        res.status(200).json({ success: true, order });
+    }
+    catch (err) {
+        next(err);
+    }
+};
+exports.viewSharedOrder = viewSharedOrder;

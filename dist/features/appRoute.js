@@ -22,6 +22,7 @@ const product_route_1 = __importDefault(require("./product/routes/product.route"
 const cart_routes_1 = __importDefault(require("./product/routes/cart.routes"));
 const order_routes_1 = __importDefault(require("./product/routes/order.routes"));
 const review_route_1 = __importDefault(require("./review/routes/review.route"));
+const payment_route_1 = __importDefault(require("./payment/payment.route"));
 exports.default = (appRouter) => {
     appRouter.use("/users", auth_route_1.default);
     appRouter.use("/userPage", user_route_1.default);
@@ -42,6 +43,7 @@ exports.default = (appRouter) => {
     appRouter.use("/products", product_route_1.default);
     appRouter.use("/cart", cart_routes_1.default);
     appRouter.use("/orders", order_routes_1.default);
-    appRouter.use("/product", review_route_1.default);
+    appRouter.use("/productReviews", review_route_1.default);
+    appRouter.use("/payments", payment_route_1.default);
     return appRouter;
 };

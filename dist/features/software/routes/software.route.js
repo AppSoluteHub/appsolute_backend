@@ -29,7 +29,7 @@ const validateRequest_1 = require("../../../middlewares/validateRequest");
 const software_dto_1 = require("../dto/software.dto");
 const auth_middleware_1 = __importStar(require("../../../middlewares/auth.middleware"));
 const router = (0, express_1.Router)();
-router.post('/', auth_middleware_1.default, (0, validateRequest_1.validateRequest)(software_dto_1.createSoftwareDto), softwareController.createSoftware);
+router.post('/', auth_middleware_1.default, auth_middleware_1.isAdmin, (0, validateRequest_1.validateRequest)(software_dto_1.createSoftwareDto), softwareController.createSoftware);
 router.get('/', softwareController.getAllSoftware);
 router.get('/:id', softwareController.getSoftwareById);
 router.patch('/:id', auth_middleware_1.default, auth_middleware_1.isAdmin, (0, validateRequest_1.validateRequest)(software_dto_1.updateSoftwareDto), softwareController.updateSoftware);

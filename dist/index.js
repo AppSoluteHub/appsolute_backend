@@ -18,19 +18,16 @@ const auth_google_middleware_1 = __importDefault(require("./middlewares/auth.goo
 const dotenv_1 = __importDefault(require("dotenv"));
 const error_middleware_1 = require("./middlewares/error.middleware");
 const http_1 = __importDefault(require("http"));
-// import { initializeSocket } from "./config/websocket";
-// import { connectRedis } from "./config/redis";
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const server = http_1.default.createServer(app);
-// connectRedis();
-// initializeSocket(server);
-app.use(body_parser_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(body_parser_1.default.json({ limit: "20mb" }));
+app.use(express_1.default.urlencoded({ extended: true, limit: "20mb" }));
+app.use(express_1.default.json({ limit: "20mb" }));
 const allowedOrigins = [
-    // "http://localhost:3000",
-    // "http://localhost:3001",
+    "http://localhost:3000",
+    "http://localhost:3001",
     // "http://localhost:3002",
     "https://appsolutehub.com",
     "https://appsolutehub.vercel.app",
@@ -52,7 +49,10 @@ app.use((0, cors_1.default)({
 app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.json());
 const storage = multer_1.default.memoryStorage();
-exports.upload = (0, multer_1.default)({ storage });
+exports.upload = (0, multer_1.default)({
+    storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+});
 app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET,
     resave: false,
@@ -66,6 +66,5 @@ const rootRouter = (0, appRoute_1.default)(router);
 app.use("/api/v1", rootRouter);
 app.use(error_middleware_1.errorHandler);
 (0, swagger_1.default)(app);
-// Start Server
 server.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
 exports.default = app;

@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const payment_controller_1 = require("./payment.controller");
+const dotenv_1 = __importDefault(require("dotenv"));
+const auth_middleware_1 = __importDefault(require("../../middlewares/auth.middleware"));
+const validateRequest_1 = require("../../middlewares/validateRequest");
+const payment_validator_1 = require("../../validators/payment.validator");
+dotenv_1.default.config();
+const router = (0, express_1.Router)();
+const paystackSecretKey = process.env.PAYSTACK_SECRETE_KEY || '';
+const paymentController = new payment_controller_1.PaymentController(paystackSecretKey);
+router.post('/initiate', auth_middleware_1.default, (0, validateRequest_1.validateRequest)(payment_validator_1.initiatePaymentSchema), paymentController.initiatePayment.bind(paymentController));
+router.get('/verify', paymentController.verifyPayment.bind(paymentController));
+router.post('/webhook', paymentController.handleWebhook.bind(paymentController));
+router.get('/status', paymentController.getPaymentStatus.bind(paymentController));
+router.get('/users', paymentController.getUserDetails.bind(paymentController));
+exports.default = router;

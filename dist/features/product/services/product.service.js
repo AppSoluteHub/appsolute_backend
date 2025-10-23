@@ -48,11 +48,23 @@ exports.getAllProducts = getAllProducts;
 const getProductById = async (id) => {
     const product = await prisma.product.findUnique({
         where: { id },
+        include: {
+            reviews: {
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                            profileImage: true,
+                        },
+                    },
+                },
+            },
+        },
     });
     if (!product) {
         throw new appError_1.AppError("Product not found", 404);
     }
-    // Fetch related products by category (excluding current product)
     const relatedProducts = await prisma.product.findMany({
         where: {
             category: product.category,

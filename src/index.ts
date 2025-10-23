@@ -22,8 +22,8 @@ const port = process.env.PORT || 3000;
 const server = http.createServer(app); 
 
 
-app.use(bodyParser.json({ limit: "20mb" }));
-app.use(express.urlencoded({ extended: true, limit: "20mb" }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.json({ limit: "20mb" }));
 
 const allowedOrigins = [
@@ -58,7 +58,7 @@ app.use(express.json());
 const storage = multer.memoryStorage();
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+  limits: { fileSize: 50 * 1024 * 1024 }, // 10 MB per file
 });
 
 app.use(

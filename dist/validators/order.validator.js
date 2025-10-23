@@ -16,5 +16,6 @@ exports.createOrderSchema = joi_1.default.object({
         phone: joi_1.default.string().required(),
         email: joi_1.default.string().email().required(),
         address: joi_1.default.string().required(),
+        note: joi_1.default.string().optional(),
     }).required(),
 });

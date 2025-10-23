@@ -7,6 +7,7 @@ import contactRoute from './subscribers/routes/subscriber.route';
 import userTaskRoute from './tasks/routes/userTask.route';
 import commentRoute from './comments/comment.route';
 import dashboardRoute from './dashboard/dashboard.route';
+import productDashboardRoute from './product/routes/dashboard.route';
 import likeRoute from './like/like.route';
 import tagRoute from './tags/tag.route';
 import catRoute from './category/cat.route';
@@ -28,6 +29,7 @@ export default (appRouter :any) => {
   appRouter.use("/subscribers",contactRoute);
   appRouter.use("/admin", userPageRoute);
   appRouter.use("/dashboard",dashboardRoute );
+  appRouter.use("/productDashboard",productDashboardRoute );
   appRouter.use("/behavior", userBahaviourRoutes );
   appRouter.use("/tasks",taskRoute);
   appRouter.use("/doTasks",userTaskRoute);

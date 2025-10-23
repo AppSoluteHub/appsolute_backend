@@ -22,12 +22,18 @@ const getCart = async (userId) => {
     }
     // Calculate and update subtotal and total
     const subtotal = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const discount = cart.items.reduce((acc, item) => acc + (item.product.price * (item.product.discount || 0) / 100 * item.quantity), 0);
+    const totalBeforeVat = subtotal - discount;
+    const vat = totalBeforeVat * 0.075;
+    const total = totalBeforeVat + vat;
     // Update cart totals in database
     await prisma.cart.update({
         where: { id: cart.id },
         data: {
             subtotal,
-            total: subtotal,
+            total,
+            vat,
+            discount,
         },
     });
     // Related products based on categories of items in cart
@@ -47,7 +53,9 @@ const getCart = async (userId) => {
     return {
         ...cart,
         subtotal,
-        total: subtotal,
+        total,
+        vat,
+        discount,
         relatedProducts,
     };
 };
@@ -60,6 +68,8 @@ const addToCart = async (userId, productId, quantity = 1) => {
                 userId,
                 subtotal: 0,
                 total: 0,
+                vat: 0,
+                discount: 0,
             },
         });
     }
@@ -72,12 +82,19 @@ const addToCart = async (userId, productId, quantity = 1) => {
         where: { cartId: cart.id, productId },
     });
     if (existingItem) {
+        const newQuantity = existingItem.quantity + quantity;
+        if (newQuantity > 5) {
+            throw new appError_1.BadRequestError('You can only add up to 5 items of the same product to your cart.', 400);
+        }
         await prisma.cartItem.update({
             where: { id: existingItem.id },
-            data: { quantity: existingItem.quantity + quantity },
+            data: { quantity: newQuantity },
         });
     }
     else {
+        if (quantity > 5) {
+            throw new appError_1.BadRequestError('You can only add up to 5 items of the same product to your cart.', 400);
+        }
         await prisma.cartItem.create({
             data: {
                 cartId: cart.id,
@@ -96,7 +113,7 @@ const removeFromCart = async (userId, cartItemId) => {
     const item = await prisma.cartItem.findFirst({
         where: {
             id: cartItemId,
-            cartId: cart.id, // Extra security check
+            cartId: cart.id,
         }
     });
     if (!item)
@@ -105,10 +122,12 @@ const removeFromCart = async (userId, cartItemId) => {
     return (0, exports.getCart)(userId);
 };
 exports.removeFromCart = removeFromCart;
-// Additional helper functions you might need:
 const updateCartItemQuantity = async (userId, cartItemId, quantity) => {
     if (quantity <= 0) {
         return (0, exports.removeFromCart)(userId, cartItemId);
+    }
+    if (quantity > 5) {
+        throw new appError_1.BadRequestError('You can only have up to 5 items of the same product in your cart.', 400);
     }
     const cart = await prisma.cart.findFirst({ where: { userId } });
     if (!cart)
@@ -140,6 +159,8 @@ const clearCart = async (userId) => {
         data: {
             subtotal: 0,
             total: 0,
+            vat: 0,
+            discount: 0,
         },
     });
     return (0, exports.getCart)(userId);

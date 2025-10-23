@@ -48,7 +48,10 @@ exports.getCartController = getCartController;
 const addToCartController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
-        const { productId, quantity = 1 } = req.body;
+        if (!userId) {
+            throw new appError_1.UnAuthorizedError('User not authenticated', 401);
+        }
+        const { quantity = 1, productId } = req.body;
         if (!userId) {
             throw new appError_1.BadRequestError('User not authenticated', 401);
         }
@@ -75,7 +78,7 @@ const removeFromCartController = async (req, res, next) => {
         const userId = req.user?.id;
         const { cartItemId } = req.params;
         if (!userId) {
-            throw new appError_1.AppError('User not authenticated', 401);
+            throw new appError_1.UnAuthorizedError('User not authenticated', 401);
         }
         if (!cartItemId) {
             throw new appError_1.BadRequestError('Cart item ID is required');
