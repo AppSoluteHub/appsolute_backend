@@ -122,7 +122,7 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
     },
   });
 
-  await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+  // await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
 
   return order;
 }, {

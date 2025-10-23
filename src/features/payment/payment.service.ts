@@ -29,7 +29,7 @@ export class PayStackService {
         {
           amount: amountInKobo,
           email,
-          callback_url: "http://localhost:3000/success",
+          callback_url: "http://localhost:3000/order-successful",
         },
         {
           headers: {
@@ -107,8 +107,9 @@ export class PayStackService {
           where: { id: payment.orderId },
           data: { status: "CONFIRMED" },
         });
-      }
+        await prisma.cartItem.deleteMany({ where: { cart: { userId: payment.order.userId } } });
 
+      }
       return isSuccessful;
     } catch (error: any) {
       console.error("Payment verification failed:", error.message);
