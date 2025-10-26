@@ -7,6 +7,7 @@ const router = Router();
 
 router.get('/', authenticate, cartController.getCartController);
 router.post('/', authenticate, cartController.addToCartController);
+router.patch('/', authenticate, cartController.updateCartItemController);
 router.delete('/:cartItemId',authenticate , cartController.removeFromCartController);
 
 export default router;
