@@ -3,13 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.upload = void 0;
 const express_1 = __importDefault(require("express"));
 const express_2 = require("express");
-const body_parser_1 = __importDefault(require("body-parser"));
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
-const multer_1 = __importDefault(require("multer"));
 const appRoute_1 = __importDefault(require("./features/appRoute"));
 const swagger_1 = __importDefault(require("./swagger/swagger"));
 const express_session_1 = __importDefault(require("express-session"));
@@ -22,9 +19,8 @@ dotenv_1.default.config();
 const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 const server = http_1.default.createServer(app);
-app.use(body_parser_1.default.json({ limit: "20mb" }));
-app.use(express_1.default.urlencoded({ extended: true, limit: "20mb" }));
-app.use(express_1.default.json({ limit: "20mb" }));
+app.use(express_1.default.json({ limit: "50mb" }));
+app.use(express_1.default.urlencoded({ extended: true, limit: "50mb" }));
 const allowedOrigins = [
     "http://localhost:3000",
     "http://localhost:3001",
@@ -47,12 +43,6 @@ app.use((0, cors_1.default)({
     credentials: true,
 }));
 app.use((0, cookie_parser_1.default)());
-app.use(express_1.default.json());
-const storage = multer_1.default.memoryStorage();
-exports.upload = (0, multer_1.default)({
-    storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
-});
 app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET,
     resave: false,

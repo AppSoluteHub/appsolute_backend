@@ -331,6 +331,8 @@ model Review {
   id        String   @id @default(uuid())
   rating    Int
   comment   String
+  title   String
+  isRecommending   Boolean
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   userId    String

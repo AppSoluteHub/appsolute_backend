@@ -32,5 +32,6 @@ const auth_middleware_1 = __importDefault(require("../../../middlewares/auth.mid
 const router = (0, express_1.Router)();
 router.get('/', auth_middleware_1.default, cartController.getCartController);
 router.post('/', auth_middleware_1.default, cartController.addToCartController);
+router.patch('/', auth_middleware_1.default, cartController.updateCartItemController);
 router.delete('/:cartItemId', auth_middleware_1.default, cartController.removeFromCartController);
 exports.default = router;

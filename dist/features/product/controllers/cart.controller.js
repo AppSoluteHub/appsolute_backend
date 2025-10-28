@@ -98,8 +98,8 @@ exports.removeFromCartController = removeFromCartController;
 const updateCartItemController = async (req, res, next) => {
     try {
         const userId = req.user?.id;
-        const { cartItemId } = req.params;
-        const { quantity } = req.body;
+        // const { cartItemId } = req.params;
+        const { quantity, cartItemId } = req.body;
         if (!userId) {
             throw new appError_1.AppError('User not authenticated', 401);
         }

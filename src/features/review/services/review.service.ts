@@ -6,6 +6,8 @@ const prisma = new PrismaClient();
 export const createReview = async (data: {
   rating: number;
   comment: string;
+  title: string;
+  isRecommending: boolean;
   productId: string;
   userId: string;
 }) => {

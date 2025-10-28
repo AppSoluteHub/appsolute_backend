@@ -12,6 +12,7 @@ const subscriber_route_1 = __importDefault(require("./subscribers/routes/subscri
 const userTask_route_1 = __importDefault(require("./tasks/routes/userTask.route"));
 const comment_route_1 = __importDefault(require("./comments/comment.route"));
 const dashboard_route_1 = __importDefault(require("./dashboard/dashboard.route"));
+const dashboard_route_2 = __importDefault(require("./product/routes/dashboard.route"));
 const like_route_1 = __importDefault(require("./like/like.route"));
 const tag_route_1 = __importDefault(require("./tags/tag.route"));
 const cat_route_1 = __importDefault(require("./category/cat.route"));
@@ -32,6 +33,7 @@ exports.default = (appRouter) => {
     appRouter.use("/subscribers", subscriber_route_1.default);
     appRouter.use("/admin", user_route_1.default);
     appRouter.use("/dashboard", dashboard_route_1.default);
+    appRouter.use("/productDashboard", dashboard_route_2.default);
     appRouter.use("/behavior", route_1.default);
     appRouter.use("/tasks", task_route_1.default);
     appRouter.use("/doTasks", userTask_route_1.default);

@@ -6,17 +6,23 @@ const date_fns_1 = require("date-fns");
 const prisma = new client_1.PrismaClient();
 class DashboardService {
     async getDashboardData() {
-        const totalEarnings = await prisma.payment.aggregate({
-            _sum: { amount: true },
-            where: { status: "SUCCESS" },
-        });
-        const totalSales = await prisma.payment.count({
-            where: { status: "SUCCESS" },
-        });
-        const totalOrders = await prisma.order.count();
-        const totalUsers = await prisma.user.count();
+        const [totalEarnings, totalSales, totalOrders, totalUsers] = await Promise.all([
+            prisma.payment.aggregate({
+                _sum: { amount: true },
+                where: { status: "SUCCESS" },
+            }),
+            prisma.payment.count({
+                where: { status: "SUCCESS" },
+            }),
+            prisma.order.count(),
+            prisma.user.count(),
+        ]);
         const totalProducts = await prisma.product.count();
-        const soldProducts = await prisma.orderItem.count();
+        const soldGroup = await prisma.orderItem.groupBy({
+            by: ["productId"],
+            _count: true,
+        });
+        const soldProducts = soldGroup.length;
         const unsoldProducts = Math.max(totalProducts - soldProducts, 0);
         const [completed, pending, processing, cancelled, refunded] = await Promise.all([
             prisma.order.count({ where: { status: "COMPLETED" } }),
@@ -25,7 +31,7 @@ class DashboardService {
             prisma.order.count({ where: { status: "CANCELLED" } }),
             prisma.order.count({ where: { status: "REFUNDED" } }),
         ]);
-        const last12Months = Array.from({ length: 12 }, (_, i) => (0, date_fns_1.subMonths)(new Date(), i)).reverse();
+        const last12Months = Array.from({ length: 12 }, (_, i) => (0, date_fns_1.subMonths)(new Date(), 11 - i));
         const monthlySales = await Promise.all(last12Months.map(async (date) => {
             const start = (0, date_fns_1.startOfMonth)(date);
             const end = new Date(start);
