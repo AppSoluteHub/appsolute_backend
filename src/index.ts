@@ -75,6 +75,7 @@ app.use("/api/v1", rootRouter);
 
 app.use(errorHandler);
 
+
 setupSwagger(app);
 
 

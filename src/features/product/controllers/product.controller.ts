@@ -11,30 +11,7 @@ export const createProduct = async (
   next: NextFunction
 ) => {
   try {
-    let imageUrl: string | undefined;
-    let galleryUrls: string[] | undefined;
-
-    // Handle single image upload
-    if (
-      req.files &&
-      (req.files as { [fieldname: string]: Express.Multer.File[] }).image
-    ) {
-      const imageFile = (
-        req.files as { [fieldname: string]: Express.Multer.File[] }
-      ).image[0];
-      imageUrl = await uploadImageToCloudinary(imageFile);
-    }
-
-    // Handle multiple gallery images upload
-    if (
-      req.files &&
-      (req.files as { [fieldname: string]: Express.Multer.File[] }).gallery
-    ) {
-      const galleryFiles = (
-        req.files as { [fieldname: string]: Express.Multer.File[] }
-      ).gallery;
-      galleryUrls = await uploadMultipleImagesToCloudinary(galleryFiles);
-    }
+    const { image: imageUrl, gallery: galleryUrls, ...restOfBody } = req.body;
 
     const normalizeArray = (field: any) => {
       if (!field) return [];
@@ -51,13 +28,13 @@ export const createProduct = async (
     };
 
     const productData = {
-      ...req.body,
-      price: parseFloat(req.body.price),
-      weight: parseFloat(req.body.weight),
-      stock: parseInt(req.body.stock, 10),
-      colors: normalizeArray(req.body.colors),
-      sizes: normalizeArray(req.body.sizes),
-      tags: normalizeArray(req.body.tags),
+      ...restOfBody,
+      price: parseFloat(restOfBody.price),
+      weight: parseFloat(restOfBody.weight),
+      stock: parseInt(restOfBody.stock, 10),
+      colors: normalizeArray(restOfBody.colors),
+      sizes: normalizeArray(restOfBody.sizes),
+      tags: normalizeArray(restOfBody.tags),
       image: imageUrl,
       gallery: galleryUrls,
     };
@@ -110,30 +87,7 @@ export const updateProduct = async (
   next: NextFunction
 ) => {
   try {
-    let imageUrl: string | undefined;
-    let galleryUrls: string[] | undefined;
-
-    // Handle single image upload for update
-    if (
-      req.files &&
-      (req.files as { [fieldname: string]: Express.Multer.File[] }).image
-    ) {
-      const imageFile = (
-        req.files as { [fieldname: string]: Express.Multer.File[] }
-      ).image[0];
-      imageUrl = await uploadImageToCloudinary(imageFile);
-    }
-
-    // Handle multiple gallery images upload for update
-    if (
-      req.files &&
-      (req.files as { [fieldname: string]: Express.Multer.File[] }).gallery
-    ) {
-      const galleryFiles = (
-        req.files as { [fieldname: string]: Express.Multer.File[] }
-      ).gallery;
-      galleryUrls = await uploadMultipleImagesToCloudinary(galleryFiles);
-    }
+    const { image: imageUrl, gallery: galleryUrls, ...restOfBody } = req.body;
 
     const normalizeArray = (field: any) => {
       if (!field) return undefined;
@@ -149,25 +103,25 @@ export const updateProduct = async (
       return [field];
     };
 
-    const productData: any = { ...req.body };
+    const productData: any = { ...restOfBody };
 
-    if (req.body.price) {
-      productData.price = parseFloat(req.body.price);
+    if (restOfBody.price) {
+      productData.price = parseFloat(restOfBody.price);
     }
-    if (req.body.weight) {
-      productData.weight = parseFloat(req.body.weight);
+    if (restOfBody.weight) {
+      productData.weight = parseFloat(restOfBody.weight);
     }
-    if (req.body.stock) {
-      productData.stock = parseInt(req.body.stock, 10);
+    if (restOfBody.stock) {
+      productData.stock = parseInt(restOfBody.stock, 10);
     }
-    if (req.body.colors) {
-      productData.colors = normalizeArray(req.body.colors);
+    if (restOfBody.colors) {
+      productData.colors = normalizeArray(restOfBody.colors);
     }
-    if (req.body.sizes) {
-      productData.sizes = normalizeArray(req.body.sizes);
+    if (restOfBody.sizes) {
+      productData.sizes = normalizeArray(restOfBody.sizes);
     }
-    if (req.body.tags) {
-      productData.tags = normalizeArray(req.body.tags);
+    if (restOfBody.tags) {
+      productData.tags = normalizeArray(restOfBody.tags);
     }
     if (imageUrl) {
       productData.image = imageUrl;
