@@ -30,7 +30,7 @@ const allowedOrigins = [
   "http://localhost:3001",
   // "http://localhost:3002",
   "https://appsolutehub.com",
-  "http://appsolute.vercel.app/ ",
+ "https://appsolute.vercel.app",
   "https://appsolutehub.vercel.app",
   "https://app-solute-hub-app.vercel.app",
 ];
