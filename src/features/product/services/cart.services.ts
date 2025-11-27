@@ -1,7 +1,7 @@
-import { PrismaClient, Cart, CartItem, Product } from "@prisma/client";
+import {  Cart, CartItem, Product } from "@prisma/client";
 import { BadRequestError } from "../../../lib/appError";
 
-const prisma = new PrismaClient();
+import { prisma } from "../../../utils/prisma";
 
 type CartWithExtras = Cart & {
   items: (CartItem & { product: Product })[];

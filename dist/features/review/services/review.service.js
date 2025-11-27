@@ -1,19 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteReview = exports.updateReview = exports.getReviewById = exports.getAllReviews = exports.createReview = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 const createReview = async (data) => {
-    const product = await prisma.product.findUnique({ where: { id: data.productId } });
+    const product = await prisma_1.prisma.product.findUnique({ where: { id: data.productId } });
     if (!product) {
         throw new appError_1.AppError('Product not found', 404);
     }
-    const user = await prisma.user.findUnique({ where: { id: data.userId } });
+    const user = await prisma_1.prisma.user.findUnique({ where: { id: data.userId } });
     if (!user) {
         throw new appError_1.BadRequestError('User not found', 404);
     }
-    const existingReview = await prisma.review.findFirst({
+    const existingReview = await prisma_1.prisma.review.findFirst({
         where: {
             userId: data.userId,
             productId: data.productId
@@ -22,7 +21,7 @@ const createReview = async (data) => {
     if (existingReview) {
         throw new appError_1.BadRequestError('You have already reviewed this product. You can update your existing review instead.', 409);
     }
-    return await prisma.review.create({ data });
+    return await prisma_1.prisma.review.create({ data });
 };
 exports.createReview = createReview;
 const getAllReviews = async (options) => {
@@ -36,7 +35,7 @@ const getAllReviews = async (options) => {
         where.userId = userId;
     }
     const [reviews, total] = await Promise.all([
-        prisma.review.findMany({
+        prisma_1.prisma.review.findMany({
             where,
             skip,
             take: limit,
@@ -57,7 +56,7 @@ const getAllReviews = async (options) => {
                 },
             },
         }),
-        prisma.review.count({ where }),
+        prisma_1.prisma.review.count({ where }),
     ]);
     return {
         reviews,
@@ -68,7 +67,7 @@ const getAllReviews = async (options) => {
 };
 exports.getAllReviews = getAllReviews;
 const getReviewById = async (id) => {
-    const review = await prisma.review.findUnique({
+    const review = await prisma_1.prisma.review.findUnique({
         where: { id },
         include: {
             user: {
@@ -94,14 +93,14 @@ const getReviewById = async (id) => {
 };
 exports.getReviewById = getReviewById;
 const updateReview = async (id, data) => {
-    return await prisma.review.update({
+    return await prisma_1.prisma.review.update({
         where: { id },
         data,
     });
 };
 exports.updateReview = updateReview;
 const deleteReview = async (id) => {
-    return await prisma.review.delete({
+    return await prisma_1.prisma.review.delete({
         where: { id },
     });
 };

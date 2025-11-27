@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../utils/prisma");
 class UserService {
     static async getUsers({ page = 1, limit = 10, search = "", }) {
         try {
             const skip = (page - 1) * limit;
-            const users = await prisma.user.findMany({
+            const users = await prisma_1.prisma.user.findMany({
                 where: {
                     OR: [
                         { fullName: { contains: search, mode: "insensitive" } },
@@ -18,7 +18,7 @@ class UserService {
                 skip,
                 take: limit,
             });
-            const totalUsers = await prisma.user.count({
+            const totalUsers = await prisma_1.prisma.user.count({
                 where: {
                     OR: [
                         { fullName: { contains: search, mode: "insensitive" } },
@@ -40,7 +40,7 @@ class UserService {
     }
     static async getAdmins({ search = "" }) {
         try {
-            const admins = await prisma.user.findMany({
+            const admins = await prisma_1.prisma.user.findMany({
                 where: {
                     role: {
                         in: ["ADMIN", "SUPERADMIN"],
@@ -60,7 +60,7 @@ class UserService {
     }
     static async getRoles({ search = "" }) {
         try {
-            const admins = await prisma.user.findMany({
+            const admins = await prisma_1.prisma.user.findMany({
                 where: {
                     role: {
                         in: ["ADMIN", "SUPERADMIN", "GUEST", "EDITOR", "CONTRIBUTOR"],
@@ -121,7 +121,7 @@ class UserService {
             throw new appError_1.BadRequestError("User ID is required");
         }
         try {
-            const user = await prisma.user.findUnique({
+            const user = await prisma_1.prisma.user.findUnique({
                 where: { id: userId },
             });
             if (!user) {
@@ -147,10 +147,10 @@ class UserService {
         try {
             if (!userId)
                 throw new appError_1.BadRequestError("User ID is required");
-            const user = await prisma.user.findUnique({ where: { id: userId } });
+            const user = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
-            await prisma.user.delete({ where: { id: userId } });
+            await prisma_1.prisma.user.delete({ where: { id: userId } });
             return { message: "User deleted successfully" };
         }
         catch (error) {
@@ -162,7 +162,7 @@ class UserService {
         try {
             if (!userId)
                 throw new appError_1.BadRequestError("User ID is required");
-            const user = await prisma.user.findUnique({ where: { id: userId } });
+            const user = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
             const { fullName, email, role, gender, country, phone, nickName } = updates;
@@ -170,7 +170,7 @@ class UserService {
             if (fullName)
                 updateData.fullName = fullName;
             if (email) {
-                const existingUser = await prisma.user.findUnique({ where: { email } });
+                const existingUser = await prisma_1.prisma.user.findUnique({ where: { email } });
                 if (existingUser && existingUser.id !== userId) {
                     throw new appError_1.DuplicateError("Email already in use");
                 }
@@ -191,7 +191,7 @@ class UserService {
                 updateData.phone = phone;
             if (nickName !== undefined)
                 updateData.nickName = nickName;
-            const updatedUser = await prisma.user.update({
+            const updatedUser = await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: updateData,
                 select: {
@@ -220,7 +220,7 @@ class UserService {
         if (updates.role) {
             data.role = updates.role;
         }
-        const existingUser = await prisma.user.findUnique({
+        const existingUser = await prisma_1.prisma.user.findUnique({
             where: { email },
             select: {
                 id: true,
@@ -232,7 +232,7 @@ class UserService {
             throw new appError_1.NotFoundError("User not found");
         }
         const existUserId = existingUser?.id;
-        const updatedUser = await prisma.user.update({
+        const updatedUser = await prisma_1.prisma.user.update({
             where: { id: existUserId },
             data,
             select: {
@@ -244,7 +244,7 @@ class UserService {
         return updatedUser;
     }
     static async updateProfileImage(userId, imageUrl) {
-        return await prisma.user.update({
+        return await prisma_1.prisma.user.update({
             where: { id: userId },
             data: { profileImage: imageUrl },
         });

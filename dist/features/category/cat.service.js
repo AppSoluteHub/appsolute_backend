@@ -1,15 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteCategory = exports.updateCategory = exports.getCategoryById = exports.getAllCategories = exports.createCategory = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../utils/prisma");
+const library_1 = require("@prisma/client/runtime/library");
 const createCategory = async (data) => {
-    return await prisma.category.create({ data });
+    return await prisma_1.prisma.category.create({ data });
 };
 exports.createCategory = createCategory;
 const getAllCategories = async () => {
-    return await prisma.category.findMany({
+    return await prisma_1.prisma.category.findMany({
         orderBy: {
             createdAt: 'desc',
         },
@@ -17,7 +17,7 @@ const getAllCategories = async () => {
 };
 exports.getAllCategories = getAllCategories;
 const getCategoryById = async (id) => {
-    return await prisma.category.findUnique({ where: { id } });
+    return await prisma_1.prisma.category.findUnique({ where: { id } });
 };
 exports.getCategoryById = getCategoryById;
 // export const updateCategory = async (id: string, data: { name?: string }) => {
@@ -28,13 +28,13 @@ exports.getCategoryById = getCategoryById;
 // };
 const updateCategory = async (id, data) => {
     try {
-        return await prisma.category.update({
+        return await prisma_1.prisma.category.update({
             where: { id },
             data,
         });
     }
     catch (err) {
-        if (err instanceof client_1.Prisma.PrismaClientKnownRequestError &&
+        if (err instanceof library_1.PrismaClientKnownRequestError &&
             err.code === 'P2002' &&
             Array.isArray(err.meta.target) &&
             err.meta.target.includes('name')) {
@@ -47,15 +47,15 @@ const updateCategory = async (id, data) => {
 };
 exports.updateCategory = updateCategory;
 const deleteCategory = async (id) => {
-    const category = await prisma.category.findUnique({ where: { id } });
+    const category = await prisma_1.prisma.category.findUnique({ where: { id } });
     if (!category) {
         throw new appError_1.NotFoundError(`Category with id ${id} not found`);
     }
     try {
         // Delete associated PostCategoryLink records first
-        await prisma.postCategoryLink.deleteMany({ where: { categoryId: id } });
+        await prisma_1.prisma.postCategoryLink.deleteMany({ where: { categoryId: id } });
         // Now delete the category
-        return await prisma.category.delete({ where: { id } });
+        return await prisma_1.prisma.category.delete({ where: { id } });
     }
     catch (err) {
         throw new Error('Cannot delete category. Please try again later.');

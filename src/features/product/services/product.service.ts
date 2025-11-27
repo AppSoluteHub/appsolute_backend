@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { AppError } from '../../../lib/appError';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../utils/prisma';
 
 export const createProduct = async (data: any) => {
   return await prisma.product.create({ data });

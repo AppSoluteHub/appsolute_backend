@@ -5,16 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../../../utils/prisma");
 const email_1 = require("../../../utils/email");
 const appError_1 = require("../../../lib/appError");
 const library_1 = require("@prisma/client/runtime/library");
-const prisma = new client_1.PrismaClient();
 class AuthService {
     static async register({ fullName, profileImage, email, password, }) {
         try {
             const lowercaseEmail = email.toLowerCase();
-            const existingUser = await prisma.user.findUnique({
+            const existingUser = await prisma_1.prisma.user.findUnique({
                 where: { email: lowercaseEmail },
             });
             if (existingUser && existingUser.verified) {
@@ -27,7 +26,7 @@ class AuthService {
             let user;
             if (existingUser && !existingUser.verified) {
                 // Case 2: User exists but not verified → update existing user
-                user = await prisma.user.update({
+                user = await prisma_1.prisma.user.update({
                     where: { email: lowercaseEmail },
                     data: {
                         fullName,
@@ -41,7 +40,7 @@ class AuthService {
             }
             else {
                 // Case 3: New user → create
-                user = await prisma.user.create({
+                user = await prisma_1.prisma.user.create({
                     data: {
                         fullName,
                         email: lowercaseEmail,
@@ -104,7 +103,7 @@ class AuthService {
         if (!token)
             throw new appError_1.BadRequestError("Verification token is required.");
         try {
-            const user = await prisma.user.findFirst({
+            const user = await prisma_1.prisma.user.findFirst({
                 where: {
                     resetTokenExpires: {
                         gte: new Date(),
@@ -119,7 +118,7 @@ class AuthService {
             const isTokenValid = await bcryptjs_1.default.compare(token, user.resetToken);
             if (!isTokenValid) {
                 if (!user.verified) {
-                    await prisma.user.delete({ where: { id: user.id } });
+                    await prisma_1.prisma.user.delete({ where: { id: user.id } });
                 }
                 throw new appError_1.InvalidError("Verification token is incorrect or expired , please register again.");
             }
@@ -127,7 +126,7 @@ class AuthService {
                 throw new appError_1.BadRequestError("This account is already verified.");
             }
             // Everything checks out, verify the user
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: user.id },
                 data: {
                     verified: true,
@@ -151,14 +150,14 @@ class AuthService {
     static async resendVerificationEmail(email) {
         if (!email)
             throw new appError_1.BadRequestError("Email is required");
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma_1.prisma.user.findUnique({ where: { email } });
         if (!user)
             throw new appError_1.NotFoundError("User not found");
         if (user.verified)
             throw new appError_1.BadRequestError("User is already verified");
         const verificationToken = crypto_1.default.randomBytes(32).toString("hex");
         const verificationTokenHash = await bcryptjs_1.default.hash(verificationToken, 10);
-        await prisma.user.update({
+        await prisma_1.prisma.user.update({
             where: { email },
             data: {
                 resetToken: verificationTokenHash,
@@ -199,7 +198,7 @@ class AuthService {
     }
     static async login(email, password) {
         try {
-            const user = await prisma.user.findUnique({
+            const user = await prisma_1.prisma.user.findUnique({
                 where: { email: email.toLowerCase() },
             });
             if (!user)
@@ -222,7 +221,7 @@ class AuthService {
     static async forgotPassword(email) {
         if (!email)
             throw new appError_1.BadRequestError("Email is required");
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { email: email.toLowerCase() },
         });
         if (!user)
@@ -230,7 +229,7 @@ class AuthService {
         const resetToken = crypto_1.default.randomBytes(32).toString("hex");
         const resetTokenHash = await bcryptjs_1.default.hash(resetToken, 10);
         const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);
-        await prisma.user.update({
+        await prisma_1.prisma.user.update({
             where: { email },
             data: { resetToken: resetTokenHash, resetTokenExpires },
         });
@@ -252,14 +251,14 @@ class AuthService {
         if (!passwordRegex.test(newPassword)) {
             throw new appError_1.BadRequestError("Password must be at least 8 characters long, with an uppercase letter, a lowercase letter, a number, and a special character.");
         }
-        const user = await prisma.user.findFirst({
+        const user = await prisma_1.prisma.user.findFirst({
             where: { resetTokenExpires: { gte: new Date() } },
         });
         if (!user || !(await bcryptjs_1.default.compare(token, user.resetToken))) {
             throw new appError_1.InvalidError("Invalid or expired token");
         }
         const hashedPassword = await bcryptjs_1.default.hash(newPassword, 10);
-        await prisma.user.update({
+        await prisma_1.prisma.user.update({
             where: { id: user.id },
             data: {
                 password: hashedPassword,
@@ -284,7 +283,7 @@ class AuthService {
     }
     static async findById(id) {
         try {
-            const user = await prisma.user.findUnique({ where: { id } });
+            const user = await prisma_1.prisma.user.findUnique({ where: { id } });
             if (!user)
                 throw new appError_1.NotFoundError("User not found");
             return user;

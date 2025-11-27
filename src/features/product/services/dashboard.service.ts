@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { subMonths, startOfMonth } from "date-fns";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../utils/prisma";
 
 class DashboardService {
   async getDashboardData() {

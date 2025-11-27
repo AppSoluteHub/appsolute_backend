@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { BadRequestError, InternalServerError } from "../../../lib/appError";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../../utils/prisma";
 
 export const answerTask = async (
   userId: string,

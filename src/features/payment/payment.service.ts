@@ -1,8 +1,7 @@
 import axios from "axios";
-import { PrismaClient, PaymentStatus } from "@prisma/client";
+import {  PaymentStatus } from "@prisma/client";
 import { BadRequestError } from "../../lib/appError";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../utils/prisma";
 
 export class PayStackService {
   private paystackSecretKey: string;
@@ -78,44 +77,58 @@ export class PayStackService {
     return /^\d+(\.\d{1,2})?$/.test(amount.toFixed(2));
   }
 
-  async verifyPayment(reference: string): Promise<boolean> {
-    try {
-      const response: any = await axios.get(
-        `https://api.paystack.co/transaction/verify/${reference}`,
-        {
-          headers: {
-            Authorization: `Bearer ${this.paystackSecretKey}`,
-          },
-        }
-      );
-
-      const { status } = response.data.data;
-      const isSuccessful = status === "success";
-
-      // Update the payment and get its related order
-      const payment = await prisma.payment.update({
-        where: { reference },
-        data: {
-          status: isSuccessful ? PaymentStatus.SUCCESS : PaymentStatus.FAILED,
+ 
+      async verifyPayment(reference: string): Promise<boolean> {
+  try {
+    const response: any = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.paystackSecretKey}`,
         },
-        include: { order: true },
+      }
+    );
+
+    const { status } = response.data.data;
+    const isSuccessful = status === "success";
+
+    // Update payment and fetch linked order + user
+    const payment = await prisma.payment.update({
+      where: { reference },
+      data: {
+        status: isSuccessful ? PaymentStatus.SUCCESS : PaymentStatus.FAILED,
+      },
+      include: {
+        order: true,
+      },
+    });
+
+    // After success, confirm order and clear cart
+    if (isSuccessful && payment.orderId) {
+      await prisma.order.update({
+        where: { id: payment.orderId },
+        data: { status: "CONFIRMED" },
       });
 
-      // If successful and linked to an order, mark order as CONFIRMED
-      if (isSuccessful && payment.orderId) {
-        await prisma.order.update({
-          where: { id: payment.orderId },
-          data: { status: "CONFIRMED" },
-        });
-        await prisma.cartItem.deleteMany({ where: { cart: { userId: payment.order.userId } } });
+      // Fetch user cart
+      const cart = await prisma.cart.findFirst({
+        where: { userId: payment.order.userId },
+      });
 
+      // Clear cart items
+      if (cart) {
+        await prisma.cartItem.deleteMany({
+          where: { cartId: cart.id },
+        });
       }
-      return isSuccessful;
-    } catch (error: any) {
-      console.error("Payment verification failed:", error.message);
-      return false;
     }
+
+    return isSuccessful;
+  } catch (error: any) {
+    console.error("Payment verification failed:", error.message);
+    return false;
   }
+}
 
   async handleWebhook(payload: any): Promise<void> {
     const { event, data } = payload;

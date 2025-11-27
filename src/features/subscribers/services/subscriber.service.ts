@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
 import { sendEmail } from "../../../utils/email";
 import { BadRequestError } from "../../../lib/appError";
+import { prisma } from "../../../utils/prisma";
 
-const prisma = new PrismaClient();
 
 export default class SubscriberService {
   static async subscribe(email: string) {

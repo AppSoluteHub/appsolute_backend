@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../utils/prisma";
 import { sendEmail } from "../../../utils/email";
 import {
   AppError,
@@ -14,7 +14,7 @@ import {
 import { RegisterInput, EmailData } from "../../../interfaces/auth.interfaces";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-const prisma = new PrismaClient();
+
 
 class AuthService {
 

@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../../../utils/prisma");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
 function normalizeToArray(input) {
     if (!input)
         return [];
@@ -24,7 +23,7 @@ class PostService {
             throw new appError_1.BadRequestError("Title and description are required");
         }
         const existingUsers = contributorEmails.length
-            ? await prisma.user.findMany({
+            ? await prisma_1.prisma.user.findMany({
                 where: { email: { in: contributorEmails } },
             })
             : [];
@@ -36,7 +35,7 @@ class PostService {
         //   );
         // }
         const contributorNames = existingUsers.map((u) => u.fullName);
-        const post = await prisma.post.create({
+        const post = await prisma_1.prisma.post.create({
             data: {
                 title,
                 description,
@@ -79,7 +78,7 @@ class PostService {
     }
     static async getAllPosts(publishedOnly = true) {
         try {
-            return await prisma.post.findMany({
+            return await prisma_1.prisma.post.findMany({
                 where: publishedOnly ? { isPublished: true } : undefined,
                 include: {
                     author: {
@@ -167,7 +166,7 @@ class PostService {
     // }
     static async getPostById(postId) {
         try {
-            const post = await prisma.post.findUnique({
+            const post = await prisma_1.prisma.post.findUnique({
                 where: { id: postId },
                 include: {
                     author: {
@@ -249,14 +248,14 @@ class PostService {
         const categories = normalizeToArray(updateData.categories);
         const contributors = normalizeToArray(updateData.contributors);
         // 2) fetch & auth
-        const post = await prisma.post.findUnique({ where: { id: postId } });
+        const post = await prisma_1.prisma.post.findUnique({ where: { id: postId } });
         if (!post)
             throw new appError_1.NotFoundError("Post not found");
         if (post.authorId !== userId)
             throw new appError_1.UnAuthorizedError("Not authorized");
         // 3) minimal transaction: update & clear joins
-        await prisma.$transaction([
-            prisma.post.update({
+        await prisma_1.prisma.$transaction([
+            prisma_1.prisma.post.update({
                 where: { id: postId },
                 data: {
                     title: updateData.title,
@@ -265,36 +264,36 @@ class PostService {
                     isPublished: updateData.isPublished,
                 },
             }),
-            prisma.postTag.deleteMany({ where: { postId } }),
-            prisma.postCategoryLink.deleteMany({ where: { postId } }),
-            prisma.contributor.deleteMany({ where: { postId } }),
+            prisma_1.prisma.postTag.deleteMany({ where: { postId } }),
+            prisma_1.prisma.postCategoryLink.deleteMany({ where: { postId } }),
+            prisma_1.prisma.contributor.deleteMany({ where: { postId } }),
         ]);
         // 4) outside transaction: re-create tags
         for (const name of tags) {
-            const tag = await prisma.tag.upsert({
+            const tag = await prisma_1.prisma.tag.upsert({
                 where: { name },
                 update: {},
                 create: { name },
             });
-            await prisma.postTag.create({ data: { postId, tagId: tag.id } });
+            await prisma_1.prisma.postTag.create({ data: { postId, tagId: tag.id } });
         }
         // 5) re-create categories
         for (const name of categories) {
-            const cat = await prisma.category.upsert({
+            const cat = await prisma_1.prisma.category.upsert({
                 where: { name },
                 update: {},
                 create: { name },
             });
-            await prisma.postCategoryLink.create({
+            await prisma_1.prisma.postCategoryLink.create({
                 data: { postId, categoryId: cat.id },
             });
         }
         // 6) re-create contributors
         for (const uid of contributors) {
-            await prisma.contributor.create({ data: { postId, userId: uid } });
+            await prisma_1.prisma.contributor.create({ data: { postId, userId: uid } });
         }
         // 7) return the fully updated post
-        return prisma.post.findUnique({
+        return prisma_1.prisma.post.findUnique({
             where: { id: postId },
             include: {
                 tags: { include: { tag: true } },
@@ -306,13 +305,13 @@ class PostService {
     static async deletePost(postId, userId) {
         try {
             // 1) Fetch post & user
-            const post = await prisma.post.findUnique({
+            const post = await prisma_1.prisma.post.findUnique({
                 where: { id: postId },
                 select: { authorId: true },
             });
             if (!post)
                 throw new appError_1.NotFoundError("Post not found");
-            const user = await prisma.user.findUnique({
+            const user = await prisma_1.prisma.user.findUnique({
                 where: { id: userId },
                 select: { role: true },
             });
@@ -323,18 +322,18 @@ class PostService {
                 throw new appError_1.ForbiddenError("Not authorized to delete this post");
             }
             // 3) Cascade‐style cleanup in a single transaction
-            await prisma.$transaction([
+            await prisma_1.prisma.$transaction([
                 // remove comments & likes
-                prisma.comment.deleteMany({ where: { postId } }),
-                prisma.like.deleteMany({ where: { postId } }),
+                prisma_1.prisma.comment.deleteMany({ where: { postId } }),
+                prisma_1.prisma.like.deleteMany({ where: { postId } }),
                 // remove contributors join‐rows
-                prisma.contributor.deleteMany({ where: { postId } }),
+                prisma_1.prisma.contributor.deleteMany({ where: { postId } }),
                 // remove tags join‐rows
-                prisma.postTag.deleteMany({ where: { postId } }),
+                prisma_1.prisma.postTag.deleteMany({ where: { postId } }),
                 // remove categories join‐rows
-                prisma.postCategoryLink.deleteMany({ where: { postId } }),
+                prisma_1.prisma.postCategoryLink.deleteMany({ where: { postId } }),
                 // finally delete the post
-                prisma.post.delete({ where: { id: postId } }),
+                prisma_1.prisma.post.delete({ where: { id: postId } }),
             ]);
             return { message: "Post deleted successfully" };
         }

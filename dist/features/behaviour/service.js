@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userBehaviorService = exports.UserBehaviorService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../utils/prisma");
 class UserBehaviorService {
     async trackInteraction(interaction, page, device) {
-        return await prisma.userBehavior.create({
+        return await prisma_1.prisma.userBehavior.create({
             data: {
                 interaction,
                 page,

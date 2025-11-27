@@ -1,17 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("@prisma/client");
 const email_1 = require("../../../utils/email");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 class SubscriberService {
     static async subscribe(email) {
         if (!email)
             throw new appError_1.BadRequestError("Email is required");
-        const existingSubscriber = await prisma.subscriber.findUnique({ where: { email } });
+        const existingSubscriber = await prisma_1.prisma.subscriber.findUnique({ where: { email } });
         if (existingSubscriber)
             throw new appError_1.BadRequestError("Email is already subscribed");
-        const newSubscriber = await prisma.subscriber.create({
+        const newSubscriber = await prisma_1.prisma.subscriber.create({
             data: { email },
         });
         const emailTemplate = `

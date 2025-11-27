@@ -4,11 +4,10 @@ exports.getLeaderboardProgressService = exports.getUserTaskProgressService = exp
 exports.createTaskWithQuestions = createTaskWithQuestions;
 exports.deleteTaskById = deleteTaskById;
 exports.updateTaskWithQuestions = updateTaskWithQuestions;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 async function createTaskWithQuestions(title, categories, tags, url, points, imageUrl, description, questions) {
     try {
-        return await prisma.task.create({
+        return await prisma_1.prisma.task.create({
             data: {
                 title,
                 url,
@@ -57,7 +56,7 @@ async function createTaskWithQuestions(title, categories, tags, url, points, ima
 }
 const getAllTasks = async (userId) => {
     try {
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: userId },
             include: {
                 userTasks: true,
@@ -66,7 +65,7 @@ const getAllTasks = async (userId) => {
         if (!user) {
             throw new Error("User with this id not found");
         }
-        return await prisma.task.findMany({
+        return await prisma_1.prisma.task.findMany({
             where: {
                 NOT: {
                     userTasks: {
@@ -111,7 +110,7 @@ const getAllTasks = async (userId) => {
 };
 exports.getAllTasks = getAllTasks;
 const getTasks = async (userId) => {
-    const tasks = await prisma.task.findMany({
+    const tasks = await prisma_1.prisma.task.findMany({
         include: {
             questions: true,
             tags: {
@@ -176,7 +175,7 @@ const getTasks = async (userId) => {
 };
 exports.getTasks = getTasks;
 const getTaskById = async (taskId, userId) => {
-    const task = await prisma.task.findFirst({
+    const task = await prisma_1.prisma.task.findFirst({
         where: {
             id: taskId,
         },
@@ -242,10 +241,10 @@ const getTaskById = async (taskId, userId) => {
 exports.getTaskById = getTaskById;
 const getUserTaskProgressService = async (userId) => {
     // Get total number of tasks
-    const totalTasks = await prisma.task.count();
+    const totalTasks = await prisma_1.prisma.task.count();
     const totalTasksNumber = Number(totalTasks);
     // Get number of distinct tasks the user has attempted (answered at least one question)
-    const attemptedTasks = await prisma.$queryRaw `
+    const attemptedTasks = await prisma_1.prisma.$queryRaw `
     SELECT COUNT(DISTINCT "taskId") as count
     FROM "UserTask"
     WHERE "userId" = ${userId}
@@ -261,14 +260,14 @@ const getUserTaskProgressService = async (userId) => {
 };
 exports.getUserTaskProgressService = getUserTaskProgressService;
 const getLeaderboardProgressService = async (userId) => {
-    const currentUser = await prisma.user.findUnique({
+    const currentUser = await prisma_1.prisma.user.findUnique({
         where: { id: userId },
         select: { totalScore: true },
     });
     if (!currentUser)
         throw new Error("User not found");
     const userScore = currentUser.totalScore;
-    const usersAhead = await prisma.user.findMany({
+    const usersAhead = await prisma_1.prisma.user.findMany({
         where: {
             totalScore: {
                 gt: userScore,
@@ -302,7 +301,7 @@ const getLeaderboardProgressService = async (userId) => {
 };
 exports.getLeaderboardProgressService = getLeaderboardProgressService;
 async function deleteTaskById(taskId) {
-    return prisma.$transaction(async (tx) => {
+    return prisma_1.prisma.$transaction(async (tx) => {
         // Delete relations first to avoid foreign key issues
         await tx.taskTag.deleteMany({ where: { taskId } });
         await tx.taskCategory.deleteMany({ where: { taskId } });
@@ -315,13 +314,13 @@ async function deleteTaskById(taskId) {
 async function updateTaskWithQuestions(taskId, data) {
     const ops = [];
     if (data.tags) {
-        ops.push(prisma.taskTag.deleteMany({ where: { taskId } }));
+        ops.push(prisma_1.prisma.taskTag.deleteMany({ where: { taskId } }));
     }
     if (data.categories) {
-        ops.push(prisma.taskCategory.deleteMany({ where: { taskId } }));
+        ops.push(prisma_1.prisma.taskCategory.deleteMany({ where: { taskId } }));
     }
     if (data.questions) {
-        ops.push(prisma.question.deleteMany({ where: { taskId } }));
+        ops.push(prisma_1.prisma.question.deleteMany({ where: { taskId } }));
     }
     const updatePayload = {};
     if (data.title !== undefined)
@@ -367,7 +366,7 @@ async function updateTaskWithQuestions(taskId, data) {
             })),
         };
     }
-    ops.push(prisma.task.update({
+    ops.push(prisma_1.prisma.task.update({
         where: { id: taskId },
         data: updatePayload,
         include: {
@@ -376,6 +375,6 @@ async function updateTaskWithQuestions(taskId, data) {
             categories: { include: { category: true } },
         },
     }));
-    const results = await prisma.$transaction(ops);
+    const results = await prisma_1.prisma.$transaction(ops);
     return results[results.length - 1];
 }

@@ -1,7 +1,6 @@
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { NotFoundError } from '../../lib/appError';
-const prisma = new PrismaClient();
-
+import { prisma } from "../../utils/prisma";
 export const createTag = async (data: { name: string }) => {
   const { name } = data;
 

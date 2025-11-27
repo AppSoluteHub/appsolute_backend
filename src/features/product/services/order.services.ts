@@ -1,9 +1,7 @@
 
-import { PrismaClient } from '@prisma/client';
 import {  BadRequestError } from '../../../lib/appError';
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../utils/prisma';
 
 type BillingAddressInput = {
   fullName: string;

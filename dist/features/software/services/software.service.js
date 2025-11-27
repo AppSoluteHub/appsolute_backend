@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSoftware = exports.updateSoftware = exports.getSoftwareById = exports.getAllSoftware = exports.createSoftware = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 const createSoftware = async (data) => {
-    return await prisma.software.create({ data });
+    return await prisma_1.prisma.software.create({ data });
 };
 exports.createSoftware = createSoftware;
 const getAllSoftware = async (options) => {
@@ -22,12 +21,12 @@ const getAllSoftware = async (options) => {
         };
     }
     const [software, total] = await Promise.all([
-        prisma.software.findMany({
+        prisma_1.prisma.software.findMany({
             where,
             skip,
             take: limit,
         }),
-        prisma.software.count({ where }),
+        prisma_1.prisma.software.count({ where }),
     ]);
     return {
         software,
@@ -38,7 +37,7 @@ const getAllSoftware = async (options) => {
 };
 exports.getAllSoftware = getAllSoftware;
 const getSoftwareById = async (id) => {
-    const software = await prisma.software.findUnique({
+    const software = await prisma_1.prisma.software.findUnique({
         where: { id },
     });
     if (!software) {
@@ -48,14 +47,14 @@ const getSoftwareById = async (id) => {
 };
 exports.getSoftwareById = getSoftwareById;
 const updateSoftware = async (id, data) => {
-    return await prisma.software.update({
+    return await prisma_1.prisma.software.update({
         where: { id },
         data,
     });
 };
 exports.updateSoftware = updateSoftware;
 const deleteSoftware = async (id) => {
-    return await prisma.software.delete({
+    return await prisma_1.prisma.software.delete({
         where: { id },
     });
 };

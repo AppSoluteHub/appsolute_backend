@@ -3,11 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTag = exports.updateTag = exports.getTagById = exports.getAllTags = exports.createTag = void 0;
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../utils/prisma");
 const createTag = async (data) => {
     const { name } = data;
     try {
-        const tag = await prisma.tag.create({
+        const tag = await prisma_1.prisma.tag.create({
             data: { name }
         });
         return { success: true, tag };
@@ -26,7 +26,7 @@ const createTag = async (data) => {
 };
 exports.createTag = createTag;
 const getAllTags = async () => {
-    return await prisma.tag.findMany({
+    return await prisma_1.prisma.tag.findMany({
         orderBy: {
             createdAt: 'desc'
         }
@@ -34,12 +34,12 @@ const getAllTags = async () => {
 };
 exports.getAllTags = getAllTags;
 const getTagById = async (id) => {
-    return await prisma.tag.findUnique({ where: { id } });
+    return await prisma_1.prisma.tag.findUnique({ where: { id } });
 };
 exports.getTagById = getTagById;
 const updateTag = async (id, data) => {
     try {
-        return await prisma.tag.update({
+        return await prisma_1.prisma.tag.update({
             where: { id },
             data,
         });
@@ -58,13 +58,13 @@ const updateTag = async (id, data) => {
 };
 exports.updateTag = updateTag;
 const deleteTag = async (id) => {
-    const tag = await prisma.tag.findUnique({ where: { id } });
+    const tag = await prisma_1.prisma.tag.findUnique({ where: { id } });
     if (!tag) {
         throw new appError_1.NotFoundError(`Tag with id ${id} not found`);
     }
     try {
-        await prisma.taskTag.deleteMany({ where: { tagId: id } });
-        return await prisma.tag.delete({ where: { id } });
+        await prisma_1.prisma.taskTag.deleteMany({ where: { tagId: id } });
+        return await prisma_1.prisma.tag.delete({ where: { id } });
     }
     catch (err) {
         throw err;

@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../utils/prisma";
 import {
   CreateCommentDto,
   UpdateCommentDto,
@@ -6,7 +6,7 @@ import {
 import { AppError, NotFoundError } from "../../lib/appError";
 // import { redisClient } from "../../config/redis";
 
-const prisma = new PrismaClient();
+
 
 export class CommentService {
   async createComment(data: CreateCommentDto) {
