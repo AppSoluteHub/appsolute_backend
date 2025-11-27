@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../utils/prisma';
 
 export class UserBehaviorService {
   async trackInteraction( interaction: string, page: string, device: string) {

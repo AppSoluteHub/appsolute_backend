@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 const createProduct = async (data) => {
-    return await prisma.product.create({ data });
+    return await prisma_1.prisma.product.create({ data });
 };
 exports.createProduct = createProduct;
 const getAllProducts = async (options) => {
@@ -30,12 +29,12 @@ const getAllProducts = async (options) => {
         };
     }
     const [products, total] = await Promise.all([
-        prisma.product.findMany({
+        prisma_1.prisma.product.findMany({
             where,
             skip,
             take: limit,
         }),
-        prisma.product.count({ where }),
+        prisma_1.prisma.product.count({ where }),
     ]);
     return {
         products,
@@ -46,7 +45,7 @@ const getAllProducts = async (options) => {
 };
 exports.getAllProducts = getAllProducts;
 const getProductById = async (id) => {
-    const product = await prisma.product.findUnique({
+    const product = await prisma_1.prisma.product.findUnique({
         where: { id },
         include: {
             reviews: {
@@ -65,7 +64,7 @@ const getProductById = async (id) => {
     if (!product) {
         throw new appError_1.AppError("Product not found", 404);
     }
-    const relatedProducts = await prisma.product.findMany({
+    const relatedProducts = await prisma_1.prisma.product.findMany({
         where: {
             category: product.category,
             id: { not: product.id },
@@ -79,14 +78,14 @@ const getProductById = async (id) => {
 };
 exports.getProductById = getProductById;
 const updateProduct = async (id, data) => {
-    return await prisma.product.update({
+    return await prisma_1.prisma.product.update({
         where: { id },
         data,
     });
 };
 exports.updateProduct = updateProduct;
 const deleteProduct = async (id) => {
-    return await prisma.product.delete({
+    return await prisma_1.prisma.product.delete({
         where: { id },
     });
 };

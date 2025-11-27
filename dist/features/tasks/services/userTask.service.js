@@ -1,18 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.answerTask = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 const answerTask = async (userId, taskId, answers) => {
     try {
-        const existingAttempt = await prisma.userTask.findFirst({
+        const existingAttempt = await prisma_1.prisma.userTask.findFirst({
             where: { userId, taskId },
         });
         if (existingAttempt) {
             throw new appError_1.BadRequestError("You have already attempted this task.");
         }
-        const task = await prisma.task.findUnique({
+        const task = await prisma_1.prisma.task.findUnique({
             where: { id: taskId },
             include: { questions: true },
         });
@@ -41,16 +40,16 @@ const answerTask = async (userId, taskId, answers) => {
                 scoreEarned,
             };
         });
-        await prisma.userTask.createMany({ data: userAnswers });
+        await prisma_1.prisma.userTask.createMany({ data: userAnswers });
         let totalScoreEarned = (task.points / totalQuestions) * correctAnswersCount;
         totalScoreEarned = Math.round(totalScoreEarned);
         if (totalScoreEarned > 0) {
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: { totalScore: { increment: totalScoreEarned } },
             });
         }
-        await prisma.user.update({
+        await prisma_1.prisma.user.update({
             where: { id: userId },
             data: { answered: { increment: answers.length } },
         });

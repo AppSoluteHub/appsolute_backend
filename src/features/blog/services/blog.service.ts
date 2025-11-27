@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../utils/prisma";
 import { UpdatePostData } from "../../../interfaces/post.interface";
 
 import {
@@ -10,7 +10,7 @@ import {
   UnAuthorizedError,
 } from "../../../lib/appError";
 
-const prisma = new PrismaClient();
+
 
 export interface PostData {
   title: string;

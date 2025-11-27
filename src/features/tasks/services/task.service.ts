@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { UpdateTaskData } from '../../../interfaces/task.interface';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../utils/prisma';
 export async function createTaskWithQuestions(
   title: string,
   categories: string[],

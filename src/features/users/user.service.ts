@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, Role } from "@prisma/client";
+import { Prisma, Role } from "@prisma/client";
 import { RegisterInput } from "../../interfaces/auth.interfaces";
 import {
   BadRequestError,
@@ -9,8 +9,7 @@ import {
 import bcrypt from "bcryptjs";
 import cloudinary from "../../config/cloudinary";
 import e from "express";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../utils/prisma";
 
 
 export class UserService {

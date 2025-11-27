@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { AppError, BadRequestError } from '../../../lib/appError';
-
-const prisma = new PrismaClient();
+import { prisma } from '../../../utils/prisma';
 
 export const createReview = async (data: {
   rating: number;

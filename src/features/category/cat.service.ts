@@ -1,7 +1,6 @@
-import { Prisma, PrismaClient } from '@prisma/client';
 import { NotFoundError } from '../../lib/appError';
-const prisma = new PrismaClient();
-
+import { prisma } from "../../utils/prisma";
+import {PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 export const createCategory = async (data: { name: string }) => {
   return await prisma.category.create({ data });
 };
@@ -37,7 +36,7 @@ export const updateCategory = async (id: string, data: { name?: string }) => {
     });
   } catch (err) {
     if (
-      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err instanceof PrismaClientKnownRequestError &&
       err.code === 'P2002' &&
       Array.isArray((err.meta as { target?: string[] }).target) &&
       (err.meta as { target: string[] }).target.includes('name')

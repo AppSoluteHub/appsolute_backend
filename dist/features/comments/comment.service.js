@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentService = void 0;
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../../utils/prisma");
 const appError_1 = require("../../lib/appError");
 // import { redisClient } from "../../config/redis";
-const prisma = new client_1.PrismaClient();
 class CommentService {
     async createComment(data) {
-        const newComment = await prisma.comment.create({
+        const newComment = await prisma_1.prisma.comment.create({
             data,
             include: {
                 author: { select: { fullName: true, profileImage: true } },
@@ -22,14 +21,14 @@ class CommentService {
                 throw new appError_1.AppError("postId is required", 400);
             }
             // Check if post exists
-            const postExists = await prisma.post.findUnique({
+            const postExists = await prisma_1.prisma.post.findUnique({
                 where: { id: postId },
             });
             if (!postExists) {
                 throw new appError_1.NotFoundError("Post not found");
             }
             // Fetch comments with likes, unlikes, and author
-            const rawComments = await prisma.comment.findMany({
+            const rawComments = await prisma_1.prisma.comment.findMany({
                 where: { postId },
                 select: {
                     id: true,
@@ -66,7 +65,7 @@ class CommentService {
         }
     }
     async updateComment(commentId, authorId, data) {
-        const existingComment = await prisma.comment.findUnique({
+        const existingComment = await prisma_1.prisma.comment.findUnique({
             where: { id: commentId },
             select: { authorId: true },
         });
@@ -76,7 +75,7 @@ class CommentService {
         if (existingComment.authorId !== authorId) {
             throw new Error("Unauthorized: You can only update your own comment");
         }
-        const updatedComment = await prisma.comment.update({
+        const updatedComment = await prisma_1.prisma.comment.update({
             where: { id: commentId },
             data,
             include: {
@@ -87,13 +86,13 @@ class CommentService {
         return updatedComment;
     }
     async getCommentById(commentId) {
-        const comment = await prisma.comment.findUnique({
+        const comment = await prisma_1.prisma.comment.findUnique({
             where: { id: commentId },
         });
         return comment;
     }
     async deleteComment(commentId) {
-        const deletedComment = await prisma.comment.delete({
+        const deletedComment = await prisma_1.prisma.comment.delete({
             where: { id: commentId },
         });
         return deletedComment;

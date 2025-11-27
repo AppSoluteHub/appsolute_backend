@@ -1,42 +1,41 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.dashboardService = void 0;
-const client_1 = require("@prisma/client");
 const date_fns_1 = require("date-fns");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 class DashboardService {
     async getDashboardData() {
         const [totalEarnings, totalSales, totalOrders, totalUsers] = await Promise.all([
-            prisma.payment.aggregate({
+            prisma_1.prisma.payment.aggregate({
                 _sum: { amount: true },
                 where: { status: "SUCCESS" },
             }),
-            prisma.payment.count({
+            prisma_1.prisma.payment.count({
                 where: { status: "SUCCESS" },
             }),
-            prisma.order.count(),
-            prisma.user.count(),
+            prisma_1.prisma.order.count(),
+            prisma_1.prisma.user.count(),
         ]);
-        const totalProducts = await prisma.product.count();
-        const soldGroup = await prisma.orderItem.groupBy({
+        const totalProducts = await prisma_1.prisma.product.count();
+        const soldGroup = await prisma_1.prisma.orderItem.groupBy({
             by: ["productId"],
             _count: true,
         });
         const soldProducts = soldGroup.length;
         const unsoldProducts = Math.max(totalProducts - soldProducts, 0);
         const [completed, pending, processing, cancelled, refunded] = await Promise.all([
-            prisma.order.count({ where: { status: "COMPLETED" } }),
-            prisma.order.count({ where: { status: "PENDING" } }),
-            prisma.order.count({ where: { status: "PROCESSING" } }),
-            prisma.order.count({ where: { status: "CANCELLED" } }),
-            prisma.order.count({ where: { status: "REFUNDED" } }),
+            prisma_1.prisma.order.count({ where: { status: "COMPLETED" } }),
+            prisma_1.prisma.order.count({ where: { status: "PENDING" } }),
+            prisma_1.prisma.order.count({ where: { status: "PROCESSING" } }),
+            prisma_1.prisma.order.count({ where: { status: "CANCELLED" } }),
+            prisma_1.prisma.order.count({ where: { status: "REFUNDED" } }),
         ]);
         const last12Months = Array.from({ length: 12 }, (_, i) => (0, date_fns_1.subMonths)(new Date(), 11 - i));
         const monthlySales = await Promise.all(last12Months.map(async (date) => {
             const start = (0, date_fns_1.startOfMonth)(date);
             const end = new Date(start);
             end.setMonth(end.getMonth() + 1);
-            const monthSales = await prisma.payment.aggregate({
+            const monthSales = await prisma_1.prisma.payment.aggregate({
                 _sum: { amount: true },
                 where: {
                     status: "SUCCESS",

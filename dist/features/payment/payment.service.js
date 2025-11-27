@@ -7,7 +7,7 @@ exports.PayStackService = void 0;
 const axios_1 = __importDefault(require("axios"));
 const client_1 = require("@prisma/client");
 const appError_1 = require("../../lib/appError");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../utils/prisma");
 class PayStackService {
     constructor(secretKey) {
         this.paystackSecretKey = secretKey;
@@ -29,7 +29,7 @@ class PayStackService {
                 },
             });
             const { reference } = response.data.data;
-            await prisma.payment.upsert({
+            await prisma_1.prisma.payment.upsert({
                 where: { orderId },
                 update: {
                     amount,
@@ -65,21 +65,32 @@ class PayStackService {
             });
             const { status } = response.data.data;
             const isSuccessful = status === "success";
-            // Update the payment and get its related order
-            const payment = await prisma.payment.update({
+            // Update payment and fetch linked order + user
+            const payment = await prisma_1.prisma.payment.update({
                 where: { reference },
                 data: {
                     status: isSuccessful ? client_1.PaymentStatus.SUCCESS : client_1.PaymentStatus.FAILED,
                 },
-                include: { order: true },
+                include: {
+                    order: true,
+                },
             });
-            // If successful and linked to an order, mark order as CONFIRMED
+            // After success, confirm order and clear cart
             if (isSuccessful && payment.orderId) {
-                await prisma.order.update({
+                await prisma_1.prisma.order.update({
                     where: { id: payment.orderId },
                     data: { status: "CONFIRMED" },
                 });
-                await prisma.cartItem.deleteMany({ where: { cart: { userId: payment.order.userId } } });
+                // Fetch user cart
+                const cart = await prisma_1.prisma.cart.findFirst({
+                    where: { userId: payment.order.userId },
+                });
+                // Clear cart items
+                if (cart) {
+                    await prisma_1.prisma.cartItem.deleteMany({
+                        where: { cartId: cart.id },
+                    });
+                }
             }
             return isSuccessful;
         }
@@ -92,13 +103,13 @@ class PayStackService {
         const { event, data } = payload;
         switch (event) {
             case "charge.success":
-                await prisma.payment.update({
+                await prisma_1.prisma.payment.update({
                     where: { reference: data.reference },
                     data: { status: client_1.PaymentStatus.SUCCESS },
                 });
                 break;
             case "charge.failed":
-                await prisma.payment.update({
+                await prisma_1.prisma.payment.update({
                     where: { reference: data.reference },
                     data: { status: client_1.PaymentStatus.FAILED },
                 });
@@ -106,13 +117,13 @@ class PayStackService {
         }
     }
     async getPaymentStatus() {
-        const status = await prisma.payment.findMany({
+        const status = await prisma_1.prisma.payment.findMany({
             where: { status: client_1.PaymentStatus.SUCCESS },
         });
         return status;
     }
     async getUserDetails() {
-        const users = await prisma.user.findMany({
+        const users = await prisma_1.prisma.user.findMany({
             where: {
                 payments: {
                     some: {

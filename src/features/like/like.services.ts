@@ -1,7 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { BadRequestError, NotFoundError } from "../../lib/appError";
-
-const prisma = new PrismaClient();
+import { prisma } from "../../utils/prisma";
 
 export class LikeService {
   async toggleCommentLike(userId: string, commentId: string) {

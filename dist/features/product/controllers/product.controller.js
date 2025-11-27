@@ -25,23 +25,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
 const productService = __importStar(require("../services/product.service"));
-const cloudinary_utils_1 = require("../../../utils/cloudinary.utils");
 const createProduct = async (req, res, next) => {
     try {
-        let imageUrl;
-        let galleryUrls;
-        // Handle single image upload
-        if (req.files &&
-            req.files.image) {
-            const imageFile = req.files.image[0];
-            imageUrl = await (0, cloudinary_utils_1.uploadImageToCloudinary)(imageFile);
-        }
-        // Handle multiple gallery images upload
-        if (req.files &&
-            req.files.gallery) {
-            const galleryFiles = req.files.gallery;
-            galleryUrls = await (0, cloudinary_utils_1.uploadMultipleImagesToCloudinary)(galleryFiles);
-        }
+        const { image: imageUrl, gallery: galleryUrls, ...restOfBody } = req.body;
         const normalizeArray = (field) => {
             if (!field)
                 return [];
@@ -60,13 +46,13 @@ const createProduct = async (req, res, next) => {
             return [field];
         };
         const productData = {
-            ...req.body,
-            price: parseFloat(req.body.price),
-            weight: parseFloat(req.body.weight),
-            stock: parseInt(req.body.stock, 10),
-            colors: normalizeArray(req.body.colors),
-            sizes: normalizeArray(req.body.sizes),
-            tags: normalizeArray(req.body.tags),
+            ...restOfBody,
+            price: parseFloat(restOfBody.price),
+            weight: parseFloat(restOfBody.weight),
+            stock: parseInt(restOfBody.stock, 10),
+            colors: normalizeArray(restOfBody.colors),
+            sizes: normalizeArray(restOfBody.sizes),
+            tags: normalizeArray(restOfBody.tags),
             image: imageUrl,
             gallery: galleryUrls,
         };
@@ -107,20 +93,7 @@ const getProductById = async (req, res, next) => {
 exports.getProductById = getProductById;
 const updateProduct = async (req, res, next) => {
     try {
-        let imageUrl;
-        let galleryUrls;
-        // Handle single image upload for update
-        if (req.files &&
-            req.files.image) {
-            const imageFile = req.files.image[0];
-            imageUrl = await (0, cloudinary_utils_1.uploadImageToCloudinary)(imageFile);
-        }
-        // Handle multiple gallery images upload for update
-        if (req.files &&
-            req.files.gallery) {
-            const galleryFiles = req.files.gallery;
-            galleryUrls = await (0, cloudinary_utils_1.uploadMultipleImagesToCloudinary)(galleryFiles);
-        }
+        const { image: imageUrl, gallery: galleryUrls, ...restOfBody } = req.body;
         const normalizeArray = (field) => {
             if (!field)
                 return undefined;
@@ -138,24 +111,24 @@ const updateProduct = async (req, res, next) => {
             }
             return [field];
         };
-        const productData = { ...req.body };
-        if (req.body.price) {
-            productData.price = parseFloat(req.body.price);
+        const productData = { ...restOfBody };
+        if (restOfBody.price) {
+            productData.price = parseFloat(restOfBody.price);
         }
-        if (req.body.weight) {
-            productData.weight = parseFloat(req.body.weight);
+        if (restOfBody.weight) {
+            productData.weight = parseFloat(restOfBody.weight);
         }
-        if (req.body.stock) {
-            productData.stock = parseInt(req.body.stock, 10);
+        if (restOfBody.stock) {
+            productData.stock = parseInt(restOfBody.stock, 10);
         }
-        if (req.body.colors) {
-            productData.colors = normalizeArray(req.body.colors);
+        if (restOfBody.colors) {
+            productData.colors = normalizeArray(restOfBody.colors);
         }
-        if (req.body.sizes) {
-            productData.sizes = normalizeArray(req.body.sizes);
+        if (restOfBody.sizes) {
+            productData.sizes = normalizeArray(restOfBody.sizes);
         }
-        if (req.body.tags) {
-            productData.tags = normalizeArray(req.body.tags);
+        if (restOfBody.tags) {
+            productData.tags = normalizeArray(restOfBody.tags);
         }
         if (imageUrl) {
             productData.image = imageUrl;

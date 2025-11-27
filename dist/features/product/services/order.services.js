@@ -4,12 +4,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getOrderByShareToken = exports.generateShareableOrderLink = exports.createOrder = exports.getOrderById = exports.getUsersOrders = void 0;
-const client_1 = require("@prisma/client");
 const appError_1 = require("../../../lib/appError");
 const crypto_1 = __importDefault(require("crypto"));
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../utils/prisma");
 const getUsersOrders = async (userId) => {
-    const orders = await prisma.order.findMany({
+    const orders = await prisma_1.prisma.order.findMany({
         where: {
             userId,
             status: { not: 'PENDING' },
@@ -30,7 +29,7 @@ const getUsersOrders = async (userId) => {
 };
 exports.getUsersOrders = getUsersOrders;
 const getOrderById = async (userId, orderId) => {
-    const order = await prisma.order.findFirst({
+    const order = await prisma_1.prisma.order.findFirst({
         where: {
             id: orderId,
             userId,
@@ -51,7 +50,7 @@ const getOrderById = async (userId, orderId) => {
 };
 exports.getOrderById = getOrderById;
 const createOrder = async (userId, billingAddress) => {
-    return await prisma.$transaction(async (tx) => {
+    return await prisma_1.prisma.$transaction(async (tx) => {
         const cart = await tx.cart.findFirst({
             where: { userId },
             include: {
@@ -104,7 +103,7 @@ const createOrder = async (userId, billingAddress) => {
 exports.createOrder = createOrder;
 const generateShareableOrderLink = async (userId, orderId) => {
     // Find the order
-    const order = await prisma.order.findFirst({
+    const order = await prisma_1.prisma.order.findFirst({
         where: { id: orderId, userId },
     });
     if (!order) {
@@ -113,7 +112,7 @@ const generateShareableOrderLink = async (userId, orderId) => {
     // Generate a unique token
     const token = crypto_1.default.randomBytes(16).toString("hex");
     // Save token in the order
-    await prisma.order.update({
+    await prisma_1.prisma.order.update({
         where: { id: orderId },
         data: { shareToken: token },
     });
@@ -124,7 +123,7 @@ const generateShareableOrderLink = async (userId, orderId) => {
 exports.generateShareableOrderLink = generateShareableOrderLink;
 // Fetch order by share token
 const getOrderByShareToken = async (token) => {
-    const order = await prisma.order.findFirst({
+    const order = await prisma_1.prisma.order.findFirst({
         where: { shareToken: token },
         include: {
             items: { include: { product: true } },
