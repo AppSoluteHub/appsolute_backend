@@ -48,6 +48,6 @@ exports.default = (appRouter) => {
     appRouter.use("/orders", order_routes_1.default);
     appRouter.use("/productReviews", review_route_1.default);
     appRouter.use("/payments", payment_route_1.default);
-    appRouter.use("/ai-image", ai_image_route_1.default);
+    appRouter.use("/aiImage", ai_image_route_1.default);
     return appRouter;
 };
