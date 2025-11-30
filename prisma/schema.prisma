@@ -1,12 +1,12 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
 
 
 model User {
@@ -417,4 +417,19 @@ model AiImage {
   createdAt         DateTime @default(now())
   userId            String
   user              User     @relation(fields: [userId], references: [id])
+}
+
+model QuizQuestion {
+  id        Int     @id @default(autoincrement())
+  number    Int     @unique       
+  question  String
+  answer    String
+  used      Boolean @default(false)
+}
+
+model Score {
+  id       Int    @id @default(autoincrement())
+  userId   String @unique
+  score    Int    @default(0)
+  updatedAt DateTime @updatedAt
 }
