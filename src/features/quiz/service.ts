@@ -1,6 +1,20 @@
+import {  DuplicateError } from '../../lib/appError';
 import { prisma } from '../../utils/prisma';
 
 export const fetchForDisplay = async (number: number) => {
+  const alreadyAnswered = await prisma.quizQuestion.findUnique({
+    where: { number },
+    select: { used: true },
+  });
+
+  if(alreadyAnswered === null ){
+    return null;
+  }
+  if(alreadyAnswered.used === true){
+    throw new DuplicateError('Question has already been answered');
+    
+  }
+
   return prisma.quizQuestion.findUnique({
     where: { number },
     select: {

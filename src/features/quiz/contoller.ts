@@ -1,25 +1,38 @@
 import { Request, Response } from 'express';
 import { fetchForDisplay, attemptQuestion } from './service';
+import {  DuplicateError } from '../../lib/appError';
 
 export const getQuestion = async (req: Request, res: Response) => {
   const number = Number(req.body.number);
-  if (isNaN(number)) {
-     res.status(400).json({ error: 'Invalid question number' });
-     return
+  if (!number) {
+    res.status(400).json({ error: 'Question number is required' });
+    return;
+  }
+  
+   if (isNaN(number)) {
+    res.status(400).json({ error: 'Invalid question number' });
+    return;
   }
 
   try {
     const question = await fetchForDisplay(number);
+
     if (!question) {
-       res.status(404).json({ error: 'Question not found' });
-       return
+      res.status(404).json({ error: 'Question not found' });
+      return;
     }
+
     res.json(question);
-  } catch (err) {
-    console.error(err);
+  } catch (err: any) {
+   if (err instanceof DuplicateError) {
+   res.status(409).json({ error: err.message });
+   return;
+}
+
     res.status(500).json({ error: 'Server error' });
   }
 };
+
 
 // Controller to attempt a question
 export const postAttempt = async (req: Request, res: Response) => {
