@@ -19,8 +19,13 @@ export class AiImageController {
         if (!userId) {
             return res.status(401).json({ message: 'User not authenticated' });
         }
-
-        const generatedImage = await AiImageService.generateImage(prompt, image, userId);
+        if (!prompt || prompt.trim() === '') {
+            return res.status(400).json({ 
+                status: 'error',
+                message: 'Prompt is required' 
+            });
+        }
+        const generatedImage = await AiImageService.transformImage(prompt, image, userId);
 
         res.status(200).json({
             status: 'success',

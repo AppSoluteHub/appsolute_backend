@@ -18,7 +18,13 @@ AiImageController.generateImage = (0, catchAsync_1.catchAsync)(async (req, res) 
     if (!userId) {
         return res.status(401).json({ message: 'User not authenticated' });
     }
-    const generatedImage = await ai_image_service_1.AiImageService.generateImage(prompt, image, userId);
+    if (!prompt || prompt.trim() === '') {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Prompt is required'
+        });
+    }
+    const generatedImage = await ai_image_service_1.AiImageService.transformImage(prompt, image, userId);
     res.status(200).json({
         status: 'success',
         data: generatedImage,
