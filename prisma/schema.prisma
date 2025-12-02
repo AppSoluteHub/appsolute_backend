@@ -433,3 +433,9 @@ model Score {
   score    Int    @default(0)
   updatedAt DateTime @updatedAt
 }
+
+model QuizConfig {
+  id                    Int @id @default(1)
+  trials                Int @default(3)
+  correctAnswersForSpin Int @default(5)
+}

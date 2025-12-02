@@ -1,6 +1,29 @@
 import {  DuplicateError } from '../../lib/appError';
 import { prisma } from '../../utils/prisma';
 
+export const getQuizConfig = async () => {
+  let config = await prisma.quizConfig.findFirst();
+  if (!config) {
+    config = await prisma.quizConfig.create({
+      data: {
+        id: 1,
+        trials: 3,
+        correctAnswersForSpin: 5,
+      },
+    });
+  }
+  return config;
+};
+
+export const updateQuizConfig = async (newConfig: { trials?: number; correctAnswersForSpin?: number }) => {
+  const config = await getQuizConfig();
+  return prisma.quizConfig.update({
+    where: { id: config.id },
+    data: newConfig,
+  });
+};
+
+
 export const fetchForDisplay = async (number: number) => {
   const alreadyAnswered = await prisma.quizQuestion.findUnique({
     where: { number },
@@ -83,4 +106,11 @@ export const attemptQuestion = async (
     correctAnswer: question.answer,
     userScore: scoreRecord.score,
   };
+};
+
+export const seedQuestions = async (questions: any[]) => {
+  return prisma.quizQuestion.createMany({
+    data: questions,
+    skipDuplicates: true,
+  });
 };

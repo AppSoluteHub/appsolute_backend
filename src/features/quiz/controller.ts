@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { fetchForDisplay, attemptQuestion } from './service';
+import { fetchForDisplay, attemptQuestion, seedQuestions, updateQuizConfig, getQuizConfig } from './service';
 import {  DuplicateError } from '../../lib/appError';
 
 export const getQuestion = async (req: Request, res: Response) => {
@@ -59,6 +59,50 @@ export const postAttempt = async (req: Request, res: Response) => {
     res.json(result);
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const seedQuizQuestions = async (req: Request, res: Response) => {
+  const { questions } = req.body;
+
+  if (!questions || !Array.isArray(questions)) {
+     res.status(400).json({ error: 'Invalid request body, expecting a "questions" array' });
+     return
+  }
+
+  try {
+    const result = await seedQuestions(questions);
+    res.status(201).json({ message: 'Questions seeded successfully', count: result.count });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const configureQuiz = async (req: Request, res: Response) => {
+  const { trials, correctAnswersForSpin } = req.body;
+
+  if (trials === undefined && correctAnswersForSpin === undefined) {
+     res.status(400).json({ error: 'No configuration provided' });
+      return;
+  }
+
+  try {
+    const newConfig = await updateQuizConfig({ trials, correctAnswersForSpin });
+    res.json({ message: 'Quiz configuration updated', newConfig });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const getConfiguration = async (req: Request, res: Response) => {
+  try {
+    const config = await getQuizConfig();
+    res.json(config);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Server error' });
   }
 };
