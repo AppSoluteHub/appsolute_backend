@@ -1,108 +1,86 @@
-import { Request, Response } from 'express';
-import { fetchForDisplay, attemptQuestion, seedQuestions, updateQuizConfig, getQuizConfig } from './service';
-import {  DuplicateError } from '../../lib/appError';
+import { Request, Response } from "express";
+import { fetchForDisplay, attemptQuestion, updateSpinConfig } from "./service";
+import { BadRequestError, InternalServerError, UnAuthorizedError } from "../../lib/appError";
+import { catchAsync } from "../../utils/catchAsync";
 
-export const getQuestion = async (req: Request, res: Response) => {
+const validateNumber = (value: any): string | null => {
+  if (value === undefined || value === null || value === '') {
+    return 'Question number is required, ensure is a valid number (1-100)';
+  }
+
+  const num = Number(value);
+
+  if (isNaN(num)) {
+    return 'Question number is required, ensure is a valid number (1-100)';
+  }
+
+  if (num < 1 || num > 100) {
+    return 'Question number must be between 1 and 100';
+  }
+
+  return null;
+};
+
+
+
+export const getQuestion = catchAsync(async (req: Request, res: Response) => {
+  if(req.user?.id===undefined){
+    throw new UnAuthorizedError("User not authorized, please login");
+  }
+
+  const error = validateNumber(req.body.number);
+  if (error) {
+    throw new BadRequestError(error);
+  } 
+ 
+
   const number = Number(req.body.number);
-  if (!number) {
-    res.status(400).json({ error: 'Question number is required' });
-    return;
+
+  const question = await fetchForDisplay(number);
+
+  const { correctAnswer, ...safe } = question;
+  res.json(safe);
+});
+
+export const postAttempt = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  if(!userId){
+    throw new UnAuthorizedError("User not authorized, please login");
   }
-  
-   if (isNaN(number)) {
-    res.status(400).json({ error: 'Invalid question number' });
-    return;
-  }
-
-  try {
-    const question = await fetchForDisplay(number);
-
-    if (!question) {
-      res.status(404).json({ error: 'Question not found' });
-      return;
-    }
-
-    res.json(question);
-  } catch (err: any) {
-   if (err instanceof DuplicateError) {
-   res.status(409).json({ error: err.message });
-   return;
-}
-
-    res.status(500).json({ error: 'Server error' });
-  }
-};
-
-
-// Controller to attempt a question
-export const postAttempt = async (req: Request, res: Response) => {
   const number = Number(req.params.number);
-  const { userAnswer, userId } = req.body;
-  
-  if (!userAnswer || !userId) {
-     res.status(400).json({ error: 'Missing userAnswer or userId' });
-     return
+  const error = validateNumber(number);
+  if (error) {
+    throw new BadRequestError(error);
   }
 
-  if (isNaN(number)) {
-     res.status(400).json({ error: 'Invalid question number' });
-     return
+  const { userAnswer } = req.body;
+
+  if (!userAnswer ) {
+    throw new BadRequestError("Missing userAnswer,please provide an answer to proceed.");
   }
 
-  try {
-    const result = await attemptQuestion(number, userAnswer, userId);
-    if (!result.success) {
-       res.status(400).json({ error: result.error });
-       return
-    }
-    console.log(result);
-    res.json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
+  const result = await attemptQuestion(number, userAnswer, userId); 
+  if (!result.success) {
+    throw new InternalServerError("Failed to attempt question");
   }
-};
+  console.log(result);
+  res.json(result);
+});
 
-export const seedQuizQuestions = async (req: Request, res: Response) => {
-  const { questions } = req.body;
-
-  if (!questions || !Array.isArray(questions)) {
-     res.status(400).json({ error: 'Invalid request body, expecting a "questions" array' });
-     return
-  }
-
-  try {
-    const result = await seedQuestions(questions);
-    res.status(201).json({ message: 'Questions seeded successfully', count: result.count });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
-
-export const configureQuiz = async (req: Request, res: Response) => {
+export const updateQuizConfig = catchAsync(async (req: Request, res: Response) => {
   const { trials, correctAnswersForSpin } = req.body;
 
-  if (trials === undefined && correctAnswersForSpin === undefined) {
-     res.status(400).json({ error: 'No configuration provided' });
-      return;
+  if (typeof trials !== 'number' || trials <= 0 || !Number.isInteger(trials)) {
+    throw new BadRequestError("Trials must be a positive integer.");
   }
 
-  try {
-    const newConfig = await updateQuizConfig({ trials, correctAnswersForSpin });
-    res.json({ message: 'Quiz configuration updated', newConfig });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
+  if (typeof correctAnswersForSpin !== 'number' || correctAnswersForSpin <= 0 || !Number.isInteger(correctAnswersForSpin)) {
+    throw new BadRequestError("Correct answers for spin must be a positive integer.");
   }
-};
 
-export const getConfiguration = async (req: Request, res: Response) => {
-  try {
-    const config = await getQuizConfig();
-    res.json(config);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
+  const config = await updateSpinConfig(trials, correctAnswersForSpin);
+  res.status(200).json({
+    status: 'success',
+    data: config,
+  });
+});

@@ -420,11 +420,12 @@ model AiImage {
 }
 
 model QuizQuestion {
-  id        Int     @id @default(autoincrement())
-  number    Int     @unique       
-  question  String
-  answer    String
-  used      Boolean @default(false)
+  id               Int      @id @default(autoincrement())
+  number           Int      @unique       
+  question         String
+  options          String[]
+  correctAnswer    String @default("")
+  answeredByUserId String?
 }
 
 model Score {

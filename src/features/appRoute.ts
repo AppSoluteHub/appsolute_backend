@@ -21,6 +21,7 @@ import reviewRoute from './review/routes/review.route';
 import paymentRoute from './payment/payment.route';
 import aiImageRoute from './ai-image/ai-image.route';
 import quizRoute from './quiz/route';
+
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
   appRouter.use("/userPage",userPageRoute);

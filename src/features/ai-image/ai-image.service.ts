@@ -32,7 +32,6 @@ export class AiImageService {
 
             console.log("Running Replicate model with prompt:", prompt);
 
-            // Using SDXL img2img - handles ANY prompt (cartoon, oil painting, cyberpunk, etc.)
             const output = await replicate.run(
                 "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
                 {
@@ -50,7 +49,6 @@ export class AiImageService {
 
             console.log("Model completed. Output:", output);
 
-            // Handle output (can be a URL or array of URLs)
             let imageUrl: string;
             if (Array.isArray(output)) {
                 imageUrl = output[0] as string;
@@ -58,7 +56,6 @@ export class AiImageService {
                 imageUrl = output as any;
             }
 
-            // Download the generated image
             const response = await fetch(imageUrl);
             if (!response.ok) {
                 throw new Error(`Failed to download image: ${response.statusText}`);
@@ -67,13 +64,11 @@ export class AiImageService {
             const arrayBuffer = await response.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
 
-            // Save to temporary file
             const tempFile = path.join(process.cwd(), `generated_${Date.now()}.png`);
             fs.writeFileSync(tempFile, buffer);
 
             console.log("Generated image saved temporarily");
 
-            // Upload generated image to Cloudinary
             const generatedUpload = await cloudinary.uploader.upload(tempFile, {
                 folder: "ai-images/generated",
             });
