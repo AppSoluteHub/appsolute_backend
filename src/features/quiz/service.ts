@@ -38,9 +38,62 @@ const techTopics = [
   "design patterns",
 ];
 
-const generateQuestion = async () => {
+// const generateQuestion = async () => {
+//   const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
+//   const randomSeed = Math.floor(Math.random() * 100000);
+
+//   const prompt = `
+// Generate a unique THEORY (open-ended) technical question about ${randomTopic}.
+// The question must require explanation or reasoning (no multiple-choice).
+
+// Return JSON ONLY:
+
+// {
+//   "question": "string",
+//   "modelAnswer": "string"
+// }
+
+// Rules:
+// - "question" must be something a user writes 2–5 sentences to answer.
+// - "modelAnswer" must be a factual expert-level explanation.
+// - DO NOT include options or correctAnswer.
+// Random seed: ${randomSeed}
+//   `;
+
+//   try {
+//     const output = await replicate.run("meta/meta-llama-3-70b-instruct", {
+//       input: {
+//         prompt,
+//         max_tokens: 512,
+//         temperature: 0.9,
+//         top_p: 0.95,
+//         seed: randomSeed,
+//       },
+//     });
+
+//     const text = Array.isArray(output) ? output.join("") : String(output);
+//     const cleanText = text.replace(/```json|```/g, "").trim();
+
+//     const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+//     const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
+
+//     if (!parsed.question || !parsed.modelAnswer) {
+//       throw new InternalServerError(
+//         "AI response missing required theory-question fields."
+//       );
+//     }
+
+//     return parsed;
+//   } catch (err: any) {
+//     throw new InternalServerError(
+//       "Invalid question format from AI: " + err.message
+//     );
+//   }
+// };
+const generateQuestion = async (): Promise<{ question: string; modelAnswer: string }> => {
   const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
   const randomSeed = Math.floor(Math.random() * 100000);
+  const MAX_MODEL_ANSWER_LENGTH = 1000; // adjust as needed
 
   const prompt = `
 Generate a unique THEORY (open-ended) technical question about ${randomTopic}.
@@ -60,7 +113,7 @@ Rules:
 Random seed: ${randomSeed}
   `;
 
-  try {
+  const callAI = async () => {
     const output = await replicate.run("meta/meta-llama-3-70b-instruct", {
       input: {
         prompt,
@@ -71,24 +124,49 @@ Random seed: ${randomSeed}
       },
     });
 
-    const text = Array.isArray(output) ? output.join("") : String(output);
-    const cleanText = text.replace(/```json|```/g, "").trim();
+    let text = Array.isArray(output) ? output.join("") : String(output);
 
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
+    // Clean the text
+    text = text.replace(/```json|```/g, "")
+               .replace(/\r?\n/g, " ")
+               .trim();
+
+    // Extract JSON object
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No JSON object found in AI response.");
+
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonMatch[0]);
+    } catch (err) {
+      throw new Error("Failed to parse AI JSON: " + err);
+    }
 
     if (!parsed.question || !parsed.modelAnswer) {
-      throw new InternalServerError(
-        "AI response missing required theory-question fields."
-      );
+      throw new Error("AI JSON missing 'question' or 'modelAnswer' fields.");
+    }
+
+    // Truncate extremely long modelAnswer to avoid parsing issues
+    if (parsed.modelAnswer.length > MAX_MODEL_ANSWER_LENGTH) {
+      parsed.modelAnswer = parsed.modelAnswer.slice(0, MAX_MODEL_ANSWER_LENGTH);
     }
 
     return parsed;
-  } catch (err: any) {
-    throw new InternalServerError(
-      "Invalid question format from AI: " + err.message
-    );
+  };
+
+  let lastError: any;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await callAI();
+    } catch (err :any) {
+      console.warn(`AI JSON parsing failed on attempt ${attempt}:`, err.message);
+      lastError = err;
+    }
   }
+
+  throw new InternalServerError(
+    `AI failed to generate a valid question after 3 attempts: ${lastError.message}`
+  );
 };
 
 export const fetchForDisplay = async (number: number) => {

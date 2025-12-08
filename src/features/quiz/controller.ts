@@ -24,9 +24,9 @@ const validateNumber = (value: any): string | null => {
 
 
 export const getQuestion = catchAsync(async (req: Request, res: Response) => {
-  if(req.user?.id===undefined){
-    throw new UnAuthorizedError("User not authorized, please login");
-  }
+  // if(req.user?.id===undefined){
+  //   throw new UnAuthorizedError("User not authorized, please login");
+  // }
 
   const error = validateNumber(req.body.number);
   if (error) {
@@ -38,7 +38,7 @@ export const getQuestion = catchAsync(async (req: Request, res: Response) => {
 
   const question = await fetchForDisplay(number);
 
-  // const { correctAnswer, ...safe } = question;
+  const { modelAnswer, ...safe } = question;
   res.json(question);
 });
 
