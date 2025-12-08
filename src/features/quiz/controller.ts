@@ -38,8 +38,8 @@ export const getQuestion = catchAsync(async (req: Request, res: Response) => {
 
   const question = await fetchForDisplay(number);
 
-  const { correctAnswer, ...safe } = question;
-  res.json(safe);
+  // const { correctAnswer, ...safe } = question;
+  res.json(question);
 });
 
 export const postAttempt = catchAsync(async (req: Request, res: Response) => {
