@@ -106,7 +106,7 @@ dotenv.config();
     }
 
 
-    static async getUserImages(userId: string, page: number = 1, limit: number = 4) {
+    static async getUserImages(userId: string, page: number , limit: number) {
         try {
             const skip = (page - 1) * limit;
 
