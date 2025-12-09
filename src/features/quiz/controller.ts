@@ -24,20 +24,23 @@ const validateNumber = (value: any): string | null => {
 
 
 export const getQuestion = catchAsync(async (req: Request, res: Response) => {
-  if(req.user?.id===undefined){
-    throw new UnAuthorizedError("User not authorized, please login");
-  }
 
-  const error = validateNumber(req.body.number);
-  if (error) {
-    throw new BadRequestError(error);
-  } 
- 
+if (!req.user?.id) {
+  throw new UnAuthorizedError("User not authorized, please login");
+}
 
-  const number = Number(req.body.number);
+const number = Number(req.params.number);
 
-  const question = await fetchForDisplay(number);
+if (isNaN(number)) {
+  throw new BadRequestError("Invalid number parameter");
+}
 
+const error = validateNumber(number);
+if (error) {
+  throw new BadRequestError(error);
+}
+
+const question = await fetchForDisplay(number);
   const { modelAnswer, ...safe } = question;
   res.json(safe);
 });
