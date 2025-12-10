@@ -4,40 +4,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateSpinConfig = exports.attemptQuestion = exports.fetchForDisplay = void 0;
+exports.isQuizError = isQuizError;
 const replicate_1 = __importDefault(require("replicate"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const prisma_1 = require("../../utils/prisma");
+const nlp_helper_1 = require("../../utils/nlp.helper");
 const appError_1 = require("../../lib/appError");
+// Type guard helper
+function isQuizError(response) {
+    return 'error' in response && response.error === true;
+}
 const replicate = new replicate_1.default({
     auth: process.env.REPLICATE_API_KEY,
 });
-// Topics for theory questions
 const techTopics = [
-    "data structures",
-    "algorithms",
-    "web development",
-    "databases",
-    "cloud computing",
-    "cybersecurity",
-    "machine learning",
-    "DevOps",
-    "programming languages",
-    "software architecture",
-    "API design",
-    "mobile development",
-    "networking",
-    "version control",
-    "testing and QA",
-    "operating systems",
-    "containerization",
-    "microservices",
-    "blockchain",
+    "data structures", "algorithms", "web development", "databases",
+    "cloud computing", "cybersecurity", "machine learning", "DevOps",
+    "programming languages", "software architecture", "API design",
+    "mobile development", "networking", "version control", "testing and QA",
+    "operating systems", "containerization", "microservices", "blockchain",
     "design patterns",
 ];
 const generateQuestion = async () => {
     const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
     const randomSeed = Math.floor(Math.random() * 100000);
+    const MAX_MODEL_ANSWER_LENGTH = 1000;
     const prompt = `
 Generate a unique THEORY (open-ended) technical question about ${randomTopic}.
 The question must require explanation or reasoning (no multiple-choice).
@@ -55,7 +47,7 @@ Rules:
 - DO NOT include options or correctAnswer.
 Random seed: ${randomSeed}
   `;
-    try {
+    const callAI = async () => {
         const output = await replicate.run("meta/meta-llama-3-70b-instruct", {
             input: {
                 prompt,
@@ -65,18 +57,37 @@ Random seed: ${randomSeed}
                 seed: randomSeed,
             },
         });
-        const text = Array.isArray(output) ? output.join("") : String(output);
-        const cleanText = text.replace(/```json|```/g, "").trim();
-        const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
-        if (!parsed.question || !parsed.modelAnswer) {
-            throw new appError_1.InternalServerError("AI response missing required theory-question fields.");
+        let text = Array.isArray(output) ? output.join("") : String(output);
+        text = text.replace(/```json|```/g, "").replace(/\r?\n/g, " ").trim();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch)
+            throw new Error("No JSON object found in AI response.");
+        let parsed;
+        try {
+            parsed = JSON.parse(jsonMatch[0]);
         }
-        return parsed;
+        catch (err) {
+            throw new Error("Failed to parse AI JSON: " + err);
+        }
+        if (!parsed.question || !parsed.modelAnswer) {
+            throw new Error("AI JSON missing 'question' or 'modelAnswer' fields.");
+        }
+        if (parsed.modelAnswer.length > MAX_MODEL_ANSWER_LENGTH) {
+            parsed.modelAnswer = parsed.modelAnswer.slice(0, MAX_MODEL_ANSWER_LENGTH);
+        }
+        return { ...parsed, topic: randomTopic };
+    };
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+            return await callAI();
+        }
+        catch (err) {
+            console.warn(`AI JSON parsing failed on attempt ${attempt}:`, err.message);
+            lastError = err;
+        }
     }
-    catch (err) {
-        throw new appError_1.InternalServerError("Invalid question format from AI: " + err.message);
-    }
+    throw new appError_1.InternalServerError(`AI failed to generate a valid question after 3 attempts: ${lastError.message}`);
 };
 const fetchForDisplay = async (number) => {
     let quizQuestion = await prisma_1.prisma.quizQuestion.findUnique({
@@ -84,11 +95,22 @@ const fetchForDisplay = async (number) => {
     });
     if (quizQuestion) {
         if (quizQuestion.answeredByUserId) {
-            throw new appError_1.DuplicateError(`Question number ${number} has already been answered.`);
+            // Return conversational error with explicit type
+            const errorResponse = {
+                error: true, // Now TypeScript knows this is literally 'true'
+                message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                    type: 'already_answered',
+                    data: { number, byYou: false }
+                }),
+                aiStyle: true
+            };
+            return errorResponse;
         }
-        return quizQuestion;
+        // Return existing question without modelAnswer
+        const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
+        return questionWithoutAnswer;
     }
-    // Generate new theory question
+    // Generate new question with conversational feedback
     const generated = await generateQuestion();
     quizQuestion = await prisma_1.prisma.quizQuestion.create({
         data: {
@@ -98,31 +120,47 @@ const fetchForDisplay = async (number) => {
             answeredByUserId: null,
         },
     });
-    return quizQuestion;
+    // Return without modelAnswer
+    const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
+    const successResponse = {
+        ...questionWithoutAnswer,
+        aiMessage: nlp_helper_1.NLPHelper.generateConversationalMessage({
+            type: 'question_ready'
+        }),
+        generatedTopic: generated.topic,
+        aiStyle: true
+    };
+    return successResponse;
 };
 exports.fetchForDisplay = fetchForDisplay;
 const attemptQuestion = async (number, userAnswer, userId) => {
     if (typeof userAnswer !== "string") {
-        throw new appError_1.BadRequestError("User answer must be a string.");
+        throw new appError_1.BadRequestError("I need your answer as text. Could you write out your response?");
     }
     const quizConfig = await prisma_1.prisma.quizConfig.findUnique({ where: { id: 1 } });
     if (!quizConfig) {
         throw new appError_1.InternalServerError("Quiz configuration not found. Please contact admin.");
     }
-    // Retrieve score
     let scoreRecord = await prisma_1.prisma.score.findUnique({ where: { userId } });
     const currentCorrectAnswers = scoreRecord ? scoreRecord.score : 0;
-    // Count attempts
     const userAttempts = await prisma_1.prisma.quizQuestion.count({
         where: { answeredByUserId: userId },
     });
     if (userAttempts >= quizConfig.trials) {
         return {
             success: false,
-            message: `You have used all your ${quizConfig.trials} trials.`,
-            qualifiedForSpin: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'trials_exhausted',
+                data: {
+                    trials: quizConfig.trials,
+                    score: currentCorrectAnswers,
+                    qualified: currentCorrectAnswers >= quizConfig.correctAnswersForSpin
+                }
+            }),
+            qualifiedForSpin: currentCorrectAnswers >= quizConfig.correctAnswersForSpin,
             trialsRemaining: 0,
             userScore: currentCorrectAnswers,
+            aiStyle: true
         };
     }
     const quizQuestion = await prisma_1.prisma.quizQuestion.findUnique({
@@ -132,12 +170,14 @@ const attemptQuestion = async (number, userAnswer, userId) => {
         throw new appError_1.NotFoundError(`Question number ${number} not found.`);
     }
     if (quizQuestion.answeredByUserId) {
-        if (quizQuestion.answeredByUserId === userId) {
-            throw new appError_1.DuplicateError("You have already answered this question.");
-        }
-        throw new appError_1.ForbiddenError(`Question number ${number} has already been answered by another user.`);
+        const byYou = quizQuestion.answeredByUserId === userId;
+        throw new appError_1.DuplicateError(nlp_helper_1.NLPHelper.generateConversationalMessage({
+            type: 'already_answered',
+            data: { number, byYou }
+        }));
     }
     let correct = false;
+    let aiFeedback = "";
     try {
         const validationPrompt = `
 You are grading a THEORY (open-ended) answer.
@@ -153,7 +193,7 @@ Return ONLY JSON:
 {
   "isCorrect": true/false,
   "score": 0-100,
-  "feedback": "short explanation"
+  "feedback": "short friendly explanation"
 }
 `;
         const result = await replicate.run("meta/meta-llama-3-70b-instruct", {
@@ -164,32 +204,26 @@ Return ONLY JSON:
                 top_p: 0.9,
             },
         });
-        const validationText = Array.isArray(result)
-            ? result.join("")
-            : String(result);
+        const validationText = Array.isArray(result) ? result.join("") : String(result);
         const clean = validationText.replace(/```json|```/g, "").trim();
         const parsed = JSON.parse(clean);
         if (typeof parsed.isCorrect !== "boolean") {
             throw new Error("AI returned invalid format.");
         }
         correct = parsed.isCorrect;
+        aiFeedback = parsed.feedback || "";
     }
     catch (err) {
         console.error("AI validation failed:", err);
         throw new appError_1.InternalServerError("Failed to validate answer.");
     }
-    // Mark as answered
     await prisma_1.prisma.quizQuestion.update({
         where: { id: quizQuestion.id },
         data: { answeredByUserId: userId },
     });
-    // Update score
     if (!scoreRecord) {
         scoreRecord = await prisma_1.prisma.score.create({
-            data: {
-                userId,
-                score: correct ? 1 : 0,
-            },
+            data: { userId, score: correct ? 1 : 0 },
         });
     }
     else if (correct) {
@@ -198,7 +232,6 @@ Return ONLY JSON:
             data: { score: scoreRecord.score + 1 },
         });
     }
-    // Attempts after update
     const updatedUserAttempts = await prisma_1.prisma.quizQuestion.count({
         where: { answeredByUserId: userId },
     });
@@ -206,13 +239,45 @@ Return ONLY JSON:
     const trialsRemaining = Math.max(0, quizConfig.trials - updatedUserAttempts);
     let message = "";
     if (qualifiedForSpin) {
-        message = "Congratulations! You qualify to spin the wheel.";
+        message = nlp_helper_1.NLPHelper.generateConversationalMessage({
+            type: 'qualified',
+            data: { score: scoreRecord.score }
+        });
     }
-    else if (trialsRemaining === 0) {
-        message = `You have used all your trials.`;
+    else if (correct) {
+        message = nlp_helper_1.NLPHelper.generateConversationalMessage({
+            type: 'correct',
+            data: {
+                score: scoreRecord.score,
+                trials: quizConfig.trials,
+                remaining: trialsRemaining,
+                qualified: qualifiedForSpin
+            }
+        });
     }
     else {
-        message = `You need ${quizConfig.correctAnswersForSpin - scoreRecord.score} more correct answers to qualify. ${trialsRemaining} trials remaining.`;
+        message = nlp_helper_1.NLPHelper.generateConversationalMessage({
+            type: 'incorrect',
+            data: {
+                score: scoreRecord.score,
+                trials: quizConfig.trials,
+                remaining: trialsRemaining,
+                feedback: aiFeedback
+            }
+        });
+    }
+    if (!qualifiedForSpin && trialsRemaining > 0) {
+        const needed = quizConfig.correctAnswersForSpin - scoreRecord.score;
+        if (needed > 0) {
+            message = nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'need_more',
+                data: {
+                    needed,
+                    score: scoreRecord.score,
+                    remaining: trialsRemaining
+                }
+            });
+        }
     }
     return {
         success: true,
@@ -221,6 +286,8 @@ Return ONLY JSON:
         qualifiedForSpin,
         trialsRemaining,
         message,
+        aiFeedback,
+        aiStyle: true
     };
 };
 exports.attemptQuestion = attemptQuestion;

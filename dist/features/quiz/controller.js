@@ -4,52 +4,125 @@ exports.updateQuizConfig = exports.postAttempt = exports.getQuestion = void 0;
 const service_1 = require("./service");
 const appError_1 = require("../../lib/appError");
 const catchAsync_1 = require("../../utils/catchAsync");
-const validateNumber = (value) => {
-    if (value === undefined || value === null || value === '') {
-        return 'Question number is required, ensure is a valid number (1-100)';
-    }
-    const num = Number(value);
-    if (isNaN(num)) {
-        return 'Question number is required, ensure is a valid number (1-100)';
-    }
-    if (num < 1 || num > 100) {
-        return 'Question number must be between 1 and 100';
-    }
-    return null;
-};
+const nlp_helper_1 = require("../../utils/nlp.helper");
 exports.getQuestion = (0, catchAsync_1.catchAsync)(async (req, res) => {
-    if (req.user?.id === undefined) {
+    if (!req.user?.id) {
         throw new appError_1.UnAuthorizedError("User not authorized, please login");
     }
-    const error = validateNumber(req.body.number);
-    if (error) {
-        throw new appError_1.BadRequestError(error);
+    const rawInput = req.params.number;
+    const parsed = nlp_helper_1.NLPHelper.parseQuestionNumber(String(rawInput));
+    if (!parsed.number) {
+        res.status(400).json({
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'invalid_input',
+                data: { input: rawInput }
+            }),
+            aiStyle: true,
+            suggestion: "Try: '5', 'five', 'question 5', or 'number five'"
+        });
+        return;
     }
-    const number = Number(req.body.number);
-    const question = await (0, service_1.fetchForDisplay)(number);
-    // const { correctAnswer, ...safe } = question;
-    res.json(question);
+    if (parsed.number < 1 || parsed.number > 100) {
+        res.status(400).json({
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'range_error',
+                data: { number: parsed.number }
+            }),
+            aiStyle: true
+        });
+        return;
+    }
+    try {
+        const question = await (0, service_1.fetchForDisplay)(parsed.number);
+        if ((0, service_1.isQuizError)(question)) {
+            res.status(400).json(question);
+            return;
+        }
+        const response = { ...question };
+        if (parsed.confidence === 'medium') {
+            response.aiNote = nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'uncertain_parse',
+                data: { number: parsed.number, input: rawInput }
+            });
+        }
+        else if (parsed.confidence === 'low') {
+            response.aiNote = nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'uncertain_parse',
+                data: { number: parsed.number, input: rawInput }
+            });
+        }
+        res.json(response);
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'server_error'
+            }),
+            aiStyle: true,
+            technical: err.message
+        });
+    }
 });
 exports.postAttempt = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const userId = req.user?.id;
     if (!userId) {
         throw new appError_1.UnAuthorizedError("User not authorized, please login");
     }
-    const number = Number(req.params.number);
-    const error = validateNumber(number);
-    if (error) {
-        throw new appError_1.BadRequestError(error);
+    const rawNumber = req.params.number;
+    const parsed = nlp_helper_1.NLPHelper.parseQuestionNumber(String(rawNumber));
+    if (!parsed.number || parsed.number < 1 || parsed.number > 100) {
+        res.status(400).json({
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'invalid_input',
+                data: { input: rawNumber }
+            }),
+            aiStyle: true
+        });
+        return;
     }
     const { userAnswer } = req.body;
-    if (!userAnswer) {
-        throw new appError_1.BadRequestError("Missing userAnswer,please provide an answer to proceed.");
+    if (!userAnswer || typeof userAnswer !== 'string' || userAnswer.trim().length === 0) {
+        res.status(400).json({
+            message: "I didn't see your answer! Could you write out your response? I'm looking for 2-5 sentences explaining your thinking. 📝",
+            aiStyle: true
+        });
+        return;
     }
-    const result = await (0, service_1.attemptQuestion)(number, userAnswer, userId);
-    if (!result.success) {
-        throw new appError_1.InternalServerError("Failed to attempt question");
+    const wordCount = userAnswer.trim().split(/\s+/).length;
+    if (wordCount < 5) {
+        res.status(400).json({
+            message: "That's a bit short! Could you explain a bit more? I need at least a few sentences to properly evaluate your understanding. Think of it like explaining to a friend! 😊",
+            aiStyle: true,
+            suggestion: "Aim for 2-5 sentences"
+        });
+        return;
     }
-    console.log(result);
-    res.json(result);
+    try {
+        const result = await (0, service_1.attemptQuestion)(parsed.number, userAnswer, userId);
+        if (!result.success) {
+            res.status(400).json(result);
+            return;
+        }
+        console.log(result);
+        res.json(result);
+    }
+    catch (err) {
+        console.error(err);
+        if (err.message.includes('already answered')) {
+            res.status(400).json({
+                message: err.message,
+                aiStyle: true
+            });
+        }
+        else {
+            res.status(500).json({
+                message: "Hmm, I ran into trouble processing your answer. Mind trying again?",
+                aiStyle: true,
+                error: err.message
+            });
+        }
+    }
 });
 exports.updateQuizConfig = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { trials, correctAnswersForSpin } = req.body;
@@ -63,5 +136,6 @@ exports.updateQuizConfig = (0, catchAsync_1.catchAsync)(async (req, res) => {
     res.status(200).json({
         status: 'success',
         data: config,
+        message: `Quiz config updated! Players now get ${trials} trials and need ${correctAnswersForSpin} correct answers to spin the wheel.`
     });
 });
