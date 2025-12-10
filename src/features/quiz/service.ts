@@ -41,13 +41,23 @@ const replicate = new Replicate({
 });
 
 const techTopics = [
-  "data structures", "algorithms", "web development", "databases",
-  "cloud computing", "cybersecurity", "machine learning", "DevOps",
-  "programming languages", "software architecture", "API design",
-  "mobile development", "networking", "version control", "testing and QA",
-  "operating systems", "containerization", "microservices", "blockchain",
-  "design patterns",
+  "computers", 
+  "internet",
+  "websites",
+  "coding basics",
+  "HTML basics",
+  "CSS basics",
+  "JavaScript basics",
+  "mobile apps",
+  "files and folders",
+  "databases basics",
+  "password security",
+  "cloud storage",
+  "networks basics",
+  "problem solving",
+  "software installation"
 ];
+
 
 const generateQuestion = async (): Promise<{ question: string; modelAnswer: string; topic: string }> => {
   const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
