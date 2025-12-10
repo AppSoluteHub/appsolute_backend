@@ -29,4 +29,14 @@ router.post(
     AiImageController.generateImage
 );
 
+router.get('/', authenticate, AiImageController.getUserImages);
+
+router.get('/:id', authenticate,AiImageController.getImageById);
+
+router.get('/stats',authenticate, AiImageController.getUserStats);
+
+router.put('/:id',authenticate, AiImageController.updateImage);
+
+router.delete('/:id',authenticate, AiImageController.deleteImage);
+
 export default router;

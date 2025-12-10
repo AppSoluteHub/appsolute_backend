@@ -420,11 +420,11 @@ model AiImage {
 }
 
 model QuizQuestion {
-  id        Int     @id @default(autoincrement())
-  number    Int     @unique       
-  question  String
-  answer    String
-  used      Boolean @default(false)
+  id               Int      @id @default(autoincrement())
+  number           Int      @unique       
+  question         String
+   modelAnswer   String
+  answeredByUserId String?
 }
 
 model Score {
@@ -432,4 +432,10 @@ model Score {
   userId   String @unique
   score    Int    @default(0)
   updatedAt DateTime @updatedAt
+}
+
+model QuizConfig {
+  id                    Int @id @default(1)
+  trials                Int @default(3)
+  correctAnswersForSpin Int @default(5)
 }
