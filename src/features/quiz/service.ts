@@ -1,24 +1,24 @@
+
+
+// service.ts - AI Chat Style (No throwing errors, return conversational responses)
 import Replicate from "replicate";
 import dotenv from "dotenv";
 dotenv.config();
 import { prisma } from "../../utils/prisma";
 import { NLPHelper } from "../../utils/nlp.helper";
 import {
-  DuplicateError,
   InternalServerError,
-  NotFoundError,
-  ForbiddenError,
-  BadRequestError,
 } from "../../lib/appError";
 
 // Type definitions with proper literal types
 type QuizQuestionError = {
-  error: true;  
+  success: false;
   message: string;
   aiStyle: boolean;
 };
 
 type QuizQuestionSuccess = {
+  success: true;
   id: number;
   number: number;
   question: string;
@@ -31,9 +31,21 @@ type QuizQuestionSuccess = {
 
 type QuizQuestionResponse = QuizQuestionError | QuizQuestionSuccess;
 
+// Attempt response types
+type AttemptResponse = {
+  success: boolean;
+  correct?: boolean;
+  userScore?: number;
+  qualifiedForSpin?: boolean;
+  trialsRemaining?: number;
+  message: string;
+  aiFeedback?: string;
+  aiStyle: boolean;
+};
+
 // Type guard helper
 export function isQuizError(response: QuizQuestionResponse): response is QuizQuestionError {
-  return 'error' in response && response.error === true;
+  return !response.success;
 }
 
 const replicate = new Replicate({
@@ -41,7 +53,7 @@ const replicate = new Replicate({
 });
 
 const techTopics = [
-  "computers", 
+     "computers", 
   "internet",
   "websites",
   "coding basics",
@@ -55,9 +67,8 @@ const techTopics = [
   "cloud storage",
   "networks basics",
   "problem solving",
-  "software installation"
+  "software installation",
 ];
-
 
 const generateQuestion = async (): Promise<{ question: string; modelAnswer: string; topic: string }> => {
   const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
@@ -141,7 +152,7 @@ export const fetchForDisplay = async (number: number): Promise<QuizQuestionRespo
     if (quizQuestion.answeredByUserId) {
       // Return conversational error with explicit type
       const errorResponse: QuizQuestionError = {
-        error: true,  // Now TypeScript knows this is literally 'true'
+        success: false,
         message: NLPHelper.generateConversationalMessage({
           type: 'already_answered',
           data: { number, byYou: false }
@@ -153,7 +164,11 @@ export const fetchForDisplay = async (number: number): Promise<QuizQuestionRespo
     
     // Return existing question without modelAnswer
     const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
-    return questionWithoutAnswer;
+    const successResponse: QuizQuestionSuccess = {
+      success: true,
+      ...questionWithoutAnswer
+    };
+    return successResponse;
   }
 
   // Generate new question with conversational feedback
@@ -172,6 +187,7 @@ export const fetchForDisplay = async (number: number): Promise<QuizQuestionRespo
   const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
   
   const successResponse: QuizQuestionSuccess = {
+    success: true,
     ...questionWithoutAnswer,
     aiMessage: NLPHelper.generateConversationalMessage({
       type: 'question_ready'
@@ -187,16 +203,24 @@ export const attemptQuestion = async (
   number: number,
   userAnswer: string,
   userId: string
-) => {
+): Promise<AttemptResponse> => {
   if (typeof userAnswer !== "string") {
-    throw new BadRequestError("I need your answer as text. Could you write out your response?");
+    return {
+      success: false,
+      message: "I need your answer as text. Could you write out your response?",
+      aiStyle: true
+    };
   }
 
   const quizConfig = await prisma.quizConfig.findUnique({ where: { id: 1 } });
   if (!quizConfig) {
-    throw new InternalServerError(
-      "Quiz configuration not found. Please contact admin."
-    );
+    return {
+      success: false,
+      message: NLPHelper.generateConversationalMessage({
+        type: 'server_error'
+      }),
+      aiStyle: true
+    };
   }
 
   let scoreRecord = await prisma.score.findUnique({ where: { userId } });
@@ -229,17 +253,26 @@ export const attemptQuestion = async (
   });
 
   if (!quizQuestion) {
-    throw new NotFoundError(`Question number ${number} not found.`);
+    return {
+      success: false,
+      message: NLPHelper.generateConversationalMessage({
+        type: 'invalid_input',
+        data: { input: `question ${number}` }
+      }),
+      aiStyle: true
+    };
   }
 
   if (quizQuestion.answeredByUserId) {
     const byYou = quizQuestion.answeredByUserId === userId;
-    throw new DuplicateError(
-      NLPHelper.generateConversationalMessage({
+    return {
+      success: false,
+      message: NLPHelper.generateConversationalMessage({
         type: 'already_answered',
         data: { number, byYou }
-      })
-    );
+      }),
+      aiStyle: true
+    };
   }
 
   let correct = false;
@@ -285,7 +318,13 @@ Return ONLY JSON:
     aiFeedback = parsed.feedback || "";
   } catch (err) {
     console.error("AI validation failed:", err);
-    throw new InternalServerError("Failed to validate answer.");
+    return {
+      success: false,
+      message: NLPHelper.generateConversationalMessage({
+        type: 'validation_error'
+      }),
+      aiStyle: true
+    };
   }
 
   await prisma.quizQuestion.update({
