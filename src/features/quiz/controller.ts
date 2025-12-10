@@ -9,7 +9,7 @@ export const getQuestion = catchAsync(async (req: Request, res: Response) => {
     throw new UnAuthorizedError("User not authorized, please login");
   }
 
-  const rawInput = req.params.number;
+  const rawInput = req.body.number;
   
   const parsed = NLPHelper.parseQuestionNumber(String(rawInput));
   
@@ -25,7 +25,7 @@ export const getQuestion = catchAsync(async (req: Request, res: Response) => {
     return;
   }
 
-  if (parsed.number < 1 || parsed.number > 100) {
+  if (parsed.number < 1 || parsed.number > 1000) {
     res.status(400).json({
       message: NLPHelper.generateConversationalMessage({
         type: 'range_error',
