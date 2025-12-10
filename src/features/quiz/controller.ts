@@ -1,89 +1,161 @@
 import { Request, Response } from "express";
-import { fetchForDisplay, attemptQuestion, updateSpinConfig } from "./service";
+import { fetchForDisplay, attemptQuestion, updateSpinConfig, isQuizError } from "./service";
 import { BadRequestError, InternalServerError, UnAuthorizedError } from "../../lib/appError";
 import { catchAsync } from "../../utils/catchAsync";
-
-const validateNumber = (value: any): string | null => {
-  if (value === undefined || value === null || value === '') {
-    return 'Question number is required, ensure is a valid number (1-100)';
-  }
-
-  const num = Number(value);
-
-  if (isNaN(num)) {
-    return 'Question number is required, ensure is a valid number (1-100)';
-  }
-
-  if (num < 1 || num > 100) {
-    return 'Question number must be between 1 and 100';
-  }
-
-  return null;
-};
-
-
+import { NLPHelper } from "../../utils/nlp.helper";
 
 export const getQuestion = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user?.id) {
+    throw new UnAuthorizedError("User not authorized, please login");
+  }
 
-if (!req.user?.id) {
-  throw new UnAuthorizedError("User not authorized, please login");
-}
+  const rawInput = req.params.number;
+  
+  const parsed = NLPHelper.parseQuestionNumber(String(rawInput));
+  
+  if (!parsed.number) {
+    res.status(400).json({
+      message: NLPHelper.generateConversationalMessage({
+        type: 'invalid_input',
+        data: { input: rawInput }
+      }),
+      aiStyle: true,
+      suggestion: "Try: '5', 'five', 'question 5', or 'number five'"
+    });
+    return;
+  }
 
-const number = Number(req.params.number);
+  if (parsed.number < 1 || parsed.number > 100) {
+    res.status(400).json({
+      message: NLPHelper.generateConversationalMessage({
+        type: 'range_error',
+        data: { number: parsed.number }
+      }),
+      aiStyle: true
+    });
+    return;
+  }
 
-if (isNaN(number)) {
-  throw new BadRequestError("Invalid number parameter");
-}
+  try {
+    const question = await fetchForDisplay(parsed.number);
+    
+    if (isQuizError(question)) {
+      res.status(400).json(question);
+      return;
+    }
 
-const error = validateNumber(number);
-if (error) {
-  throw new BadRequestError(error);
-}
+    const response: any = { ...question };
+    
+    if (parsed.confidence === 'medium') {
+      response.aiNote = NLPHelper.generateConversationalMessage({
+        type: 'uncertain_parse',
+        data: { number: parsed.number, input: rawInput }
+      });
+    } else if (parsed.confidence === 'low') {
+      response.aiNote = NLPHelper.generateConversationalMessage({
+        type: 'uncertain_parse',
+        data: { number: parsed.number, input: rawInput }
+      });
+    }
 
-const question = await fetchForDisplay(number);
-  const { modelAnswer, ...safe } = question;
-  res.json(safe);
+    res.json(response);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({
+      message: NLPHelper.generateConversationalMessage({
+        type: 'server_error'
+      }),
+      aiStyle: true,
+      technical: err.message 
+    });
+  }
 });
 
 export const postAttempt = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user?.id;
-  if(!userId){
+  if (!userId) {
     throw new UnAuthorizedError("User not authorized, please login");
   }
-  const number = Number(req.params.number);
-  const error = validateNumber(number);
-  if (error) {
-    throw new BadRequestError(error);
+
+  const rawNumber = req.params.number;
+  
+  const parsed = NLPHelper.parseQuestionNumber(String(rawNumber));
+  
+  if (!parsed.number || parsed.number < 1 || parsed.number > 100) {
+    res.status(400).json({
+      message: NLPHelper.generateConversationalMessage({
+        type: 'invalid_input',
+        data: { input: rawNumber }
+      }),
+      aiStyle: true
+    });
+    return;
   }
 
   const { userAnswer } = req.body;
-
-  if (!userAnswer ) {
-    throw new BadRequestError("Missing userAnswer,please provide an answer to proceed.");
+  
+  if (!userAnswer || typeof userAnswer !== 'string' || userAnswer.trim().length === 0) {
+    res.status(400).json({
+      message: "I didn't see your answer! Could you write out your response? I'm looking for 2-5 sentences explaining your thinking. 📝",
+      aiStyle: true
+    });
+    return;
   }
 
-  const result = await attemptQuestion(number, userAnswer, userId); 
-  if (!result.success) {
-    throw new InternalServerError("Failed to attempt question");
+  const wordCount = userAnswer.trim().split(/\s+/).length;
+  if (wordCount < 5) {
+    res.status(400).json({
+      message: "That's a bit short! Could you explain a bit more? I need at least a few sentences to properly evaluate your understanding. Think of it like explaining to a friend! 😊",
+      aiStyle: true,
+      suggestion: "Aim for 2-5 sentences"
+    });
+    return;
   }
-  console.log(result);
-  res.json(result);
+
+  try {
+    const result = await attemptQuestion(parsed.number, userAnswer, userId);
+    
+    if (!result.success) {
+      res.status(400).json(result);
+      return;
+    }
+
+    console.log(result);
+    res.json(result);
+  } catch (err: any) {
+    console.error(err);
+    
+    if (err.message.includes('already answered')) {
+      res.status(400).json({
+        message: err.message,
+        aiStyle: true
+      });
+    } else {
+      res.status(500).json({
+        message: "Hmm, I ran into trouble processing your answer. Mind trying again?",
+        aiStyle: true,
+        error: err.message
+      });
+    }
+  }
 });
 
 export const updateQuizConfig = catchAsync(async (req: Request, res: Response) => {
   const { trials, correctAnswersForSpin } = req.body;
-
+  
   if (typeof trials !== 'number' || trials <= 0 || !Number.isInteger(trials)) {
     throw new BadRequestError("Trials must be a positive integer.");
   }
-
+  
   if (typeof correctAnswersForSpin !== 'number' || correctAnswersForSpin <= 0 || !Number.isInteger(correctAnswersForSpin)) {
     throw new BadRequestError("Correct answers for spin must be a positive integer.");
   }
-
+  
   const config = await updateSpinConfig(trials, correctAnswersForSpin);
+  
   res.status(200).json({
     status: 'success',
     data: config,
+    message: `Quiz config updated! Players now get ${trials} trials and need ${correctAnswersForSpin} correct answers to spin the wheel.`
   });
 });

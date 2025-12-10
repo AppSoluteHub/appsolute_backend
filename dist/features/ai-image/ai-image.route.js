@@ -22,9 +22,9 @@ const upload = (0, multer_1.default)({
     }
 });
 router.post('/generate', auth_middleware_1.default, upload.single('image'), ai_image_controller_1.AiImageController.generateImage);
-router.get('/', ai_image_controller_1.AiImageController.getUserImages);
-router.get('/:id', ai_image_controller_1.AiImageController.getImageById);
-router.get('/stats', ai_image_controller_1.AiImageController.getUserStats);
-router.put('/:id', ai_image_controller_1.AiImageController.updateImage);
-router.delete('/:id', ai_image_controller_1.AiImageController.deleteImage);
+router.get('/', auth_middleware_1.default, ai_image_controller_1.AiImageController.getUserImages);
+router.get('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.getImageById);
+router.get('/stats', auth_middleware_1.default, ai_image_controller_1.AiImageController.getUserStats);
+router.put('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.updateImage);
+router.delete('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.deleteImage);
 exports.default = router;
