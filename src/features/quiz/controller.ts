@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { fetchForDisplay, attemptQuestion, updateSpinConfig, isQuizError } from "./service";
-import { BadRequestError, InternalServerError, UnAuthorizedError } from "../../lib/appError";
+import {  UnAuthorizedError } from "../../lib/appError";
 import { catchAsync } from "../../utils/catchAsync";
 import { NLPHelper } from "../../utils/nlp.helper";
 
@@ -9,7 +9,7 @@ export const getQuestion = catchAsync(async (req: Request, res: Response) => {
     throw new UnAuthorizedError("User not authorized, please login");
   }
 
-  const rawInput = req.params.number;
+  const rawInput = req.body.number;
   
   // Parse natural language input
   const parsed = NLPHelper.parseQuestionNumber(String(rawInput));

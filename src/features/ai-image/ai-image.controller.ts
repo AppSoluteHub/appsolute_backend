@@ -3,9 +3,6 @@ import { Request, Response } from 'express';
 import { catchAsync } from '../../utils/catchAsync';
 import { AiImageService } from './ai-image.service';
 
-
-
-
 export class AiImageController {
     static generateImage = catchAsync(async (req: Request, res: Response) => {
         const { prompt } = req.body;

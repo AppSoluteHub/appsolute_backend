@@ -1,6 +1,5 @@
 
 
-// service.ts - AI Chat Style (No throwing errors, return conversational responses)
 import Replicate from "replicate";
 import dotenv from "dotenv";
 dotenv.config();
