@@ -167,6 +167,6 @@ export const updateQuizConfig = catchAsync(async (req: Request, res: Response) =
   res.status(200).json({
     success: true,
     data: config,
-    message: `Quiz config updated! Players now get ${trials} trials and need ${correctAnswersForSpin} correct answers to spin the wheel. 🎡`
+    message: `Quiz config updated! Players now get ${trials} trials and need ${correctAnswersForSpin} correct answers to spin the wheel. `
   });
 });

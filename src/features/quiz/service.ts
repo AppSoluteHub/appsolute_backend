@@ -74,9 +74,9 @@ const generateQuestion = async (): Promise<{ question: string; modelAnswer: stri
   const randomSeed = Math.floor(Math.random() * 100000);
   const MAX_MODEL_ANSWER_LENGTH = 1000;
 
-  const prompt = `
-Generate a unique THEORY (open-ended) technical question about ${randomTopic}.
-The question must require explanation or reasoning (no multiple-choice).
+const prompt = `
+Generate a simple, beginner-friendly THEORY question about ${randomTopic}.
+The question should be easy to understand and answer in 1–3 sentences.
 
 Return JSON ONLY:
 
@@ -86,11 +86,12 @@ Return JSON ONLY:
 }
 
 Rules:
-- "question" must be something a user writes 2–5 sentences to answer.
-- "modelAnswer" must be a factual expert-level explanation.
-- DO NOT include options or correctAnswer.
+- "question" must be clear, straightforward, and not too technical.
+- "modelAnswer" must give a short, correct explanation (2–4 sentences max).
+- NO multiple-choice, NO options, NO correctAnswer.
 Random seed: ${randomSeed}
-  `;
+`;
+
 
   const callAI = async () => {
     const output = await replicate.run("meta/meta-llama-3-70b-instruct", {
