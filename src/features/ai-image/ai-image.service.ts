@@ -12,49 +12,49 @@ dotenv.config();
 export class AiImageService {
 
     // Helper method to determine transformation settings based on prompt
-    private static getTransformationSettings(userPrompt: string) {
-        const lowerPrompt = userPrompt.toLowerCase();
-        
-        // Check prompt type
-        const addKeywords = ['add', 'insert', 'include', 'put', 'place'];
-        const styleKeywords = ['cartoon', 'anime', 'sketch', 'drawing', 'illustration', 'painting', 'watercolor', 'oil painting', 'pencil', 'style'];
-        const changeKeywords = ['change', 'transform', 'convert', 'make', 'turn into', 'replace', 'modify'];
-        
-        const isAdding = addKeywords.some(keyword => lowerPrompt.startsWith(keyword));
-        const isStyleTransform = styleKeywords.some(keyword => lowerPrompt.includes(keyword));
-        const isChanging = changeKeywords.some(keyword => lowerPrompt.includes(keyword));
-        
-        if (isAdding) {
-            return {
-                strength: 0.25, // Very low - mostly preserve original
-                enhancedPrompt: `${userPrompt}, seamlessly integrated into existing scene, keep original image intact, natural addition, photorealistic`,
-                guidanceScale: 8
-            };
-        }
-        
-        if (isStyleTransform) {
-            return {
-                strength: 0.4, // Medium-low - preserve structure
-                enhancedPrompt: `${userPrompt}, maintain original composition and layout, preserve all elements, detailed ${userPrompt} style, high quality`,
-                guidanceScale: 10
-            };
-        }
-        
-        if (isChanging) {
-            return {
-                strength: 0.6, // Medium-high - allow more change
-                enhancedPrompt: `${userPrompt}, highly detailed, professional quality, sharp focus, vivid colors, 8k resolution`,
-                guidanceScale: 12
-            };
-        }
-        
-        // Default for general prompts
+   private static getTransformationSettings(userPrompt: string) {
+    const lowerPrompt = userPrompt.toLowerCase();
+    
+    // Check prompt type
+    const addKeywords = ['add', 'insert', 'include', 'put', 'place'];
+    const styleKeywords = ['cartoon', 'anime', 'sketch', 'drawing', 'illustration', 'painting', 'watercolor', 'oil painting', 'pencil', 'style'];
+    const changeKeywords = ['change', 'transform', 'convert', 'make', 'turn into', 'replace', 'modify'];
+    
+    const isAdding = addKeywords.some(keyword => lowerPrompt.startsWith(keyword));
+    const isStyleTransform = styleKeywords.some(keyword => lowerPrompt.includes(keyword));
+    const isChanging = changeKeywords.some(keyword => lowerPrompt.includes(keyword));
+    
+    if (isAdding) {
         return {
-            strength: 0.5,
-            enhancedPrompt: `${userPrompt}, highly detailed, professional quality, 8k resolution`,
-            guidanceScale: 10
+            strength: 0.15, // Very low for adding elements
+            enhancedPrompt: `${userPrompt}, keep all existing subjects and elements unchanged, preserve faces and people exactly, seamlessly add to existing photo, photorealistic integration`,
+            guidanceScale: 7
         };
     }
+    
+    if (isStyleTransform) {
+        return {
+            strength: 0.35,
+            enhancedPrompt: `${userPrompt}, preserve all subjects including people and faces, maintain exact original composition, apply style while keeping all details, detailed ${userPrompt} style`,
+            guidanceScale: 9
+        };
+    }
+    
+    if (isChanging) {
+        return {
+            strength: 0.55, // Slightly reduced
+            enhancedPrompt: `${userPrompt}, highly detailed, professional quality, sharp focus, vivid colors, 8k resolution`,
+            guidanceScale: 12
+        };
+    }
+    
+    // Default
+    return {
+        strength: 0.45,
+        enhancedPrompt: `${userPrompt}, maintain original subjects, highly detailed, professional quality`,
+        guidanceScale: 10
+    };
+}
 
     static async transformImage(prompt: string, image: Express.Multer.File, userId: string) {
         let tempFile: string | null = null;
