@@ -33,21 +33,34 @@ dotenv.config();
             const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
 
+            // const output = await replicate.run(
+            //     "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+            //     {
+            //         input: {
+            //             image: dataUrl,
+            //             prompt: prompt, 
+            //             negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
+            //             num_inference_steps: 30,
+            //             guidance_scale: 7.5,
+            //             strength: 0.8, 
+            //             seed: Math.floor(Math.random() * 1000000),
+            //         }
+            //     }
+            // );
+                
             const output = await replicate.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                {
-                    input: {
-                        image: dataUrl,
-                        prompt: prompt, 
-                        negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
-                        num_inference_steps: 30,
-                        guidance_scale: 7.5,
-                        strength: 0.8, 
-                        seed: Math.floor(Math.random() * 1000000),
-                    }
-                }
-            );
-
+    "stability-ai/stable-diffusion-img2img:15a3689ee13b0d2616e98820eca31d4c3abcd36672df6afce5cb6feb1d66087d",
+    {
+        input: {
+            image: dataUrl,
+            prompt: prompt,
+            negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+            prompt_strength: 0.3, 
+        }
+    }
+);
 
             let imageUrl: string;
             if (Array.isArray(output)) {
