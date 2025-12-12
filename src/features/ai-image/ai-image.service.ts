@@ -12,111 +12,119 @@ dotenv.config();
  export class AiImageService {
 
 
-    static async transformImage(prompt: string, image: Express.Multer.File, userId: string) {
-        try {
-            // Initialize Replicate
-            const replicate = new Replicate({
-                auth: process.env.REPLICATE_API_TOKEN,
-            });
+   static async transformImage(prompt: string, image: Express.Multer.File, userId: string) {
+    let tempFile: string | null = null;
+    
+    try {
+        // Initialize Replicate
+        const replicate = new Replicate({
+            auth: process.env.REPLICATE_API_TOKEN,
+        });
 
-            // Upload original image to Cloudinary
-            const originalUpload = await cloudinary.uploader.upload(image.path, {
-                folder: "ai-images/originals",
-            });
+        // Upload original image to Cloudinary
+        const originalUpload = await cloudinary.uploader.upload(image.path, {
+            folder: "ai-images/originals",
+        });
 
-            console.log("Original image uploaded to Cloudinary");
+        console.log("Original image uploaded to Cloudinary");
 
-            // Convert uploaded image to base64 data URL for Replicate
-            const imageBuffer = fs.readFileSync(image.path);
-            const base64Image = imageBuffer.toString('base64');
-            const mimeType = image.mimetype || 'image/jpeg';
-            const dataUrl = `data:${mimeType};base64,${base64Image}`;
+        // Convert uploaded image to base64 data URL for Replicate
+        const imageBuffer = fs.readFileSync(image.path);
+        const base64Image = imageBuffer.toString('base64');
+        const mimeType = image.mimetype || 'image/jpeg';
+        const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
+        const enhancedPrompt = `${prompt}, highly detailed, professional quality, sharp focus, vivid colors, 8k resolution`;
+        
+        const output = await replicate.run(
+            "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+            {
+                input: {
+                    image: dataUrl,
+                    prompt: enhancedPrompt,
+                    negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy, worst quality, low resolution, duplicate, morbid, mutilated",
+                    num_inference_steps: 50,
+                    guidance_scale: 12,
+                    strength: 0.65,
+                    refine: "expert_ensemble_refiner",
+                    scheduler: "KarrasDPM",
+                    seed: Math.floor(Math.random() * 1000000),
+                }
+            }
+        );
 
-            // const output = await replicate.run(
-            //     "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-            //     {
-            //         input: {
-            //             image: dataUrl,
-            //             prompt: prompt, 
-            //             negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
-            //             num_inference_steps: 30,
-            //             guidance_scale: 7.5,
-            //             strength: 0.8, 
-            //             seed: Math.floor(Math.random() * 1000000),
-            //         }
-            //     }
-            // );
-                
-            const output = await replicate.run(
-    "stability-ai/stable-diffusion-img2img:15a3689ee13b0d2616e98820eca31d4c3abcd36672df6afce5cb6feb1d66087d",
-    {
-        input: {
-            image: dataUrl,
-            prompt: prompt,
-            negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
-            num_inference_steps: 30,
-            guidance_scale: 7.5,
-            prompt_strength: 0.3, 
+        let imageUrl: string;
+        if (Array.isArray(output)) {
+            imageUrl = output[0] as string;
+        } else {
+            imageUrl = output as any;
         }
-    }
-);
 
-            let imageUrl: string;
-            if (Array.isArray(output)) {
-                imageUrl = output[0] as string;
-            } else {
-                imageUrl = output as any;
-            }
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to download image: ${response.statusText}`);
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-            const response = await fetch(imageUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to download image: ${response.statusText}`);
-            }
-            
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
+        tempFile = path.join(process.cwd(), `generated_${Date.now()}.png`);
+        fs.writeFileSync(tempFile, buffer);
 
-            const tempFile = path.join(process.cwd(), `generated_${Date.now()}.png`);
-            fs.writeFileSync(tempFile, buffer);
+        console.log("Generated image saved temporarily");
 
-            console.log("Generated image saved temporarily");
+        const generatedUpload = await cloudinary.uploader.upload(tempFile, {
+            folder: "ai-images/generated",
+        });
 
-            const generatedUpload = await cloudinary.uploader.upload(tempFile, {
-                folder: "ai-images/generated",
-            });
+        console.log("Generated image uploaded to Cloudinary");
 
-            console.log("Generated image uploaded to Cloudinary");
+        // Clean up temporary files
+        fs.unlinkSync(tempFile);
+        fs.unlinkSync(image.path);
+        tempFile = null; // Mark as cleaned up
 
-            // Clean up temporary files
-            fs.unlinkSync(tempFile);
-            fs.unlinkSync(image.path);
+        // Save to database
+        const saved = await prisma.aiImage.create({
+            data: {
+                prompt,
+                originalImageUrl: originalUpload.secure_url,
+                generatedImageUrl: generatedUpload.secure_url,
+                userId
+            },
+        });
 
-            // Save to database
-            const saved = await prisma.aiImage.create({
-                data: {
-                    prompt,
-                    originalImageUrl: originalUpload.secure_url,
-                    generatedImageUrl: generatedUpload.secure_url,
-                    userId
-                },
-            });
+        return saved;
 
-            return saved;
-
-        } catch (error : any) {
-            // Clean up uploaded file in case of error
-            if (fs.existsSync(image.path)) {
+    } catch (error: any) {
+        // Clean up uploaded file
+        if (fs.existsSync(image.path)) {
+            try {
                 fs.unlinkSync(image.path);
+            } catch (cleanupError) {
+                console.error("Error cleaning up uploaded file:", cleanupError);
             }
-              if (error.message?.includes("NSFW content detected")) {
+        }
+        
+        // Clean up temp file if it was created
+        if (tempFile && fs.existsSync(tempFile)) {
+            try {
+                fs.unlinkSync(tempFile);
+            } catch (cleanupError) {
+                console.error("Error cleaning up temp file:", cleanupError);
+            }
+        }
+        
+        // Handle NSFW content
+        if (error.message?.includes("NSFW content detected")) {
             console.warn("NSFW content detected for prompt:", prompt);
             throw new BadRequestError("The prompt or generated content was flagged as NSFW. Please modify your prompt and try again.");
         }
-            console.error("Error in transformImage:", error);
-            throw error;
-        }
+        
+        console.error("Error in transformImage:", error);
+        throw error;
     }
+}
 
 
     static async getUserImages(userId: string, page: number , limit: number) {
@@ -170,99 +178,116 @@ dotenv.config();
     }
 
   
-    static async updateImage(imageId: string, userId: string, data: { prompt: string }) {
-        try {
-            // Verify ownership and get existing image
-            const existing = await prisma.aiImage.findFirst({
-                where: { id: imageId, userId }
-            });
+   static async updateImage(imageId: string, userId: string, data: { prompt: string }) {
+    let tempFile: string | null = null;
+    
+    try {
+        // Verify ownership and get existing image
+        const existing = await prisma.aiImage.findFirst({
+            where: { id: imageId, userId }
+        });
 
-            if (!existing) {
-                throw new Error("Image not found or access denied");
-            }
-
-            if (!data.prompt) {
-                throw new Error("Prompt is required for update");
-            }
-
-            // Initialize Replicate
-            const replicate = new Replicate({
-                auth: process.env.REPLICATE_API_TOKEN,
-            });
-
-            // Download original image from Cloudinary
-            const imageResponse = await fetch(existing.originalImageUrl);
-            const imageBuffer = await imageResponse.arrayBuffer();
-            const buffer = Buffer.from(imageBuffer);
-            
-            // Convert to base64 data URL
-            const base64Image = buffer.toString('base64');
-            const dataUrl = `data:image/jpeg;base64,${base64Image}`;
-
-            // Generate new image with updated prompt
-            const output = await replicate.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                {
-                    input: {
-                        image: dataUrl,
-                        prompt: data.prompt,
-                        negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
-                        num_inference_steps: 30,
-                        guidance_scale: 7.5,
-                        strength: 0.8,
-                        seed: Math.floor(Math.random() * 1000000),
-                    }
-                }
-            );
-
-            let imageUrl: string;
-            if (Array.isArray(output)) {
-                imageUrl = output[0] as string;
-            } else {
-                imageUrl = output as any;
-            }
-
-            // Download new generated image
-            const newImageResponse = await fetch(imageUrl);
-            const newArrayBuffer = await newImageResponse.arrayBuffer();
-            const newBuffer = Buffer.from(newArrayBuffer);
-
-            const tempFile = path.join(process.cwd(), `updated_${Date.now()}.png`);
-            fs.writeFileSync(tempFile, newBuffer);
-
-            // Upload new generated image to Cloudinary
-            const newGeneratedUpload = await cloudinary.uploader.upload(tempFile, {
-                folder: "ai-images/generated",
-            });
-
-            // Delete old generated image from Cloudinary
-            const extractPublicId = (url: string) => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                const folder = parts[parts.length - 2];
-                return `ai-images/${folder}/${filename.split('.')[0]}`;
-            };
-
-            await cloudinary.uploader.destroy(extractPublicId(existing.generatedImageUrl));
-
-            // Clean up temp file
-            fs.unlinkSync(tempFile);
-
-            // Update database with new generated image URL and prompt
-            const updated = await prisma.aiImage.update({
-                where: { id: imageId },
-                data: {
-                    prompt: data.prompt,
-                    generatedImageUrl: newGeneratedUpload.secure_url,
-                }
-            });
-
-            return updated;
-        } catch (error) {
-            console.error("Error updating image:", error);
-            throw error;
+        if (!existing) {
+            throw new Error("Image not found or access denied");
         }
+
+        if (!data.prompt) {
+            throw new Error("Prompt is required for update");
+        }
+
+        // Initialize Replicate
+        const replicate = new Replicate({
+            auth: process.env.REPLICATE_API_TOKEN,
+        });
+
+        // Download original image from Cloudinary
+        const imageResponse = await fetch(existing.originalImageUrl);
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const buffer = Buffer.from(imageBuffer);
+        
+        // Convert to base64 data URL
+        const base64Image = buffer.toString('base64');
+        const dataUrl = `data:image/jpeg;base64,${base64Image}`;
+
+        const enhancedPrompt = `${data.prompt}, highly detailed, professional quality, sharp focus, vivid colors, 8k resolution`;
+
+        // Generate new image with updated prompt
+        const output = await replicate.run(
+            "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+            {
+                input: {
+                    image: dataUrl,
+                    prompt: enhancedPrompt,
+                    negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy, worst quality, low resolution, duplicate, morbid, mutilated",
+                    num_inference_steps: 50,
+                    guidance_scale: 12,
+                    strength: 0.65,
+                    refine: "expert_ensemble_refiner",
+                    scheduler: "KarrasDPM",
+                    seed: Math.floor(Math.random() * 1000000),
+                }
+            }
+        );
+
+        let imageUrl: string;
+        if (Array.isArray(output)) {
+            imageUrl = output[0] as string;
+        } else {
+            imageUrl = output as any;
+        }
+
+        // Download new generated image
+        const newImageResponse = await fetch(imageUrl);
+        const newArrayBuffer = await newImageResponse.arrayBuffer();
+        const newBuffer = Buffer.from(newArrayBuffer);
+
+        tempFile = path.join(process.cwd(), `updated_${Date.now()}.png`);
+        fs.writeFileSync(tempFile, newBuffer);
+
+        // Upload new generated image to Cloudinary
+        const newGeneratedUpload = await cloudinary.uploader.upload(tempFile, {
+            folder: "ai-images/generated",
+        });
+
+        // Delete old generated image from Cloudinary
+        const extractPublicId = (url: string) => {
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1];
+            const folder = parts[parts.length - 2];
+            return `ai-images/${folder}/${filename.split('.')[0]}`;
+        };
+
+        await cloudinary.uploader.destroy(extractPublicId(existing.generatedImageUrl));
+
+        // Clean up temp file
+        fs.unlinkSync(tempFile);
+        tempFile = null;
+
+        // Update database with new generated image URL and prompt
+        const updated = await prisma.aiImage.update({
+            where: { id: imageId },
+            data: {
+                prompt: data.prompt,
+                generatedImageUrl: newGeneratedUpload.secure_url,
+            }
+        });
+
+        return updated;
+        
+    } catch (error: any) {
+        // Clean up temp file if it was created
+        if (tempFile && fs.existsSync(tempFile)) {
+            try {
+                fs.unlinkSync(tempFile);
+            } catch (cleanupError) {
+                console.error("Error cleaning up temp file:", cleanupError);
+            }
+        }
+        
+        console.error("Error updating image:", error);
+        throw error;
     }
+}
 
     static async deleteImage(imageId: string, userId: string) {
         try {
