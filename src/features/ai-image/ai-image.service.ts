@@ -11,56 +11,69 @@ dotenv.config();
 
 export class AiImageService {
 
-    // Helper method to determine transformation settings based on prompt
-   private static getTransformationSettings(userPrompt: string) {
-    const lowerPrompt = userPrompt.toLowerCase();
-    
-    // Check prompt type
-    const addKeywords = ['add', 'insert', 'include', 'put', 'place'];
-    const styleKeywords = ['cartoon', 'anime', 'sketch', 'drawing', 'illustration', 'painting', 'watercolor', 'oil painting', 'pencil', 'style'];
-    const changeKeywords = ['change', 'transform', 'convert', 'make', 'turn into', 'replace', 'modify'];
-    
-    const isAdding = addKeywords.some(keyword => lowerPrompt.startsWith(keyword));
-    const isStyleTransform = styleKeywords.some(keyword => lowerPrompt.includes(keyword));
-    const isChanging = changeKeywords.some(keyword => lowerPrompt.includes(keyword));
-    
-    if (isAdding) {
+    // Determine the best model and settings based on prompt
+    private static getModelAndSettings(userPrompt: string) {
+        const lowerPrompt = userPrompt.toLowerCase();
+        
+        // Check for instruction-based edits (add, remove, change specific things)
+        const editKeywords = ['add', 'remove', 'put', 'place', 'insert', 'delete'];
+        const isEdit = editKeywords.some(keyword => lowerPrompt.startsWith(keyword));
+        
+        // Check for style transformations
+        const styleKeywords = ['cartoon', 'anime', 'sketch', 'drawing', 'illustration', 'painting', 'watercolor', 'oil painting', 'pencil', 'style'];
+        const isStyleTransform = styleKeywords.some(keyword => lowerPrompt.includes(keyword));
+        
+        if (isEdit) {
+            // Use InstructPix2Pix for precise edits
+            return {
+                model: "timothybrooks/instruct-pix2pix:30c1d0b916a6f8efce20493f5d61ee27491ab2a60437c13c588468b9810ec23f" as `${string}/${string}:${string}`,
+                settings: {
+                    prompt: userPrompt,
+                    num_inference_steps: 30,
+                    guidance_scale: 7.5,
+                    image_guidance_scale: 1.5,
+                },
+                usesSeed: false
+            };
+        }
+        
+        if (isStyleTransform) {
+            // Use SDXL for style transformations
+            return {
+                model: "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b" as `${string}/${string}:${string}`,
+                settings: {
+                    prompt: `${userPrompt}, maintain original composition and layout, preserve all elements, detailed ${userPrompt} style, high quality`,
+                    negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy",
+                    num_inference_steps: 50,
+                    guidance_scale: 10,
+                    strength: 0.35,
+                    refine: "expert_ensemble_refiner",
+                    scheduler: "KarrasDPM",
+                },
+                usesSeed: true
+            };
+        }
+        
+        // Default to SDXL for general transformations
         return {
-            strength: 0.15, // Very low for adding elements
-            enhancedPrompt: `${userPrompt}, keep all existing subjects and elements unchanged, preserve faces and people exactly, seamlessly add to existing photo, photorealistic integration`,
-            guidanceScale: 7
+            model: "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b" as `${string}/${string}:${string}`,
+            settings: {
+                prompt: `${userPrompt}, highly detailed, professional quality, 8k resolution`,
+                negative_prompt: "ugly, distorted, blurry, low quality",
+                num_inference_steps: 50,
+                guidance_scale: 10,
+                strength: 0.5,
+                refine: "expert_ensemble_refiner",
+                scheduler: "KarrasDPM",
+            },
+            usesSeed: true
         };
     }
-    
-    if (isStyleTransform) {
-        return {
-            strength: 0.35,
-            enhancedPrompt: `${userPrompt}, preserve all subjects including people and faces, maintain exact original composition, apply style while keeping all details, detailed ${userPrompt} style`,
-            guidanceScale: 9
-        };
-    }
-    
-    if (isChanging) {
-        return {
-            strength: 0.55, // Slightly reduced
-            enhancedPrompt: `${userPrompt}, highly detailed, professional quality, sharp focus, vivid colors, 8k resolution`,
-            guidanceScale: 12
-        };
-    }
-    
-    // Default
-    return {
-        strength: 0.45,
-        enhancedPrompt: `${userPrompt}, maintain original subjects, highly detailed, professional quality`,
-        guidanceScale: 10
-    };
-}
 
     static async transformImage(prompt: string, image: Express.Multer.File, userId: string) {
         let tempFile: string | null = null;
         
         try {
-            // Initialize Replicate
             const replicate = new Replicate({
                 auth: process.env.REPLICATE_API_TOKEN,
             });
@@ -72,33 +85,30 @@ export class AiImageService {
 
             console.log("Original image uploaded to Cloudinary");
 
-            // Convert uploaded image to base64 data URL for Replicate
+            // Convert to base64 data URL
             const imageBuffer = fs.readFileSync(image.path);
             const base64Image = imageBuffer.toString('base64');
             const mimeType = image.mimetype || 'image/jpeg';
             const dataUrl = `data:${mimeType};base64,${base64Image}`;
 
-            // Get smart settings based on prompt type
-            const settings = this.getTransformationSettings(prompt);
+            // Get the best model and settings for this prompt
+            const { model, settings, usesSeed } = this.getModelAndSettings(prompt);
             
-            console.log(`Using transformation settings: strength=${settings.strength}, guidance=${settings.guidanceScale}`);
+            console.log(`Using model: ${model}`);
+            console.log(`Settings:`, settings);
             
-            const output = await replicate.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                {
-                    input: {
-                        image: dataUrl,
-                        prompt: settings.enhancedPrompt,
-                        negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy, worst quality, low resolution, duplicate, morbid, mutilated, deformed text, unreadable",
-                        num_inference_steps: 50,
-                        guidance_scale: settings.guidanceScale,
-                        strength: settings.strength,
-                        refine: "expert_ensemble_refiner",
-                        scheduler: "KarrasDPM",
-                        seed: Math.floor(Math.random() * 1000000),
-                    }
-                }
-            );
+            // Build input object conditionally
+            const input: any = {
+                image: dataUrl,
+                ...settings,
+            };
+            
+            // Only add seed if the model supports it
+            if (usesSeed) {
+                input.seed = Math.floor(Math.random() * 1000000);
+            }
+            
+            const output = await replicate.run(model, { input });
 
             let imageUrl: string;
             if (Array.isArray(output)) {
@@ -256,28 +266,25 @@ export class AiImageService {
             const base64Image = buffer.toString('base64');
             const dataUrl = `data:image/jpeg;base64,${base64Image}`;
 
-            // Get smart settings based on prompt type
-            const settings = this.getTransformationSettings(data.prompt);
+            // Get the best model and settings for this prompt
+            const { model, settings, usesSeed } = this.getModelAndSettings(data.prompt);
             
-            console.log(`Using transformation settings: strength=${settings.strength}, guidance=${settings.guidanceScale}`);
+            console.log(`Using model: ${model}`);
+            console.log(`Settings:`, settings);
+
+            // Build input object conditionally
+            const input: any = {
+                image: dataUrl,
+                ...settings,
+            };
+            
+            // Only add seed if the model supports it
+            if (usesSeed) {
+                input.seed = Math.floor(Math.random() * 1000000);
+            }
 
             // Generate new image with updated prompt
-            const output = await replicate.run(
-                "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
-                {
-                    input: {
-                        image: dataUrl,
-                        prompt: settings.enhancedPrompt,
-                        negative_prompt: "ugly, distorted, blurry, low quality, deformed, disfigured, bad anatomy, worst quality, low resolution, duplicate, morbid, mutilated, deformed text, unreadable",
-                        num_inference_steps: 50,
-                        guidance_scale: settings.guidanceScale,
-                        strength: settings.strength,
-                        refine: "expert_ensemble_refiner",
-                        scheduler: "KarrasDPM",
-                        seed: Math.floor(Math.random() * 1000000),
-                    }
-                }
-            );
+            const output = await replicate.run(model, { input });
 
             let imageUrl: string;
             if (Array.isArray(output)) {
