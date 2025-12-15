@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const ai_image_controller_1 = require("./ai-image.controller");
 const multer_1 = __importDefault(require("multer"));
 const auth_middleware_1 = __importDefault(require("../../middlewares/auth.middleware"));
+const ai_image_controller_1 = require("./ai-image.controller");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({
     dest: 'uploads/',
@@ -21,10 +21,17 @@ const upload = (0, multer_1.default)({
         }
     }
 });
-router.post('/generate', auth_middleware_1.default, upload.single('image'), ai_image_controller_1.AiImageController.generateImage);
-router.get('/', auth_middleware_1.default, ai_image_controller_1.AiImageController.getUserImages);
-router.get('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.getImageById);
-router.get('/stats', auth_middleware_1.default, ai_image_controller_1.AiImageController.getUserStats);
-router.put('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.updateImage);
-router.delete('/:id', auth_middleware_1.default, ai_image_controller_1.AiImageController.deleteImage);
+router.post("/generate", auth_middleware_1.default, upload.single("image"), ai_image_controller_1.transformImage);
+// Get image status (for polling)
+router.get("/:imageId/status", auth_middleware_1.default, ai_image_controller_1.getImageStatus);
+// Get user images
+router.get("/", auth_middleware_1.default, ai_image_controller_1.getUserImages);
+// Get single image
+router.get("/:imageId", auth_middleware_1.default, ai_image_controller_1.getImageById);
+// Update image (async)
+router.put("/:imageId", auth_middleware_1.default, ai_image_controller_1.updateImage);
+// Delete image
+router.delete("/:imageId", auth_middleware_1.default, ai_image_controller_1.deleteImage);
+// Get user stats
+router.get("/stats", auth_middleware_1.default, ai_image_controller_1.getUserStats);
 exports.default = router;

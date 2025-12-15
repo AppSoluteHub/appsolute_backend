@@ -11,247 +11,140 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
-const appError_1 = require("../../lib/appError");
-const sharp_1 = __importDefault(require("sharp"));
 dotenv_1.default.config();
 class AiImageService {
-    // Helper to check if it's a deterministic edit (use Sharp instead of AI)
-    static isDeterministicEdit(prompt) {
-        const lowerPrompt = prompt.toLowerCase();
-        const deterministicKeywords = ['add star', 'add watermark', 'add border', 'add text'];
-        return deterministicKeywords.some(keyword => lowerPrompt.includes(keyword));
-    }
-    static async transformImage(prompt, image, userId) {
-        let tempFile = null;
-        let resizedFile = null;
-        let convertedFile = null;
+    // ✅ MAIN METHOD: Fast async response
+    static async transformImageAsync(prompt, image, userId) {
         try {
-            const openai = new openai_1.OpenAI({
-                apiKey: process.env.OPENAI_API_KEY,
-            });
-            // Upload original to Cloudinary
+            // Upload original immediately
             const originalUpload = await cloudinary_1.default.uploader.upload(image.path, {
                 folder: "ai-images/originals",
             });
             console.log("Original image uploaded to Cloudinary");
-            let generatedImagePath = '';
-            // Check if this is a deterministic edit (perfect preservation with Sharp)
-            if (this.isDeterministicEdit(prompt)) {
-                console.log("Using Sharp for deterministic overlay");
-                const lowerPrompt = prompt.toLowerCase();
-                if (lowerPrompt.includes('star')) {
-                    generatedImagePath = await this.addStarsToImage(image.path);
-                }
-                else {
-                    throw new Error("Deterministic edit type not yet implemented");
-                }
-                tempFile = generatedImagePath;
-            }
-            else {
-                // Use OpenAI gpt-image-1 for AI-powered edits
-                console.log("Using OpenAI gpt-image-1 for AI transformation");
-                // STEP 1: Convert to PNG first (fixes MIME type issue)
-                convertedFile = path_1.default.join(process.cwd(), `converted_${Date.now()}.png`);
-                await (0, sharp_1.default)(image.path)
-                    .png()
-                    .toFile(convertedFile);
-                console.log("Image converted to PNG");
-                // STEP 2: Resize to 1024x1024
-                resizedFile = path_1.default.join(process.cwd(), `resized_${Date.now()}.png`);
-                await (0, sharp_1.default)(convertedFile)
-                    .resize(1024, 1024, {
-                    fit: 'contain',
-                    background: { r: 255, g: 255, b: 255, alpha: 1 }
-                })
-                    .png()
-                    .toFile(resizedFile);
-                console.log("Image resized to 1024x1024");
-                // Clean up converted file
-                if (convertedFile && fs_1.default.existsSync(convertedFile)) {
-                    fs_1.default.unlinkSync(convertedFile);
-                    convertedFile = null;
-                }
-                // Create abort controller for timeout (30 seconds)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
-                try {
-                    // ALWAYS use edit (never generate) for image-to-image
-                    const response = await openai.images.edit({
-                        model: "gpt-image-1",
-                        image: fs_1.default.createReadStream(resizedFile),
-                        prompt: prompt,
-                        size: "1024x1024",
-                        n: 1,
-                    });
-                    clearTimeout(timeoutId);
-                    if (!response.data || response.data.length === 0) {
-                        throw new Error("No data returned from OpenAI");
-                    }
-                    const imageUrl = response.data[0].url;
-                    if (!imageUrl) {
-                        throw new Error("No image URL returned from OpenAI");
-                    }
-                    const imageResponse = await (0, node_fetch_1.default)(imageUrl);
-                    if (!imageResponse.ok) {
-                        throw new Error(`Failed to download image: ${imageResponse.statusText}`);
-                    }
-                    const arrayBuffer = await imageResponse.arrayBuffer();
-                    const buffer = Buffer.from(arrayBuffer);
-                    tempFile = path_1.default.join(process.cwd(), `generated_${Date.now()}.png`);
-                    fs_1.default.writeFileSync(tempFile, buffer);
-                    generatedImagePath = tempFile;
-                }
-                catch (abortError) {
-                    clearTimeout(timeoutId);
-                    if (abortError instanceof Error && abortError.name === 'AbortError') {
-                        throw new Error("OpenAI request timed out after 30 seconds");
-                    }
-                    throw abortError;
-                }
-                // Clean up resized file
-                if (resizedFile && fs_1.default.existsSync(resizedFile)) {
-                    fs_1.default.unlinkSync(resizedFile);
-                    resizedFile = null;
-                }
-            }
-            console.log("Generated image ready");
-            if (!generatedImagePath) {
-                throw new Error("Failed to generate image");
-            }
-            // Upload to Cloudinary
-            const generatedUpload = await cloudinary_1.default.uploader.upload(generatedImagePath, {
-                folder: "ai-images/generated",
-            });
-            console.log("Generated image uploaded to Cloudinary");
-            // Clean up
-            if (tempFile && fs_1.default.existsSync(tempFile)) {
-                fs_1.default.unlinkSync(tempFile);
-            }
-            if (fs_1.default.existsSync(image.path)) {
-                fs_1.default.unlinkSync(image.path);
-            }
-            tempFile = null;
-            // Save to database
-            const saved = await prisma_1.prisma.aiImage.create({
+            // Create pending database entry
+            const pending = await prisma_1.prisma.aiImage.create({
                 data: {
                     prompt,
                     originalImageUrl: originalUpload.secure_url,
-                    generatedImageUrl: generatedUpload.secure_url,
-                    userId
+                    generatedImageUrl: null,
+                    status: "processing",
+                    userId,
                 },
             });
-            return saved;
+            console.log(`Image record created with ID: ${pending.id}, status: processing`);
+            // Clean up uploaded file
+            if (fs_1.default.existsSync(image.path)) {
+                fs_1.default.unlinkSync(image.path);
+            }
+            // ✅ Process in background (don't await)
+            this.processImageInBackground(pending.id, prompt, originalUpload.secure_url).catch((err) => {
+                console.error("Background processing error:", err);
+                // Update status to failed
+                prisma_1.prisma.aiImage
+                    .update({
+                    where: { id: pending.id },
+                    data: { status: "failed" },
+                })
+                    .catch((updateErr) => console.error("Failed to update status to failed:", updateErr));
+            });
+            // Return immediately with processing status
+            return pending;
         }
         catch (error) {
-            // Handle OpenAI safety/moderation errors
-            if (error?.status === 400) {
-                if (error?.message?.includes("safety") ||
-                    error?.message?.includes("content_policy") ||
-                    error?.message?.includes("violated")) {
-                    console.warn("Content policy violation for prompt:", prompt);
-                    throw new appError_1.BadRequestError("This image or prompt violates content policy. Please try a different prompt or image.");
-                }
-            }
-            // Handle rate limiting
-            if (error?.status === 429) {
-                console.error("OpenAI rate limit hit");
-                throw new appError_1.BadRequestError("Too many requests. Please try again in a moment.");
-            }
-            // Cleanup all temp files
+            // Clean up uploaded file on error
             if (fs_1.default.existsSync(image.path)) {
-                try {
-                    fs_1.default.unlinkSync(image.path);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up uploaded file:", cleanupError);
-                }
+                fs_1.default.unlinkSync(image.path);
+            }
+            console.error("Error in transformImageAsync:", error);
+            throw error;
+        }
+    }
+    // ✅ Background processing method
+    static async processImageInBackground(imageId, prompt, originalUrl) {
+        let tempFile = null;
+        let originalTempPath = null;
+        try {
+            console.log(`Starting background processing for image ${imageId}`);
+            const openai = new openai_1.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            // Download original from Cloudinary
+            const imageResponse = await (0, node_fetch_1.default)(originalUrl);
+            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            originalTempPath = path_1.default.join(process.cwd(), `original_${Date.now()}.png`);
+            fs_1.default.writeFileSync(originalTempPath, imageBuffer);
+            console.log(`Processing with OpenAI for image ${imageId}`);
+            // OpenAI processing with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await openai.images.edit({
+                model: "gpt-image-1",
+                image: await (0, openai_1.toFile)(fs_1.default.createReadStream(originalTempPath), "image.png", {
+                    type: "image/png",
+                }),
+                prompt,
+                size: "1024x1024",
+                n: 1,
+            });
+            clearTimeout(timeoutId);
+            if (!response.data || response.data.length === 0) {
+                throw new Error("No data returned from OpenAI");
+            }
+            const imageBase64 = response.data[0].b64_json;
+            if (!imageBase64)
+                throw new Error("No image data returned from OpenAI");
+            tempFile = path_1.default.join(process.cwd(), `generated_${Date.now()}.png`);
+            fs_1.default.writeFileSync(tempFile, Buffer.from(imageBase64, "base64"));
+            console.log(`Uploading generated image to Cloudinary for ${imageId}`);
+            // Upload generated image
+            const generatedUpload = await cloudinary_1.default.uploader.upload(tempFile, {
+                folder: "ai-images/generated",
+            });
+            console.log(`Image processing completed for ${imageId}`);
+            // Update database with generated image
+            await prisma_1.prisma.aiImage.update({
+                where: { id: imageId },
+                data: {
+                    generatedImageUrl: generatedUpload.secure_url,
+                    status: "completed",
+                },
+            });
+            // Clean up
+            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
+                fs_1.default.unlinkSync(originalTempPath);
             }
             if (tempFile && fs_1.default.existsSync(tempFile)) {
-                try {
-                    fs_1.default.unlinkSync(tempFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up temp file:", cleanupError);
-                }
+                fs_1.default.unlinkSync(tempFile);
             }
-            if (resizedFile && fs_1.default.existsSync(resizedFile)) {
-                try {
-                    fs_1.default.unlinkSync(resizedFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up resized file:", cleanupError);
-                }
-            }
-            if (convertedFile && fs_1.default.existsSync(convertedFile)) {
-                try {
-                    fs_1.default.unlinkSync(convertedFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up converted file:", cleanupError);
-                }
-            }
-            console.error("Error in transformImage:", error);
-            throw error;
-        }
-    }
-    // Helper for star overlay using Sharp (deterministic, perfect preservation)
-    static async addStarsToImage(imagePath) {
-        const outputPath = path_1.default.join(process.cwd(), `stars_${Date.now()}.png`);
-        const image = (0, sharp_1.default)(imagePath);
-        const metadata = await image.metadata();
-        const composites = [];
-        const numStars = 10 + Math.floor(Math.random() * 15);
-        for (let i = 0; i < numStars; i++) {
-            const x = Math.floor(Math.random() * metadata.width);
-            const y = Math.floor(Math.random() * metadata.height);
-            const size = 20 + Math.floor(Math.random() * 40);
-            const starSvg = Buffer.from(`
-                <svg width="${size}" height="${size}">
-                    <polygon points="${size / 2},${size * 0.1} ${size * 0.61},${size * 0.35} ${size * 0.88},${size * 0.35} ${size * 0.67},${size * 0.52} ${size * 0.75},${size * 0.8} ${size / 2},${size * 0.62} ${size * 0.25},${size * 0.8} ${size * 0.33},${size * 0.52} ${size * 0.12},${size * 0.35} ${size * 0.39},${size * 0.35}" 
-                             fill="rgba(255, 255, 255, ${0.7 + Math.random() * 0.3})" 
-                             stroke="rgba(255, 215, 0, 0.9)" 
-                             stroke-width="1"/>
-                </svg>
-            `);
-            composites.push({ input: starSvg, top: y, left: x });
-        }
-        await image.composite(composites).toFile(outputPath);
-        return outputPath;
-    }
-    static async getUserImages(userId, page, limit) {
-        try {
-            const skip = (page - 1) * limit;
-            const [images, total] = await Promise.all([
-                prisma_1.prisma.aiImage.findMany({
-                    where: { userId },
-                    orderBy: { createdAt: 'desc' },
-                    skip,
-                    take: limit,
-                }),
-                prisma_1.prisma.aiImage.count({ where: { userId } })
-            ]);
-            return {
-                images,
-                pagination: {
-                    total,
-                    page,
-                    limit,
-                    totalPages: Math.ceil(total / limit)
-                }
-            };
+            console.log(`Cleanup completed for ${imageId}`);
         }
         catch (error) {
-            console.error("Error fetching user images:", error);
-            throw error;
+            console.error(`Background processing error for ${imageId}:`, error);
+            // Update to failed status
+            await prisma_1.prisma.aiImage
+                .update({
+                where: { id: imageId },
+                data: {
+                    status: "failed",
+                    generatedImageUrl: null,
+                },
+            })
+                .catch((updateErr) => console.error("Failed to update status to failed:", updateErr));
+            // Clean up on error
+            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
+                fs_1.default.unlinkSync(originalTempPath);
+            }
+            if (tempFile && fs_1.default.existsSync(tempFile)) {
+                fs_1.default.unlinkSync(tempFile);
+            }
         }
     }
-    static async getImageById(imageId, userId) {
+    // ✅ Get image status (for polling)
+    static async getImageStatus(imageId, userId) {
         try {
             const image = await prisma_1.prisma.aiImage.findFirst({
                 where: {
                     id: imageId,
-                    userId
-                }
+                    userId,
+                },
             });
             if (!image) {
                 throw new Error("Image not found or access denied");
@@ -259,242 +152,421 @@ class AiImageService {
             return image;
         }
         catch (error) {
-            console.error("Error fetching image by ID:", error);
+            console.error("Error fetching image status:", error);
             throw error;
         }
     }
-    static async updateImage(imageId, userId, data) {
-        let tempFile = null;
-        let resizedFile = null;
-        let originalTempPath = null;
-        let convertedFile = null;
+    // ✅ Get user images with optional status filter
+    static async getUserImages(userId, page, limit, status) {
+        const skip = (page - 1) * limit;
+        const where = { userId };
+        if (status) {
+            where.status = status;
+        }
+        const [images, total] = await Promise.all([
+            prisma_1.prisma.aiImage.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip,
+                take: limit,
+            }),
+            prisma_1.prisma.aiImage.count({ where }),
+        ]);
+        return {
+            images,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
+    }
+    static async getImageById(imageId, userId) {
+        const image = await prisma_1.prisma.aiImage.findFirst({
+            where: { id: imageId, userId },
+        });
+        if (!image)
+            throw new Error("Image not found or access denied");
+        return image;
+    }
+    // ✅ Update method (also async now)
+    static async updateImageAsync(imageId, userId, data) {
         try {
-            // Verify ownership and get existing image
             const existing = await prisma_1.prisma.aiImage.findFirst({
-                where: { id: imageId, userId }
+                where: { id: imageId, userId },
             });
-            if (!existing) {
+            if (!existing)
                 throw new Error("Image not found or access denied");
-            }
-            if (!data.prompt) {
+            if (!data.prompt)
                 throw new Error("Prompt is required for update");
-            }
-            const openai = new openai_1.OpenAI({
-                apiKey: process.env.OPENAI_API_KEY,
-            });
-            // Download original image from Cloudinary
-            const imageResponse = await (0, node_fetch_1.default)(existing.originalImageUrl);
-            const imageBuffer = await imageResponse.arrayBuffer();
-            const buffer = Buffer.from(imageBuffer);
-            // Save to temp file
-            originalTempPath = path_1.default.join(process.cwd(), `original_${Date.now()}.png`);
-            fs_1.default.writeFileSync(originalTempPath, buffer);
-            let generatedImagePath = '';
-            // Check if deterministic edit
-            if (this.isDeterministicEdit(data.prompt)) {
-                console.log("Using Sharp for deterministic overlay");
-                const lowerPrompt = data.prompt.toLowerCase();
-                if (lowerPrompt.includes('star')) {
-                    generatedImagePath = await this.addStarsToImage(originalTempPath);
-                }
-                else {
-                    throw new Error("Deterministic edit type not yet implemented");
-                }
-                tempFile = generatedImagePath;
-            }
-            else {
-                // STEP 1: Convert to PNG first
-                convertedFile = path_1.default.join(process.cwd(), `converted_${Date.now()}.png`);
-                await (0, sharp_1.default)(originalTempPath)
-                    .png()
-                    .toFile(convertedFile);
-                console.log("Image converted to PNG");
-                // STEP 2: Resize to 1024x1024
-                resizedFile = path_1.default.join(process.cwd(), `resized_${Date.now()}.png`);
-                await (0, sharp_1.default)(convertedFile)
-                    .resize(1024, 1024, {
-                    fit: 'contain',
-                    background: { r: 255, g: 255, b: 255, alpha: 1 }
-                })
-                    .png()
-                    .toFile(resizedFile);
-                console.log("Image resized to 1024x1024");
-                // Clean up converted file
-                if (convertedFile && fs_1.default.existsSync(convertedFile)) {
-                    fs_1.default.unlinkSync(convertedFile);
-                    convertedFile = null;
-                }
-                // Create timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000);
-                try {
-                    // Use OpenAI edit
-                    const response = await openai.images.edit({
-                        model: "gpt-image-1",
-                        image: fs_1.default.createReadStream(resizedFile),
-                        prompt: data.prompt,
-                        size: "1024x1024",
-                        n: 1,
-                    });
-                    clearTimeout(timeoutId);
-                    if (!response.data || response.data.length === 0) {
-                        throw new Error("No data returned from OpenAI");
-                    }
-                    const imageUrl = response.data[0].url;
-                    if (!imageUrl) {
-                        throw new Error("No image URL returned from OpenAI");
-                    }
-                    const newImageResponse = await (0, node_fetch_1.default)(imageUrl);
-                    const newArrayBuffer = await newImageResponse.arrayBuffer();
-                    const newBuffer = Buffer.from(newArrayBuffer);
-                    tempFile = path_1.default.join(process.cwd(), `updated_${Date.now()}.png`);
-                    fs_1.default.writeFileSync(tempFile, newBuffer);
-                    generatedImagePath = tempFile;
-                }
-                catch (abortError) {
-                    clearTimeout(timeoutId);
-                    if (abortError instanceof Error && abortError.name === 'AbortError') {
-                        throw new Error("OpenAI request timed out after 30 seconds");
-                    }
-                    throw abortError;
-                }
-                // Clean up resized file
-                if (resizedFile && fs_1.default.existsSync(resizedFile)) {
-                    fs_1.default.unlinkSync(resizedFile);
-                    resizedFile = null;
-                }
-            }
-            // Clean up original temp
-            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
-                fs_1.default.unlinkSync(originalTempPath);
-                originalTempPath = null;
-            }
-            if (!generatedImagePath) {
-                throw new Error("Failed to generate image");
-            }
-            // Upload new generated image to Cloudinary
-            const newGeneratedUpload = await cloudinary_1.default.uploader.upload(generatedImagePath, {
-                folder: "ai-images/generated",
-            });
-            // Delete old generated image from Cloudinary
-            const extractPublicId = (url) => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                const folder = parts[parts.length - 2];
-                return `ai-images/${folder}/${filename.split('.')[0]}`;
-            };
-            await cloudinary_1.default.uploader.destroy(extractPublicId(existing.generatedImageUrl));
-            // Clean up temp file
-            if (tempFile && fs_1.default.existsSync(tempFile)) {
-                fs_1.default.unlinkSync(tempFile);
-                tempFile = null;
-            }
-            // Update database
+            // Update to processing status
             const updated = await prisma_1.prisma.aiImage.update({
                 where: { id: imageId },
                 data: {
                     prompt: data.prompt,
-                    generatedImageUrl: newGeneratedUpload.secure_url,
-                }
+                    status: "processing",
+                },
+            });
+            // Process in background
+            this.updateImageInBackground(imageId, data.prompt, existing.originalImageUrl, existing.generatedImageUrl).catch((err) => {
+                console.error("Background update error:", err);
+                prisma_1.prisma.aiImage
+                    .update({
+                    where: { id: imageId },
+                    data: { status: "failed" },
+                })
+                    .catch((updateErr) => console.error("Failed to update status to failed:", updateErr));
             });
             return updated;
         }
         catch (error) {
-            // Handle safety errors
-            if (error?.status === 400 &&
-                (error?.message?.includes("safety") || error?.message?.includes("content_policy"))) {
-                throw new appError_1.BadRequestError("This image or prompt violates content policy. Please try a different prompt.");
-            }
-            // Cleanup
-            if (tempFile && fs_1.default.existsSync(tempFile)) {
-                try {
-                    fs_1.default.unlinkSync(tempFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up temp file:", cleanupError);
-                }
-            }
-            if (resizedFile && fs_1.default.existsSync(resizedFile)) {
-                try {
-                    fs_1.default.unlinkSync(resizedFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up resized file:", cleanupError);
-                }
-            }
-            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
-                try {
-                    fs_1.default.unlinkSync(originalTempPath);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up original temp file:", cleanupError);
-                }
-            }
-            if (convertedFile && fs_1.default.existsSync(convertedFile)) {
-                try {
-                    fs_1.default.unlinkSync(convertedFile);
-                }
-                catch (cleanupError) {
-                    console.error("Error cleaning up converted file:", cleanupError);
-                }
-            }
-            console.error("Error updating image:", error);
+            console.error("Error in updateImageAsync:", error);
             throw error;
+        }
+    }
+    // ✅ Background update method
+    static async updateImageInBackground(imageId, prompt, originalUrl, oldGeneratedUrl) {
+        let tempFile = null;
+        let originalTempPath = null;
+        try {
+            console.log(`Starting background update for image ${imageId}`);
+            const openai = new openai_1.OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            // Download original
+            const imageResponse = await (0, node_fetch_1.default)(originalUrl);
+            const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+            originalTempPath = path_1.default.join(process.cwd(), `original_${Date.now()}.png`);
+            fs_1.default.writeFileSync(originalTempPath, imageBuffer);
+            // OpenAI processing
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 60000);
+            const response = await openai.images.edit({
+                model: "gpt-image-1",
+                image: await (0, openai_1.toFile)(fs_1.default.createReadStream(originalTempPath), "image.png", {
+                    type: "image/png",
+                }),
+                prompt,
+                size: "1024x1024",
+                n: 1,
+            });
+            clearTimeout(timeoutId);
+            if (!response.data || response.data.length === 0) {
+                throw new Error("No data returned from OpenAI");
+            }
+            const imageBase64 = response.data[0].b64_json;
+            if (!imageBase64)
+                throw new Error("No image data returned from OpenAI");
+            tempFile = path_1.default.join(process.cwd(), `updated_${Date.now()}.png`);
+            fs_1.default.writeFileSync(tempFile, Buffer.from(imageBase64, "base64"));
+            // Upload to Cloudinary
+            const newGeneratedUpload = await cloudinary_1.default.uploader.upload(tempFile, {
+                folder: "ai-images/generated",
+            });
+            // Delete old generated image from Cloudinary
+            if (oldGeneratedUrl) {
+                const extractPublicId = (url) => {
+                    const parts = url.split("/");
+                    const filename = parts[parts.length - 1];
+                    const folder = parts[parts.length - 2];
+                    return `ai-images/${folder}/${filename.split(".")[0]}`;
+                };
+                await cloudinary_1.default.uploader
+                    .destroy(extractPublicId(oldGeneratedUrl))
+                    .catch((err) => console.error("Failed to delete old image from Cloudinary:", err));
+            }
+            // Update DB
+            await prisma_1.prisma.aiImage.update({
+                where: { id: imageId },
+                data: {
+                    generatedImageUrl: newGeneratedUpload.secure_url,
+                    status: "completed",
+                },
+            });
+            // Clean up
+            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
+                fs_1.default.unlinkSync(originalTempPath);
+            }
+            if (tempFile && fs_1.default.existsSync(tempFile)) {
+                fs_1.default.unlinkSync(tempFile);
+            }
+            console.log(`Update completed for ${imageId}`);
+        }
+        catch (error) {
+            console.error(`Background update error for ${imageId}:`, error);
+            await prisma_1.prisma.aiImage
+                .update({
+                where: { id: imageId },
+                data: { status: "failed" },
+            })
+                .catch((updateErr) => console.error("Failed to update status to failed:", updateErr));
+            // Clean up on error
+            if (originalTempPath && fs_1.default.existsSync(originalTempPath)) {
+                fs_1.default.unlinkSync(originalTempPath);
+            }
+            if (tempFile && fs_1.default.existsSync(tempFile)) {
+                fs_1.default.unlinkSync(tempFile);
+            }
         }
     }
     static async deleteImage(imageId, userId) {
-        try {
-            const image = await prisma_1.prisma.aiImage.findFirst({
-                where: { id: imageId, userId }
-            });
-            if (!image) {
-                throw new Error("Image not found or access denied");
-            }
-            const extractPublicId = (url) => {
-                const parts = url.split('/');
-                const filename = parts[parts.length - 1];
-                const folder = parts[parts.length - 2];
-                return `ai-images/${folder}/${filename.split('.')[0]}`;
-            };
-            await Promise.all([
-                cloudinary_1.default.uploader.destroy(extractPublicId(image.originalImageUrl)),
-                cloudinary_1.default.uploader.destroy(extractPublicId(image.generatedImageUrl))
-            ]);
-            await prisma_1.prisma.aiImage.delete({
-                where: { id: imageId }
-            });
-            return { success: true, message: "Image deleted successfully" };
+        const image = await prisma_1.prisma.aiImage.findFirst({
+            where: { id: imageId, userId },
+        });
+        if (!image)
+            throw new Error("Image not found or access denied");
+        const extractPublicId = (url) => {
+            const parts = url.split("/");
+            const filename = parts[parts.length - 1];
+            const folder = parts[parts.length - 2];
+            return `ai-images/${folder}/${filename.split(".")[0]}`;
+        };
+        const deletePromises = [
+            cloudinary_1.default.uploader.destroy(extractPublicId(image.originalImageUrl)),
+        ];
+        // Only delete generated image if it exists
+        if (image.generatedImageUrl) {
+            deletePromises.push(cloudinary_1.default.uploader.destroy(extractPublicId(image.generatedImageUrl)));
         }
-        catch (error) {
-            console.error("Error deleting image:", error);
-            throw error;
-        }
+        await Promise.all(deletePromises);
+        await prisma_1.prisma.aiImage.delete({ where: { id: imageId } });
+        return { success: true, message: "Image deleted successfully" };
     }
     static async getUserStats(userId) {
-        try {
-            const totalImages = await prisma_1.prisma.aiImage.count({
-                where: { userId }
-            });
-            const recentImages = await prisma_1.prisma.aiImage.findMany({
-                where: { userId },
-                orderBy: { createdAt: 'desc' },
-                take: 5,
-                select: {
-                    id: true,
-                    prompt: true,
-                    createdAt: true,
-                    generatedImageUrl: true
-                }
-            });
-            return {
-                totalImages,
-                recentImages
-            };
-        }
-        catch (error) {
-            console.error("Error fetching user stats:", error);
-            throw error;
-        }
+        const [totalImages, processingCount, completedCount, failedCount] = await Promise.all([
+            prisma_1.prisma.aiImage.count({ where: { userId } }),
+            prisma_1.prisma.aiImage.count({ where: { userId, status: "processing" } }),
+            prisma_1.prisma.aiImage.count({ where: { userId, status: "completed" } }),
+            prisma_1.prisma.aiImage.count({ where: { userId, status: "failed" } }),
+        ]);
+        const recentImages = await prisma_1.prisma.aiImage.findMany({
+            where: { userId },
+            orderBy: { createdAt: "desc" },
+            take: 5,
+            select: {
+                id: true,
+                prompt: true,
+                createdAt: true,
+                generatedImageUrl: true,
+                status: true,
+            },
+        });
+        return {
+            totalImages,
+            processingCount,
+            completedCount,
+            failedCount,
+            recentImages,
+        };
     }
 }
 exports.AiImageService = AiImageService;
+// import { OpenAI, toFile } from "openai";
+// import cloudinary from "../../config/cloudinary";
+// import { prisma } from "../../utils/prisma";
+// import fs from "fs";
+// import path from "path";
+// import dotenv from "dotenv";
+// import fetch from "node-fetch";
+// import { BadRequestError } from "../../lib/appError";
+// dotenv.config();
+// export class AiImageService {
+//    static async transformImage(
+//     prompt: string,
+//     image: Express.Multer.File,
+//     userId: string
+//   ) {
+//     let tempFile: string | null = null;
+//     try {
+//       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+//       // Upload original image
+//       const originalUpload = await cloudinary.uploader.upload(image.path, {
+//         folder: "ai-images/originals",
+//       });
+//       // Create a temp file to store OpenAI's output
+//       tempFile = path.join(process.cwd(), `generated_${Date.now()}.png`);
+//       // OpenAI image edit
+//       const controller = new AbortController();
+//       const timeoutId = setTimeout(() => controller.abort(), 60000);
+//       const response = await openai.images.edit({
+//         model: "gpt-image-1",
+//         image: await toFile(fs.createReadStream(image.path), "image.png", {
+//           type: "image/png",
+//         }),
+//         prompt,
+//         size: "1024x1024",
+//         n: 1,
+//       });
+//       clearTimeout(timeoutId);
+//       if (!response.data || response.data.length === 0) {
+//         throw new Error("No data returned from OpenAI");
+//       }
+//       const imageBase64 = response.data[0].b64_json;
+//       if (!imageBase64) {
+//         throw new Error("No image data returned from OpenAI");
+//       }
+//       const buffer = Buffer.from(imageBase64, "base64");
+//       fs.writeFileSync(tempFile, buffer);
+//       // Upload generated image to Cloudinary
+//       const generatedUpload = await cloudinary.uploader.upload(tempFile, {
+//         folder: "ai-images/generated",
+//       });
+//       // Clean up
+//       if (fs.existsSync(image.path)) fs.unlinkSync(image.path);
+//       if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+//       tempFile = null;
+//       // Save to database
+//       const saved = await prisma.aiImage.create({
+//         data: {
+//           prompt,
+//           originalImageUrl: originalUpload.secure_url,
+//           generatedImageUrl: generatedUpload.secure_url,
+//           userId,
+//         },
+//       });
+//       return saved;
+//     } catch (error: any) {
+//       if (error?.status === 400 && /safety|content_policy|violated/i.test(error?.message)) {
+//         throw new BadRequestError(
+//           "This image or prompt violates content policy. Please try a different prompt or image."
+//         );
+//       }
+//       if (error?.status === 429) {
+//         throw new BadRequestError("Too many requests. Please try again in a moment.");
+//       }
+//       if (tempFile && fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+//       if (fs.existsSync(image.path)) fs.unlinkSync(image.path);
+//       console.error("Error in transformImage:", error);
+//       throw error;
+//     }
+//   }
+//   static async getUserImages(userId: string, page: number, limit: number) {
+//     const skip = (page - 1) * limit;
+//     const [images, total] = await Promise.all([
+//       prisma.aiImage.findMany({
+//         where: { userId },
+//         orderBy: { createdAt: "desc" },
+//         skip,
+//         take: limit,
+//       }),
+//       prisma.aiImage.count({ where: { userId } }),
+//     ]);
+//     return {
+//       images,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(total / limit),
+//       },
+//     };
+//   }
+//   static async getImageById(imageId: string, userId: string) {
+//     const image = await prisma.aiImage.findFirst({
+//       where: { id: imageId, userId },
+//     });
+//     if (!image) throw new Error("Image not found or access denied");
+//     return image;
+//   }
+// static async updateImage(
+//     imageId: string,
+//     userId: string,
+//     data: { prompt: string }
+//   ) {
+//     let tempFile: string | null = null;
+//     try {
+//       const existing = await prisma.aiImage.findFirst({
+//         where: { id: imageId, userId },
+//       });
+//       if (!existing) throw new Error("Image not found or access denied");
+//       if (!data.prompt) throw new Error("Prompt is required for update");
+//       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+//       // Download original image
+//       const imageResponse = await fetch(existing.originalImageUrl);
+//       const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+//       const originalTempPath = path.join(process.cwd(), `original_${Date.now()}.png`);
+//       fs.writeFileSync(originalTempPath, imageBuffer);
+//       tempFile = path.join(process.cwd(), `updated_${Date.now()}.png`);
+//       // OpenAI edit
+//       const controller = new AbortController();
+//       const timeoutId = setTimeout(() => controller.abort(), 60000);
+//       const response = await openai.images.edit({
+//         model: "gpt-image-1",
+//         image: await toFile(fs.createReadStream(originalTempPath), "image.png", {
+//           type: "image/png",
+//         }),
+//         prompt: data.prompt,
+//         size: "1024x1024",
+//         n: 1,
+//       });
+//       clearTimeout(timeoutId);
+//       if (!response.data || response.data.length === 0) {
+//         throw new Error("No data returned from OpenAI");
+//       }
+//       const imageBase64 = response.data[0].b64_json;
+//       if (!imageBase64) throw new Error("No image data returned from OpenAI");
+//       fs.writeFileSync(tempFile, Buffer.from(imageBase64, "base64"));
+//       // Upload to Cloudinary
+//       const newGeneratedUpload = await cloudinary.uploader.upload(tempFile, {
+//         folder: "ai-images/generated",
+//       });
+//       // Delete old generated image
+//       const extractPublicId = (url: string) => {
+//         const parts = url.split("/");
+//         const filename = parts[parts.length - 1];
+//         const folder = parts[parts.length - 2];
+//         return `ai-images/${folder}/${filename.split(".")[0]}`;
+//       };
+//       await cloudinary.uploader.destroy(extractPublicId(existing.generatedImageUrl));
+//       // Clean up
+//       if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+//       if (fs.existsSync(originalTempPath)) fs.unlinkSync(originalTempPath);
+//       tempFile = null;
+//       // Update DB
+//       const updated = await prisma.aiImage.update({
+//         where: { id: imageId },
+//         data: {
+//           prompt: data.prompt,
+//           generatedImageUrl: newGeneratedUpload.secure_url,
+//         },
+//       });
+//       return updated;
+//     } catch (error: any) {
+//       if (error?.status === 400 && /safety|content_policy/i.test(error?.message)) {
+//         throw new BadRequestError(
+//           "This image or prompt violates content policy. Please try a different prompt."
+//         );
+//       }
+//       if (tempFile && fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+//       console.error("Error updating image:", error);
+//       throw error;
+//     }
+//   }
+//   static async deleteImage(imageId: string, userId: string) {
+//     const image = await prisma.aiImage.findFirst({
+//       where: { id: imageId, userId },
+//     });
+//     if (!image) throw new Error("Image not found or access denied");
+//     const extractPublicId = (url: string) => {
+//       const parts = url.split("/");
+//       const filename = parts[parts.length - 1];
+//       const folder = parts[parts.length - 2];
+//       return `ai-images/${folder}/${filename.split(".")[0]}`;
+//     };
+//     await Promise.all([
+//       cloudinary.uploader.destroy(extractPublicId(image.originalImageUrl)),
+//       cloudinary.uploader.destroy(extractPublicId(image.generatedImageUrl)),
+//     ]);
+//     await prisma.aiImage.delete({ where: { id: imageId } });
+//     return { success: true, message: "Image deleted successfully" };
+//   }
+//   static async getUserStats(userId: string) {
+//     const totalImages = await prisma.aiImage.count({ where: { userId } });
+//     const recentImages = await prisma.aiImage.findMany({
+//       where: { userId },
+//       orderBy: { createdAt: "desc" },
+//       take: 5,
+//       select: { id: true, prompt: true, createdAt: true, generatedImageUrl: true },
+//     });
+//     return { totalImages, recentImages };
+//   }
+// }

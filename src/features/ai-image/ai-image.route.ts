@@ -1,9 +1,16 @@
 import { Router } from "express";
-import { AiImageController } from "./ai-image.controller";
 import multer from "multer";
 import authenticate from "../../middlewares/auth.middleware";
 
-
+import {
+  transformImage,
+  getImageStatus,
+  getUserImages,
+  getImageById,
+  updateImage,
+  deleteImage,
+  getUserStats,
+} from "./ai-image.controller"
 
 const router = Router();
 
@@ -21,22 +28,23 @@ const upload = multer({
     }
 });
 
+router.post("/generate", authenticate, upload.single("image"), transformImage);
 
-router.post(
-    '/generate',
-    authenticate, 
-    upload.single('image'),
-    AiImageController.generateImage
-);
+// Get image status (for polling)
+router.get("/:imageId/status", authenticate, getImageStatus);
 
-router.get('/', authenticate, AiImageController.getUserImages);
+// Get user images
+router.get("/", authenticate, getUserImages);
 
-router.get('/:id', authenticate,AiImageController.getImageById);
+// Get single image
+router.get("/:imageId", authenticate, getImageById);
 
-router.get('/stats',authenticate, AiImageController.getUserStats);
+// Update image (async)
+router.put("/:imageId", authenticate, updateImage);
 
-router.put('/:id',authenticate, AiImageController.updateImage);
+// Delete image
+router.delete("/:imageId", authenticate, deleteImage);
 
-router.delete('/:id',authenticate, AiImageController.deleteImage);
-
+// Get user stats
+router.get("/stats", authenticate, getUserStats);
 export default router;

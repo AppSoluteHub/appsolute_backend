@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model User {
   id                String           @id @default(uuid())
   fullName          String
@@ -127,7 +125,7 @@ model Comment {
   parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   author   User      @relation("UserComments", fields: [authorId], references: [id])
   post     Post      @relation("PostComments", fields: [postId], references: [id])
-  likes    Like[]    @relation("CommentLikes") 
+  likes    Like[]    @relation("CommentLikes")
   unlikes  Unlike[]  @relation("CommentunLikes")
 }
 
@@ -331,17 +329,17 @@ model OrderItem {
 }
 
 model Review {
-  id        String   @id @default(uuid())
-  rating    Int
-  comment   String
-  title   String
-  isRecommending   Boolean
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(uuid())
+  rating         Int
+  comment        String
+  title          String
+  isRecommending Boolean
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Cart {
@@ -413,24 +411,28 @@ model AiImage {
   id                String   @id @default(uuid())
   prompt            String
   originalImageUrl  String
-  generatedImageUrl String
+  generatedImageUrl String?
   createdAt         DateTime @default(now())
+  status            String   @default("PENDING")
   userId            String
   user              User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
 }
 
 model QuizQuestion {
-  id               Int      @id @default(autoincrement())
-  number           Int      @unique // Re-added the number field
+  id               Int     @id @default(autoincrement())
+  number           Int     @unique 
   question         String
-   modelAnswer   String
+  modelAnswer      String
   answeredByUserId String?
 }
 
 model Score {
-  id       Int    @id @default(autoincrement())
-  userId   String @unique
-  score    Int    @default(0)
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  score     Int      @default(0)
   updatedAt DateTime @updatedAt
 }
 
