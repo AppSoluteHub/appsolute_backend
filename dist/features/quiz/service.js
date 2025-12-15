@@ -13,26 +13,35 @@ const nlp_helper_1 = require("../../utils/nlp.helper");
 const appError_1 = require("../../lib/appError");
 // Type guard helper
 function isQuizError(response) {
-    return 'error' in response && response.error === true;
+    return !response.success;
 }
 const replicate = new replicate_1.default({
     auth: process.env.REPLICATE_API_KEY,
 });
 const techTopics = [
-    "data structures", "algorithms", "web development", "databases",
-    "cloud computing", "cybersecurity", "machine learning", "DevOps",
-    "programming languages", "software architecture", "API design",
-    "mobile development", "networking", "version control", "testing and QA",
-    "operating systems", "containerization", "microservices", "blockchain",
-    "design patterns",
+    "computers",
+    "internet",
+    "websites",
+    "coding basics",
+    "HTML basics",
+    "CSS basics",
+    "JavaScript basics",
+    "mobile apps",
+    "files and folders",
+    "databases basics",
+    "password security",
+    "cloud storage",
+    "networks basics",
+    "problem solving",
+    "software installation",
 ];
 const generateQuestion = async () => {
     const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
     const randomSeed = Math.floor(Math.random() * 100000);
     const MAX_MODEL_ANSWER_LENGTH = 1000;
     const prompt = `
-Generate a unique THEORY (open-ended) technical question about ${randomTopic}.
-The question must require explanation or reasoning (no multiple-choice).
+Generate a simple, beginner-friendly THEORY question about ${randomTopic}.
+The question should be easy to understand and answer in 1–3 sentences.
 
 Return JSON ONLY:
 
@@ -42,11 +51,11 @@ Return JSON ONLY:
 }
 
 Rules:
-- "question" must be something a user writes 2–5 sentences to answer.
-- "modelAnswer" must be a factual expert-level explanation.
-- DO NOT include options or correctAnswer.
+- "question" must be clear, straightforward, and not too technical.
+- "modelAnswer" must give a short, correct explanation (2–4 sentences max).
+- NO multiple-choice, NO options, NO correctAnswer.
 Random seed: ${randomSeed}
-  `;
+`;
     const callAI = async () => {
         const output = await replicate.run("meta/meta-llama-3-70b-instruct", {
             input: {
@@ -97,7 +106,7 @@ const fetchForDisplay = async (number) => {
         if (quizQuestion.answeredByUserId) {
             // Return conversational error with explicit type
             const errorResponse = {
-                error: true, // Now TypeScript knows this is literally 'true'
+                success: false,
                 message: nlp_helper_1.NLPHelper.generateConversationalMessage({
                     type: 'already_answered',
                     data: { number, byYou: false }
@@ -108,7 +117,11 @@ const fetchForDisplay = async (number) => {
         }
         // Return existing question without modelAnswer
         const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
-        return questionWithoutAnswer;
+        const successResponse = {
+            success: true,
+            ...questionWithoutAnswer
+        };
+        return successResponse;
     }
     // Generate new question with conversational feedback
     const generated = await generateQuestion();
@@ -123,6 +136,7 @@ const fetchForDisplay = async (number) => {
     // Return without modelAnswer
     const { modelAnswer, ...questionWithoutAnswer } = quizQuestion;
     const successResponse = {
+        success: true,
         ...questionWithoutAnswer,
         aiMessage: nlp_helper_1.NLPHelper.generateConversationalMessage({
             type: 'question_ready'
@@ -135,11 +149,21 @@ const fetchForDisplay = async (number) => {
 exports.fetchForDisplay = fetchForDisplay;
 const attemptQuestion = async (number, userAnswer, userId) => {
     if (typeof userAnswer !== "string") {
-        throw new appError_1.BadRequestError("I need your answer as text. Could you write out your response?");
+        return {
+            success: false,
+            message: "I need your answer as text. Could you write out your response?",
+            aiStyle: true
+        };
     }
     const quizConfig = await prisma_1.prisma.quizConfig.findUnique({ where: { id: 1 } });
     if (!quizConfig) {
-        throw new appError_1.InternalServerError("Quiz configuration not found. Please contact admin.");
+        return {
+            success: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'server_error'
+            }),
+            aiStyle: true
+        };
     }
     let scoreRecord = await prisma_1.prisma.score.findUnique({ where: { userId } });
     const currentCorrectAnswers = scoreRecord ? scoreRecord.score : 0;
@@ -167,14 +191,25 @@ const attemptQuestion = async (number, userAnswer, userId) => {
         where: { number },
     });
     if (!quizQuestion) {
-        throw new appError_1.NotFoundError(`Question number ${number} not found.`);
+        return {
+            success: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'invalid_input',
+                data: { input: `question ${number}` }
+            }),
+            aiStyle: true
+        };
     }
     if (quizQuestion.answeredByUserId) {
         const byYou = quizQuestion.answeredByUserId === userId;
-        throw new appError_1.DuplicateError(nlp_helper_1.NLPHelper.generateConversationalMessage({
-            type: 'already_answered',
-            data: { number, byYou }
-        }));
+        return {
+            success: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'already_answered',
+                data: { number, byYou }
+            }),
+            aiStyle: true
+        };
     }
     let correct = false;
     let aiFeedback = "";
@@ -215,7 +250,13 @@ Return ONLY JSON:
     }
     catch (err) {
         console.error("AI validation failed:", err);
-        throw new appError_1.InternalServerError("Failed to validate answer.");
+        return {
+            success: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'validation_error'
+            }),
+            aiStyle: true
+        };
     }
     await prisma_1.prisma.quizQuestion.update({
         where: { id: quizQuestion.id },

@@ -30,7 +30,7 @@ const express_1 = __importDefault(require("express"));
 const controller_1 = require("./controller");
 const auth_middleware_1 = __importStar(require("../../middlewares/auth.middleware"));
 const router = express_1.default.Router();
-router.get('/question/:number', auth_middleware_1.default, controller_1.getQuestion);
+router.post('/question/', auth_middleware_1.default, controller_1.getQuestion);
 router.post('/question/:number/attempt', auth_middleware_1.default, controller_1.postAttempt);
 router.put('/config', auth_middleware_1.default, auth_middleware_1.isAdmin, controller_1.updateQuizConfig);
 exports.default = router;
