@@ -100,9 +100,12 @@ export class AiImageService {
           }
         ),
         prompt,
-        size: "512x512",
+        size: "1024x1024",
         n: 1,
-      });
+      },
+     {
+    signal: controller.signal,
+  });
 
       clearTimeout(timeoutId);
 
@@ -318,9 +321,12 @@ export class AiImageService {
           }
         ),
         prompt,
-        size: "512x512",
+        size: "1024x1024",
         n: 1,
-      });
+      },
+     {
+    signal: controller.signal,
+  });
 
       clearTimeout(timeoutId);
 
