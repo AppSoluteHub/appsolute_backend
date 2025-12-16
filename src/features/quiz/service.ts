@@ -9,7 +9,6 @@ import {
   InternalServerError,
 } from "../../lib/appError";
 
-// Type definitions with proper literal types
 type QuizQuestionError = {
   success: false;
   message: string;
