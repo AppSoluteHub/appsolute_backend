@@ -423,7 +423,7 @@ model AiImage {
 
 model QuizQuestion {
   id               Int     @id @default(autoincrement())
-  number           Int     @unique 
+  number           Int     @unique // Re-added the number field
   question         String
   modelAnswer      String
   answeredByUserId String?
