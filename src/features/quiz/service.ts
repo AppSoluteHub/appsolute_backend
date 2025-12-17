@@ -198,6 +198,224 @@ export const fetchForDisplay = async (number: number): Promise<QuizQuestionRespo
   return successResponse;
 };
 
+// export const attemptQuestion = async (
+
+//   number: number,
+//   userAnswer: string,
+//   userId: string
+// ): Promise<AttemptResponse> => {
+//   if (typeof userAnswer !== "string") {
+//     return {
+//       success: false,
+//       message: "I need your answer as text. Could you write out your response?",
+//       aiStyle: true
+//     };
+//   }
+
+//   const quizConfig = await prisma.quizConfig.findUnique({ where: { id: 1 } });
+//   if (!quizConfig) {
+//     return {
+//       success: false,
+//       message: NLPHelper.generateConversationalMessage({
+//         type: 'server_error'
+//       }),
+//       aiStyle: true
+//     };
+//   }
+
+//   let scoreRecord = await prisma.score.findUnique({ where: { userId } });
+//   const currentCorrectAnswers = scoreRecord ? scoreRecord.score : 0;
+
+//   const userAttempts = await prisma.quizQuestion.count({
+//     where: { answeredByUserId: userId },
+//   });
+
+//   if (userAttempts >= quizConfig.trials) {
+//     return {
+//       success: false,
+//       message: NLPHelper.generateConversationalMessage({
+//         type: 'trials_exhausted',
+//         data: {
+//           trials: quizConfig.trials,
+//           score: currentCorrectAnswers,
+//           qualified: currentCorrectAnswers >= quizConfig.correctAnswersForSpin
+//         }
+//       }),
+//       qualifiedForSpin: currentCorrectAnswers >= quizConfig.correctAnswersForSpin,
+//       trialsRemaining: 0,
+//       userScore: currentCorrectAnswers,
+//       aiStyle: true
+//     };
+//   }
+
+//   const quizQuestion = await prisma.quizQuestion.findUnique({
+//     where: { number },
+//   });
+
+//   if (!quizQuestion) {
+//     return {
+//       success: false,
+//       message: NLPHelper.generateConversationalMessage({
+//         type: 'invalid_input',
+//         data: { input: `question ${number}` }
+//       }),
+//       aiStyle: true
+//     };
+//   }
+
+//   if (quizQuestion.answeredByUserId) {
+//     const byYou = quizQuestion.answeredByUserId === userId;
+//     return {
+//       success: false,
+//       message: NLPHelper.generateConversationalMessage({
+//         type: 'already_answered',
+//         data: { number, byYou }
+//       }),
+//       aiStyle: true
+//     };
+//   }
+
+//   let correct = false;
+//   let aiFeedback = "";
+
+//   try {
+//     const validationPrompt = `
+// You are grading a THEORY (open-ended) answer.
+
+// Question: ${quizQuestion.question}
+// Model Answer: ${quizQuestion.modelAnswer}
+// User Answer: ${userAnswer}
+
+// Evaluate semantic correctness (not exact words).
+
+// Return ONLY JSON:
+
+// {
+//   "isCorrect": true/false,
+//   "score": 0-100,
+//   "feedback": "short friendly explanation"
+// }
+// `;
+
+//     const result = await replicate.run("meta/meta-llama-3-70b-instruct", {
+//       input: {
+//         prompt: validationPrompt,
+//         max_tokens: 256,
+//         temperature: 0.1,
+//         top_p: 0.9,
+//       },
+//     });
+
+//     const validationText = Array.isArray(result) ? result.join("") : String(result);
+//     const clean = validationText.replace(/```json|```/g, "").trim();
+//     const parsed = JSON.parse(clean);
+
+//     if (typeof parsed.isCorrect !== "boolean") {
+//       throw new Error("AI returned invalid format.");
+//     }
+
+//     correct = parsed.isCorrect;
+//     aiFeedback = parsed.feedback || "";
+//   } catch (err) {
+//     console.error("AI validation failed:", err);
+//     return {
+//       success: false,
+//       message: NLPHelper.generateConversationalMessage({
+//         type: 'validation_error'
+//       }),
+//       aiStyle: true
+//     };
+//   }
+
+//   await prisma.quizQuestion.update({
+//     where: { id: quizQuestion.id },
+//     data: { answeredByUserId: userId },
+//   });
+
+//   if (!scoreRecord) {
+//     scoreRecord = await prisma.score.create({
+//       data: { userId, score: correct ? 1 : 0 },
+//     });
+//   } else if (correct) {
+//     scoreRecord = await prisma.score.update({
+//       where: { userId },
+//       data: { score: scoreRecord.score + 1 },
+//     });
+//   }
+
+//   const updatedUserAttempts = await prisma.quizQuestion.count({
+//     where: { answeredByUserId: userId },
+//   });
+
+//   const qualifiedForSpin = scoreRecord.score >= quizConfig.correctAnswersForSpin;
+//   const trialsRemaining = Math.max(0, quizConfig.trials - updatedUserAttempts);
+
+//   let message = "";
+//   if (qualifiedForSpin) {
+//     message = NLPHelper.generateConversationalMessage({
+//       type: 'qualified',
+//       data: { score: scoreRecord.score }
+//     });
+//   } else if (correct) {
+//     message = NLPHelper.generateConversationalMessage({
+//       type: 'correct',
+//       data: {
+//         score: scoreRecord.score,
+//         trials: quizConfig.trials,
+//         remaining: trialsRemaining,
+//         qualified: qualifiedForSpin
+//       }
+//     });
+//   } else {
+//     message = NLPHelper.generateConversationalMessage({
+//       type: 'incorrect',
+//       data: {
+//         score: scoreRecord.score,
+//         trials: quizConfig.trials,
+//         remaining: trialsRemaining,
+//         feedback: aiFeedback
+//       }
+//     });
+//   }
+
+//   if (!qualifiedForSpin && trialsRemaining > 0) {
+//     const needed = quizConfig.correctAnswersForSpin - scoreRecord.score;
+//     if (needed > 0) {
+//       message = NLPHelper.generateConversationalMessage({
+//         type: 'need_more',
+//         data: {
+//           needed,
+//           score: scoreRecord.score,
+//           remaining: trialsRemaining
+//         }
+//       });
+//     }
+//   }
+
+//   return {
+//     success: true,
+//     correct,
+//     userScore: scoreRecord.score,
+//     qualifiedForSpin,
+//     trialsRemaining,
+//     message,
+//     aiFeedback,
+//     aiStyle: true
+//   };
+// };
+
+// export const updateSpinConfig = async (
+//   trials: number,
+//   correctAnswersForSpin: number
+// ) => {
+//   return prisma.quizConfig.upsert({
+//     where: { id: 1 },
+//     update: { trials, correctAnswersForSpin },
+//     create: { id: 1, trials, correctAnswersForSpin },
+//   });
+// };
+
+
 export const attemptQuestion = async (
   number: number,
   userAnswer: string,
@@ -225,11 +443,13 @@ export const attemptQuestion = async (
   let scoreRecord = await prisma.score.findUnique({ where: { userId } });
   const currentCorrectAnswers = scoreRecord ? scoreRecord.score : 0;
 
-  const userAttempts = await prisma.quizQuestion.count({
+  // Count TOTAL attempts (both correct and incorrect)
+  const totalAttempts = await prisma.quizQuestion.count({
     where: { answeredByUserId: userId },
   });
 
-  if (userAttempts >= quizConfig.trials) {
+  // Check if user has exhausted all trials
+  if (totalAttempts >= quizConfig.trials) {
     return {
       success: false,
       message: NLPHelper.generateConversationalMessage({
@@ -242,6 +462,22 @@ export const attemptQuestion = async (
       }),
       qualifiedForSpin: currentCorrectAnswers >= quizConfig.correctAnswersForSpin,
       trialsRemaining: 0,
+      userScore: currentCorrectAnswers,
+      aiStyle: true
+    };
+  }
+
+  // Optional: Check if user already qualified (early exit)
+  // Comment out this block if you want users to continue playing after qualifying
+  if (currentCorrectAnswers >= quizConfig.correctAnswersForSpin) {
+    return {
+      success: false,
+      message: NLPHelper.generateConversationalMessage({
+        type: 'qualified',
+        data: { score: currentCorrectAnswers }
+      }),
+      qualifiedForSpin: true,
+      trialsRemaining: Math.max(0, quizConfig.trials - totalAttempts),
       userScore: currentCorrectAnswers,
       aiStyle: true
     };
@@ -326,11 +562,13 @@ Return ONLY JSON:
     };
   }
 
+  // Mark question as answered by this user
   await prisma.quizQuestion.update({
     where: { id: quizQuestion.id },
     data: { answeredByUserId: userId },
   });
 
+  // Update score only if correct
   if (!scoreRecord) {
     scoreRecord = await prisma.score.create({
       data: { userId, score: correct ? 1 : 0 },
@@ -342,24 +580,29 @@ Return ONLY JSON:
     });
   }
 
-  const updatedUserAttempts = await prisma.quizQuestion.count({
-    where: { answeredByUserId: userId },
-  });
+  // Recalculate attempts after this answer
+  const updatedTotalAttempts = totalAttempts + 1;
+  const updatedCorrectAnswers = scoreRecord.score;
+  
+  // Calculate remaining trials
+  const trialsRemaining = Math.max(0, quizConfig.trials - updatedTotalAttempts);
+  
+  // Check qualification
+  const qualifiedForSpin = updatedCorrectAnswers >= quizConfig.correctAnswersForSpin;
 
-  const qualifiedForSpin = scoreRecord.score >= quizConfig.correctAnswersForSpin;
-  const trialsRemaining = Math.max(0, quizConfig.trials - updatedUserAttempts);
-
+  // Generate appropriate message
   let message = "";
+  
   if (qualifiedForSpin) {
     message = NLPHelper.generateConversationalMessage({
       type: 'qualified',
-      data: { score: scoreRecord.score }
+      data: { score: updatedCorrectAnswers }
     });
   } else if (correct) {
     message = NLPHelper.generateConversationalMessage({
       type: 'correct',
       data: {
-        score: scoreRecord.score,
+        score: updatedCorrectAnswers,
         trials: quizConfig.trials,
         remaining: trialsRemaining,
         qualified: qualifiedForSpin
@@ -369,7 +612,7 @@ Return ONLY JSON:
     message = NLPHelper.generateConversationalMessage({
       type: 'incorrect',
       data: {
-        score: scoreRecord.score,
+        score: updatedCorrectAnswers,
         trials: quizConfig.trials,
         remaining: trialsRemaining,
         feedback: aiFeedback
@@ -377,14 +620,15 @@ Return ONLY JSON:
     });
   }
 
+  // If not qualified and still has trials, show progress
   if (!qualifiedForSpin && trialsRemaining > 0) {
-    const needed = quizConfig.correctAnswersForSpin - scoreRecord.score;
+    const needed = quizConfig.correctAnswersForSpin - updatedCorrectAnswers;
     if (needed > 0) {
       message = NLPHelper.generateConversationalMessage({
         type: 'need_more',
         data: {
           needed,
-          score: scoreRecord.score,
+          score: updatedCorrectAnswers,
           remaining: trialsRemaining
         }
       });
@@ -394,7 +638,7 @@ Return ONLY JSON:
   return {
     success: true,
     correct,
-    userScore: scoreRecord.score,
+    userScore: updatedCorrectAnswers,
     qualifiedForSpin,
     trialsRemaining,
     message,
