@@ -1,5 +1,4 @@
 import { Router } from "express";
-import multer from "multer";
 import authenticate from "../../middlewares/auth.middleware";
 
 import {
@@ -11,23 +10,12 @@ import {
   deleteImage,
   getUserStats,
 } from "./ai-image.controller"
+import { userRateLimiter } from "../../utils/limiter";
+import { upload1 } from "../../config/multer";
 
 const router = Router();
 
-
-const upload = multer({ 
-    dest: 'uploads/',
-    limits: { fileSize: 10 * 1024 * 1024 }, 
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed'));
-        }
-    }
-});
-
-router.post("/generate", authenticate, upload.single("image"), transformImage);
+router.post("/generate", authenticate, userRateLimiter, upload1.single("image"), transformImage);
 
 router.get("/:imageId/status", authenticate, getImageStatus);
 

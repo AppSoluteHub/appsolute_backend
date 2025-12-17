@@ -1,5 +1,3 @@
-
-
 import Replicate from "replicate";
 import dotenv from "dotenv";
 dotenv.config();
@@ -74,8 +72,8 @@ const generateQuestion = async (): Promise<{ question: string; modelAnswer: stri
   const MAX_MODEL_ANSWER_LENGTH = 1000;
 
 const prompt = `
-Generate a simple, beginner-friendly THEORY question about ${randomTopic}.
-The question should be easy to understand and answer in 1–3 sentences.
+Generate a unique simple, beginner-friendly THEORY question about ${randomTopic}.
+The question should be easy to understand and answer in 1–3 sentences and it should not repeat any previous questions.
 
 Return JSON ONLY:
 
@@ -258,7 +256,7 @@ export const attemptQuestion = async (
         data: { score: currentCorrectAnswers }
       }),
       qualifiedForSpin: true,
-      trialsRemaining: Math.max(0, quizConfig.trials - totalAttempts),
+      trialsRemaining: 0, 
       userScore: currentCorrectAnswers,
       aiStyle: true
     };
@@ -365,11 +363,13 @@ Return ONLY JSON:
   const updatedTotalAttempts = totalAttempts + 1;
   const updatedCorrectAnswers = scoreRecord.score;
   
-  // Calculate remaining trials
-  const trialsRemaining = Math.max(0, quizConfig.trials - updatedTotalAttempts);
-  
   // Check qualification
   const qualifiedForSpin = updatedCorrectAnswers >= quizConfig.correctAnswersForSpin;
+  
+
+  const trialsRemaining = qualifiedForSpin 
+    ? 0 
+    : Math.max(0, quizConfig.trials - updatedTotalAttempts);
 
   // Generate appropriate message
   let message = "";

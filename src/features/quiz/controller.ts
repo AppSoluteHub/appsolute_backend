@@ -110,23 +110,22 @@ export const postAttempt = catchAsync(async (req: Request, res: Response) => {
     return;
   }
 
-  const wordCount = userAnswer.trim().split(/\s+/).length;
-  if (wordCount < 5) {
-    res.status(200).json({
-      success: false,
-      message: NLPHelper.generateConversationalMessage({
-        type: 'short_answer'
-      }),
-      aiStyle: true,
-      suggestion: "Aim for 2-5 sentences"
-    });
-    return;
-  }
+  // const wordCount = userAnswer.trim().split(/\s+/).length;
+  // if (wordCount < 5) {
+  //   res.status(200).json({
+  //     success: false,
+  //     message: NLPHelper.generateConversationalMessage({
+  //       type: 'short_answer'
+  //     }),
+  //     aiStyle: true,
+  //     suggestion: "Aim for 2-5 sentences"
+  //   });
+  //   return;
+  // }
 
   try {
     const result = await attemptQuestion(parsed.number, userAnswer, userId);
   
-    console.log(result);
     res.status(200).json(result);
   } catch (err: any) {
     console.error('Unexpected error:', err);
@@ -136,7 +135,7 @@ export const postAttempt = catchAsync(async (req: Request, res: Response) => {
         type: 'server_error'
       }),
       aiStyle: true,
-      technical: err.message // Keep for debugging
+      technical: err.message 
     });
   }
 });
