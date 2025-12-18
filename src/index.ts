@@ -4,7 +4,6 @@ import { Router } from "express";
 
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import multer from "multer";
 import baseRoutes from "./features/appRoute";
 import setupSwagger from "./swagger/swagger";
 import session from "express-session";
