@@ -44,6 +44,8 @@ app.use((0, cors_1.default)({
     credentials: true,
 }));
 app.use((0, cookie_parser_1.default)());
+const limiter_1 = require("./utils/limiter");
+app.use(limiter_1.globalRateLimiter);
 app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET,
     resave: false,

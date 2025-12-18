@@ -96,21 +96,20 @@ exports.postAttempt = (0, catchAsync_1.catchAsync)(async (req, res) => {
         });
         return;
     }
-    const wordCount = userAnswer.trim().split(/\s+/).length;
-    if (wordCount < 5) {
-        res.status(200).json({
-            success: false,
-            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
-                type: 'short_answer'
-            }),
-            aiStyle: true,
-            suggestion: "Aim for 2-5 sentences"
-        });
-        return;
-    }
+    // const wordCount = userAnswer.trim().split(/\s+/).length;
+    // if (wordCount < 5) {
+    //   res.status(200).json({
+    //     success: false,
+    //     message: NLPHelper.generateConversationalMessage({
+    //       type: 'short_answer'
+    //     }),
+    //     aiStyle: true,
+    //     suggestion: "Aim for 2-5 sentences"
+    //   });
+    //   return;
+    // }
     try {
         const result = await (0, service_1.attemptQuestion)(parsed.number, userAnswer, userId);
-        console.log(result);
         res.status(200).json(result);
     }
     catch (err) {
@@ -121,7 +120,7 @@ exports.postAttempt = (0, catchAsync_1.catchAsync)(async (req, res) => {
                 type: 'server_error'
             }),
             aiStyle: true,
-            technical: err.message // Keep for debugging
+            technical: err.message
         });
     }
 });

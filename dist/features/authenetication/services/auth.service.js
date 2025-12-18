@@ -25,28 +25,28 @@ class AuthService {
             const verificationTokenHash = await bcryptjs_1.default.hash(verificationToken, 10);
             let user;
             if (existingUser && !existingUser.verified) {
-                // Case 2: User exists but not verified → update existing user
+                //  User exists but not verified → update existing user
                 user = await prisma_1.prisma.user.update({
                     where: { email: lowercaseEmail },
                     data: {
                         fullName,
                         password: hashedPassword,
                         profileImage: profileImage ||
-                            "https://png.pngtree.com/png-clipart/20200224/original/pngtree-cartoon-color-simple-male-avatar-png-image_5230557.jpg",
+                            "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
                         resetToken: verificationTokenHash,
                         resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
                     },
                 });
             }
             else {
-                // Case 3: New user → create
+                // New user 
                 user = await prisma_1.prisma.user.create({
                     data: {
                         fullName,
                         email: lowercaseEmail,
                         password: hashedPassword,
                         profileImage: profileImage ||
-                            "https://png.pngtree.com/png-clipart/20200224/original/pngtree-cartoon-color-simple-male-avatar-png-image_5230557.jpg",
+                            "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
                         resetToken: verificationTokenHash,
                         resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
                         verified: false,

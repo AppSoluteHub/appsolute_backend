@@ -54,9 +54,9 @@ app.use(
 
 app.use(cookieParser());
 
-
-
-
+import { globalRateLimiter } from "./utils/limiter";
+app.set('trust proxy', 1);
+app.use(globalRateLimiter);
 
 app.use(
   session({

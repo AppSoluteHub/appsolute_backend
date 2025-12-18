@@ -48,23 +48,29 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_KEY,
 });
 
+
+
 const techTopics = [
-     "computers", 
-  "internet",
-  "websites",
-  "coding basics",
-  "HTML basics",
-  "CSS basics",
-  "JavaScript basics",
+  "how computers work",
+  "the internet and Wi-Fi",
+  "smartphones and mobile devices",
   "mobile apps",
-  "files and folders",
-  "databases basics",
-  "password security",
-  "cloud storage",
-  "networks basics",
-  "problem solving",
+  "websites and browsers",
+  "email and online communication",
+  "files, folders, and storage",
+  "cloud storage and backups",
+  "passwords and online security",
+  "social media",
+  "online privacy",
+  "search engines",
+  "operating systems",
   "software installation",
+  "computer viruses and malware",
+  "artificial intelligence basics",
+  "online safety and scams",
+  "hardware vs software",
 ];
+
 
 const generateQuestion = async (): Promise<{ question: string; modelAnswer: string; topic: string }> => {
   const randomTopic = techTopics[Math.floor(Math.random() * techTopics.length)];
@@ -72,8 +78,13 @@ const generateQuestion = async (): Promise<{ question: string; modelAnswer: stri
   const MAX_MODEL_ANSWER_LENGTH = 1000;
 
 const prompt = `
-Generate a unique simple, beginner-friendly THEORY question about ${randomTopic}.
-The question should be easy to understand and answer in 1–3 sentences and it should not repeat any previous questions.
+Generate a unique,GENERAL TECHNOLOGY question about "${randomTopic}".
+
+The question must be suitable for everyday computer or smartphone users
+and should NOT require programming or coding knowledge.
+
+The answer should be understandable by a non-technical person
+and explain the idea in 1–3 short sentences.
 
 Return JSON ONLY:
 
@@ -83,9 +94,13 @@ Return JSON ONLY:
 }
 
 Rules:
-- "question" must be clear, straightforward, and not too technical.
-- "modelAnswer" must give a short, correct explanation (2–4 sentences max).
-- NO multiple-choice, NO options, NO correctAnswer.
+- Do NOT ask about programming, coding, or software development.
+- Do NOT use technical jargon.
+- "question" should sound like something a beginner would ask.
+- "modelAnswer" must be short, clear, and practical (2–4 sentences max).
+- NO multiple-choice questions.
+- NO correctAnswer field.
+
 Random seed: ${randomSeed}
 `;
 
@@ -195,7 +210,6 @@ export const fetchForDisplay = async (number: number): Promise<QuizQuestionRespo
   
   return successResponse;
 };
-
 
 export const attemptQuestion = async (
   number: number,
@@ -347,15 +361,36 @@ Return ONLY JSON:
     data: { answeredByUserId: userId },
   });
 
-  // Update score only if correct
+  // Update score record AND user model
   if (!scoreRecord) {
+    // Create new score record
     scoreRecord = await prisma.score.create({
       data: { userId, score: correct ? 1 : 0 },
     });
   } else if (correct) {
+    // Update score record
     scoreRecord = await prisma.score.update({
       where: { userId },
       data: { score: scoreRecord.score + 1 },
+    });
+  }
+
+  // Update User model with total score and answered count
+  if (correct) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        totalScore: { increment: 1 }, // Increment totalScore by 1
+        answered: { increment: 1 }     // Increment answered count by 1
+      }
+    });
+  } else {
+    // Still increment answered count even if wrong
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        answered: { increment: 1 }
+      }
     });
   }
 
@@ -366,7 +401,6 @@ Return ONLY JSON:
   // Check qualification
   const qualifiedForSpin = updatedCorrectAnswers >= quizConfig.correctAnswersForSpin;
   
-
   const trialsRemaining = qualifiedForSpin 
     ? 0 
     : Math.max(0, quizConfig.trials - updatedTotalAttempts);
@@ -427,7 +461,6 @@ Return ONLY JSON:
     aiStyle: true
   };
 };
-
 export const updateSpinConfig = async (
   trials: number,
   correctAnswersForSpin: number

@@ -40,8 +40,8 @@ const generateQuestion = async () => {
     const randomSeed = Math.floor(Math.random() * 100000);
     const MAX_MODEL_ANSWER_LENGTH = 1000;
     const prompt = `
-Generate a simple, beginner-friendly THEORY question about ${randomTopic}.
-The question should be easy to understand and answer in 1–3 sentences.
+Generate a unique simple, beginner-friendly THEORY question about ${randomTopic}.
+The question should be easy to understand and answer in 1–3 sentences and it should not repeat any previous questions.
 
 Return JSON ONLY:
 
@@ -167,10 +167,12 @@ const attemptQuestion = async (number, userAnswer, userId) => {
     }
     let scoreRecord = await prisma_1.prisma.score.findUnique({ where: { userId } });
     const currentCorrectAnswers = scoreRecord ? scoreRecord.score : 0;
-    const userAttempts = await prisma_1.prisma.quizQuestion.count({
+    // Count TOTAL attempts (both correct and incorrect)
+    const totalAttempts = await prisma_1.prisma.quizQuestion.count({
         where: { answeredByUserId: userId },
     });
-    if (userAttempts >= quizConfig.trials) {
+    // Check if user has exhausted all trials
+    if (totalAttempts >= quizConfig.trials) {
         return {
             success: false,
             message: nlp_helper_1.NLPHelper.generateConversationalMessage({
@@ -182,6 +184,19 @@ const attemptQuestion = async (number, userAnswer, userId) => {
                 }
             }),
             qualifiedForSpin: currentCorrectAnswers >= quizConfig.correctAnswersForSpin,
+            trialsRemaining: 0,
+            userScore: currentCorrectAnswers,
+            aiStyle: true
+        };
+    }
+    if (currentCorrectAnswers >= quizConfig.correctAnswersForSpin) {
+        return {
+            success: false,
+            message: nlp_helper_1.NLPHelper.generateConversationalMessage({
+                type: 'qualified',
+                data: { score: currentCorrectAnswers }
+            }),
+            qualifiedForSpin: true,
             trialsRemaining: 0,
             userScore: currentCorrectAnswers,
             aiStyle: true
@@ -258,10 +273,12 @@ Return ONLY JSON:
             aiStyle: true
         };
     }
+    // Mark question as answered by this user
     await prisma_1.prisma.quizQuestion.update({
         where: { id: quizQuestion.id },
         data: { answeredByUserId: userId },
     });
+    // Update score only if correct
     if (!scoreRecord) {
         scoreRecord = await prisma_1.prisma.score.create({
             data: { userId, score: correct ? 1 : 0 },
@@ -273,23 +290,27 @@ Return ONLY JSON:
             data: { score: scoreRecord.score + 1 },
         });
     }
-    const updatedUserAttempts = await prisma_1.prisma.quizQuestion.count({
-        where: { answeredByUserId: userId },
-    });
-    const qualifiedForSpin = scoreRecord.score >= quizConfig.correctAnswersForSpin;
-    const trialsRemaining = Math.max(0, quizConfig.trials - updatedUserAttempts);
+    // Recalculate attempts after this answer
+    const updatedTotalAttempts = totalAttempts + 1;
+    const updatedCorrectAnswers = scoreRecord.score;
+    // Check qualification
+    const qualifiedForSpin = updatedCorrectAnswers >= quizConfig.correctAnswersForSpin;
+    const trialsRemaining = qualifiedForSpin
+        ? 0
+        : Math.max(0, quizConfig.trials - updatedTotalAttempts);
+    // Generate appropriate message
     let message = "";
     if (qualifiedForSpin) {
         message = nlp_helper_1.NLPHelper.generateConversationalMessage({
             type: 'qualified',
-            data: { score: scoreRecord.score }
+            data: { score: updatedCorrectAnswers }
         });
     }
     else if (correct) {
         message = nlp_helper_1.NLPHelper.generateConversationalMessage({
             type: 'correct',
             data: {
-                score: scoreRecord.score,
+                score: updatedCorrectAnswers,
                 trials: quizConfig.trials,
                 remaining: trialsRemaining,
                 qualified: qualifiedForSpin
@@ -300,21 +321,22 @@ Return ONLY JSON:
         message = nlp_helper_1.NLPHelper.generateConversationalMessage({
             type: 'incorrect',
             data: {
-                score: scoreRecord.score,
+                score: updatedCorrectAnswers,
                 trials: quizConfig.trials,
                 remaining: trialsRemaining,
                 feedback: aiFeedback
             }
         });
     }
+    // If not qualified and still has trials, show progress
     if (!qualifiedForSpin && trialsRemaining > 0) {
-        const needed = quizConfig.correctAnswersForSpin - scoreRecord.score;
+        const needed = quizConfig.correctAnswersForSpin - updatedCorrectAnswers;
         if (needed > 0) {
             message = nlp_helper_1.NLPHelper.generateConversationalMessage({
                 type: 'need_more',
                 data: {
                     needed,
-                    score: scoreRecord.score,
+                    score: updatedCorrectAnswers,
                     remaining: trialsRemaining
                 }
             });
@@ -323,7 +345,7 @@ Return ONLY JSON:
     return {
         success: true,
         correct,
-        userScore: scoreRecord.score,
+        userScore: updatedCorrectAnswers,
         qualifiedForSpin,
         trialsRemaining,
         message,
