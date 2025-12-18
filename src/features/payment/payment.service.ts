@@ -28,7 +28,7 @@ export class PayStackService {
         {
           amount: amountInKobo,
           email,
-          callback_url: "http://localhost:3000/order-successful",
+          callback_url: "https://appsolutehub.com/order-successful",
         },
         {
           headers: {
