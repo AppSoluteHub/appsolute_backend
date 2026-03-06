@@ -1,7 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { CommentService } from "./comment.service";
+import { NotificationService } from "../notification/service";
 
 const commentService = new CommentService();
+const notificationService = new NotificationService();
 
 export class CommentController {
   async createComment(req: Request, res: Response): Promise<void> {
@@ -29,6 +31,26 @@ export class CommentController {
         postId,
         authorId,
       });
+
+      // Send notification to the post author about the new comment
+      try {
+        const post = await commentService.getPostAuthorInfo(postId);
+
+        if (post && post.authorId !== authorId) {
+          const commenterName = req.user?.email?.split('@')[0] || "A user";
+          await notificationService.createNotification(
+            post.authorId,
+            "COMMENT_ADDED",
+            "New Comment on Your Post",
+            `${commenterName} commented on your post "${post.title}"`,
+            postId,
+            "POST"
+          );
+        }
+      } catch (notificationError) {
+        console.error("Error creating comment notification:", notificationError);
+        // Don't fail the comment creation if notification fails
+      }
 
       res.status(201).json(newComment);
     } catch (error) {

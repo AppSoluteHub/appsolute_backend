@@ -1,7 +1,7 @@
 
 import express, { NextFunction, Request, Response } from "express";
 import { Router } from "express";
-
+import { globalRateLimiter } from "./utils/limiter";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import baseRoutes from "./features/appRoute";
@@ -25,9 +25,9 @@ app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  // "http://localhost:3002",
+  // "http://localhost:3000",
+  // "http://localhost:3001",
+  // // "http://localhost:3002",
   "https://appsolutehub.com",
  "https://appsolute.vercel.app",
   "https://appsolutehub.vercel.app",
@@ -53,7 +53,6 @@ app.use(
 
 app.use(cookieParser());
 
-import { globalRateLimiter } from "./utils/limiter";
 app.set('trust proxy', 1);
 app.use(globalRateLimiter);
 
@@ -79,6 +78,6 @@ app.use(errorHandler);
 setupSwagger(app);
 
 
-server.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
+server.listen(port, () => console.log(`Server is running on port ${port}`));
 
 export default app;

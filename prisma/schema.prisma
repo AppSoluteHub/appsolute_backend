@@ -15,7 +15,7 @@ model User {
   phone             String?
   gender            String?
   email             String           @unique
-  password          String
+  password          String?
   profileImage      String?
   role              Role             @default(GUEST)
   resetToken        String?
@@ -32,10 +32,13 @@ model User {
   userTasks         UserTask[]
   orders            Order[]
   reviews           Review[]
+  ratings           Rating[]
   carts             Cart[]
   billingAddresses  BillingAddress[]
   payments          Payment[]
   aiImages          AiImage[]
+  chatSessions      ChatSession[]
+  notifications     Notification[]   @relation("UserNotifications")
   joined            DateTime?        @default(now())
   updatedAt         DateTime?        @default(now())
 }
@@ -51,8 +54,8 @@ model Task {
   updatedAt   DateTime       @updatedAt
   userTasks   UserTask[]
   questions   Question[]
-  tags        TaskTag[] // many-to-many with Tag
-  categories  TaskCategory[] // many-to-many with Category
+  tags        TaskTag[] 
+  categories  TaskCategory[] 
 }
 
 model Question {
@@ -295,6 +298,10 @@ model Product {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   discount    Float?      @default(0)
+  isActive    Boolean     @default(true)
+  averageRating Float     @default(0)
+  ratingCount   Int       @default(0)
+  ratings       Rating[]
 }
 
 model Order {
@@ -440,4 +447,80 @@ model QuizConfig {
   id                    Int @id @default(1)
   trials                Int @default(3)
   correctAnswersForSpin Int @default(5)
+}
+
+
+model ChatSession {
+  id          String        @id @default(uuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastActive  DateTime      @default(now())
+  deviceInfo  String?
+  messages    ChatMessage[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      ChatRole
+  content   String
+  createdAt DateTime    @default(now())
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+}
+
+model Faq {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  value     Int      
+  productId String
+  userId    String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([userId, productId])
+}
+
+model Notification {
+  id              String             @id @default(uuid())
+  userId          String
+  type            NotificationType
+  title           String
+  message         String
+  relatedEntityId String?
+  relatedEntityType String?
+  isRead          Boolean            @default(false)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  user            User               @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  TASK_CREATED
+  TASK_SUBMITTED
+  TASK_CORRECT
+  TASK_INCORRECT
+  COMMENT_ADDED
+  POST_PUBLISHED
+  COMMENT_REPLY
+  NEW_FOLLOWER
+  GENERAL
 }

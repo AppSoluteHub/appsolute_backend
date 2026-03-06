@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { createTaskWithQuestions, deleteTaskById, getAllTasks, getLeaderboardProgressService, getTaskById, getTasks, getUserTaskProgressService, updateTaskWithQuestions  } from "../services/task.service";
 import { BadRequestError, NotFoundError } from "../../../lib/appError";
 import cloudinary from "../../../config/cloudinary";
+import { NotificationService } from "../../notification/service";
 
 
 export async function  createTaskHandler(
@@ -111,6 +112,32 @@ export async function  createTaskHandler(
       description,
       parsedQuestions
     );
+
+    // Notify all users about the new task
+    try {
+      const notificationService = new NotificationService();
+      const { prisma } = await import("../../../utils/prisma");
+      
+      const allUsers = await prisma.user.findMany({
+        select: { id: true },
+      });
+
+      const userIds = allUsers.map((user) => user.id);
+      
+      if (userIds.length > 0) {
+        await notificationService.bulkCreateNotifications(
+          userIds,
+          "TASK_CREATED",
+          "New Task Available",
+          `A new task "${title}" has been created. Earn ${points} points by completing it!`,
+          task.id,
+          "TASK"
+        );
+      }
+    } catch (notificationError) {
+      console.error("Error creating notifications:", notificationError);
+      // Don't fail the task creation if notification fails
+    }
 
     res.status(201).json({
       success: true,

@@ -1,5 +1,8 @@
 import { BadRequestError, InternalServerError } from "../../../lib/appError";
 import { prisma } from "../../../utils/prisma";
+import { NotificationService } from "../../notification/service";
+
+const notificationService = new NotificationService();
 
 export const answerTask = async (
   userId: string,
@@ -67,6 +70,35 @@ export const answerTask = async (
       where: { id: userId },
       data: { answered: { increment: answers.length } },
     });
+
+    // Send notification about task submission
+    try {
+      const isCorrect = correctAnswersCount === totalQuestions;
+      const score = `${correctAnswersCount}/${totalQuestions}`;
+      
+      if (isCorrect) {
+        await notificationService.createNotification(
+          userId,
+          "TASK_CORRECT",
+          "Task Completed Successfully! 🎉",
+          `You answered all questions correctly in "${task.title}" and earned ${totalScoreEarned} points!`,
+          taskId,
+          "TASK"
+        );
+      } else {
+        await notificationService.createNotification(
+          userId,
+          "TASK_INCORRECT",
+          "Task Submitted",
+          `You answered ${score} questions correctly in "${task.title}" and earned ${totalScoreEarned} points. Keep learning!`,
+          taskId,
+          "TASK"
+        );
+      }
+    } catch (notificationError) {
+      console.error("Error creating task submission notification:", notificationError);
+      // Don't fail the task submission if notification fails
+    }
 
     return { message: "Answers submitted successfully", totalScoreEarned };
   } catch (error: any) {

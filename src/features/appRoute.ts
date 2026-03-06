@@ -19,8 +19,10 @@ import cartRoute from './product/routes/cart.routes';
 import orderRoute from './product/routes/order.routes';
 import reviewRoute from './review/routes/review.route';
 import paymentRoute from './payment/payment.route';
-import aiImageRoute from './ai-image/ai-image.route';
-import quizRoute from './quiz/route';
+import notificationRoute from './notification/route';
+// import aiImageRoute from './ai-image/ai-image.route';
+// import quizRoute from './quiz/route';
+import chatRoute from './chat/routes/chat.routes';
 
 export default (appRouter :any) => {
   appRouter.use("/users",userRoute);
@@ -45,8 +47,11 @@ export default (appRouter :any) => {
   appRouter.use("/orders", orderRoute);
   appRouter.use("/productReviews", reviewRoute);
   appRouter.use("/payments", paymentRoute);
-  appRouter.use("/ai-image", aiImageRoute);
-  appRouter.use("/quiz",quizRoute );
+  appRouter.use("/notifications", notificationRoute);
+  // appRouter.use("/ai-image", aiImageRoute);
+  // appRouter.use("/quiz",quizRoute );
+  appRouter.use("/chat", chatRoute);
+ 
   
   return appRouter;
 };

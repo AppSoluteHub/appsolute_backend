@@ -14,66 +14,64 @@ import {
 import { RegisterInput, EmailData } from "../../../interfaces/auth.interfaces";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
-
-
 class AuthService {
-
-static async register({
-  fullName,
-  profileImage,
-  email,
-  password,
-}: RegisterInput) {
-  try {
-    const lowercaseEmail = email.toLowerCase();
-    const existingUser = await prisma.user.findUnique({
-      where: { email: lowercaseEmail },
-    });
-
-    if (existingUser && existingUser.verified) {
-      // Case 1: Already exists and verified
-      throw new DuplicateError("User with this email already exists and is verified.");
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenHash = await bcrypt.hash(verificationToken, 10);
-
-    let user;
-
-    if (existingUser && !existingUser.verified) {
-      //  User exists but not verified → update existing user
-      user = await prisma.user.update({
+  static async register({
+    fullName,
+    profileImage,
+    email,
+    password,
+  }: RegisterInput) {
+    try {
+      const lowercaseEmail = email.toLowerCase();
+      const existingUser = await prisma.user.findUnique({
         where: { email: lowercaseEmail },
-        data: {
-          fullName,
-          password: hashedPassword,
-          profileImage:
-            profileImage ||
-            "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
-          resetToken: verificationTokenHash,
-          resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
       });
-    } else {
-      // New user 
-      user = await prisma.user.create({
-        data: {
-          fullName,
-          email: lowercaseEmail,
-          password: hashedPassword,
-          profileImage:
-            profileImage ||
-            "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
-          resetToken: verificationTokenHash,
-          resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-          verified: false,
-        },
-      });
-    }
 
-    const verifyLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
-    const emailTemplate = `
+      if (existingUser && existingUser.verified) {
+        throw new DuplicateError(
+          "User with this email already exists and is verified.",
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      const verificationTokenHash = await bcrypt.hash(verificationToken, 10);
+
+      let user;
+
+      if (existingUser && !existingUser.verified) {
+        //  User exists but not verified → update existing user
+        user = await prisma.user.update({
+          where: { email: lowercaseEmail },
+          data: {
+            fullName,
+            password: hashedPassword,
+            profileImage:
+              profileImage ||
+              "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
+            resetToken: verificationTokenHash,
+            resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      } else {
+        // New user
+        user = await prisma.user.create({
+          data: {
+            fullName,
+            email: lowercaseEmail,
+            password: hashedPassword,
+            profileImage:
+              profileImage ||
+              "https://res.cloudinary.com/dw2w9f0dm/image/upload/v1765971356/Screenshot_2025-12-17_111156_rd86hd.png",
+            resetToken: verificationTokenHash,
+            resetTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            verified: false,
+          },
+        });
+      }
+
+      const verifyLink = `${process.env.FRONTEND_BASE_URL}/verify-email?token=${verificationToken}`;
+      const emailTemplate = `
       <html>
       <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; margin: 0;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);">
@@ -97,62 +95,63 @@ static async register({
       </body>
     </html>
     `;
-    await sendEmail({
-      email: user.email,
-      subject: "Verify Your Email - AppSolute",
-      html: emailTemplate,
-    });
+      await sendEmail({
+        email: user.email,
+        subject: "Verify Your Email - AppSolute",
+        html: emailTemplate,
+      });
 
-    return {
-      message:
-        "Registration successful. Please check your email to verify your account.",
-    };
-  } catch (error: any) {
-    console.error("Error in AuthService.register:", error);
+      return {
+        message:
+          "Registration successful. Please check your email to verify your account.",
+      };
+    } catch (error: any) {
+      console.error("Error in AuthService.register:", error);
 
-    if (error instanceof PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        throw new BadRequestError("Email already exists.");
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new BadRequestError("Email already exists.");
+        }
       }
-    }
-    if (error instanceof AppError) throw error;
+      if (error instanceof AppError) throw error;
 
-    throw new Error("Something went wrong during registration.");
+      throw new Error("Something went wrong during registration.");
+    }
   }
-}
 
   static async verifyEmail(token: string) {
     if (!token) throw new BadRequestError("Verification token is required.");
-  
+
     try {
       const user = await prisma.user.findFirst({
         where: {
           resetTokenExpires: {
-            gte: new Date(), 
+            gte: new Date(),
           },
           resetToken: {
             not: null,
           },
         },
       });
-  
-    
-      if (!user) throw new InvalidError("Invalid or expired verification token.");
-  
+
+      if (!user)
+        throw new InvalidError("Invalid or expired verification token.");
+
       const isTokenValid = await bcrypt.compare(token, user.resetToken!);
-  
+
       if (!isTokenValid) {
-    
         if (!user.verified) {
           await prisma.user.delete({ where: { id: user.id } });
         }
-        throw new InvalidError("Verification token is incorrect or expired , please register again.");
+        throw new InvalidError(
+          "Verification token is incorrect or expired , please register again.",
+        );
       }
-  
+
       if (user.verified) {
         throw new BadRequestError("This account is already verified.");
       }
-  
+
       // Everything checks out, verify the user
       await prisma.user.update({
         where: { id: user.id },
@@ -162,26 +161,25 @@ static async register({
           resetTokenExpires: null,
         },
       });
-  
+
       return { message: "Email verified successfully." };
-  
     } catch (error: any) {
- 
       if (error.code === "P2025") {
         throw new NotFoundError("User not found.");
       }
-  
-      if (error instanceof BadRequestError || error instanceof InvalidError || error instanceof NotFoundError) {
+
+      if (
+        error instanceof BadRequestError ||
+        error instanceof InvalidError ||
+        error instanceof NotFoundError
+      ) {
         throw error;
       }
-  
+
       console.error("Error in verifyEmail:", error);
       throw new Error("Something went wrong while verifying your email.");
     }
   }
-  
-  
-  
 
   static async resendVerificationEmail(email: string) {
     if (!email) throw new BadRequestError("Email is required");
@@ -239,7 +237,6 @@ static async register({
     return { message: "Verification email resent successfully" };
   }
 
-
   static async login(email: string, password: string) {
     try {
       const user = await prisma.user.findUnique({
@@ -249,9 +246,11 @@ static async register({
 
       if (!user.verified)
         throw new UnAuthorizedError(
-          "Email not verified. Please check your email."
+          "Email not verified. Please check your email.",
         );
-
+      if (!user.password) {
+        throw new AppError("User has no password set", 400);
+      }
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) throw new UnAuthorizedError("Invalid credentials");
 
@@ -264,7 +263,6 @@ static async register({
         : new InternalServerError("Something went wrong during login.");
     }
   }
-
 
   static async forgotPassword(email: string) {
     if (!email) throw new BadRequestError("Email is required");
@@ -298,7 +296,7 @@ static async register({
   static async resetPassword(
     token: string,
     newPassword: string,
-    confirmPassword: string
+    confirmPassword: string,
   ) {
     if (!token || !newPassword || !confirmPassword)
       throw new BadRequestError("All fields are required");
@@ -309,7 +307,7 @@ static async register({
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
       throw new BadRequestError(
-        "Password must be at least 8 characters long, with an uppercase letter, a lowercase letter, a number, and a special character."
+        "Password must be at least 8 characters long, with an uppercase letter, a lowercase letter, a number, and a special character.",
       );
     }
 
@@ -340,7 +338,6 @@ static async register({
       if (!token) throw new BadRequestError("Authentication token is missing");
       return { message: "Logout successful" };
     } catch (error: any) {
-      console.error("Error in AuthService.logout:", error);
       throw error instanceof AppError
         ? error
         : new InternalServerError("Something went wrong.");

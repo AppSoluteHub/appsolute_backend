@@ -1,5 +1,6 @@
 import { AppError, BadRequestError } from '../../../lib/appError';
 import { prisma } from '../../../utils/prisma';
+import { updateProductRatingStats } from '../../product/services/product.utils';
 
 export const createReview = async (data: {
   rating: number;
@@ -30,7 +31,9 @@ const existingReview = await prisma.review.findFirst({
     throw new BadRequestError('You have already reviewed this product. You can update your existing review instead.', 409);
   }
 
-  return await prisma.review.create({ data });
+  const review = await prisma.review.create({ data });
+  await updateProductRatingStats(data.productId);
+  return review;
 };
 
 export const getAllReviews = async (options: {
@@ -110,14 +113,18 @@ export const getReviewById = async (id: string) => {
 };
 
 export const updateReview = async (id: string, data: { rating?: number; comment?: string }) => {
-  return await prisma.review.update({
+  const review = await prisma.review.update({
     where: { id },
     data,
   });
+  await updateProductRatingStats(review.productId);
+  return review;
 };
 
 export const deleteReview = async (id: string) => {
-  return await prisma.review.delete({
+  const review = await prisma.review.delete({
     where: { id },
   });
+  await updateProductRatingStats(review.productId);
+  return review;
 };
