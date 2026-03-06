@@ -314,6 +314,10 @@ model Order {
   status         String          @default("PENDING")
   payment        Payment?        @relation("OrderPayment")
   billingAddress BillingAddress?
+  shippingDetails ShippingDetails?
+  paymentMethod  String?
+  deliveryMethod String?
+  deliveryFees   Float?          @default(0)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   vat            Float?
@@ -392,6 +396,19 @@ model BillingAddress {
   email    String
   address  String
   note     String?
+}
+
+model ShippingDetails {
+  id                      String   @id @default(uuid())
+  orderId                 String   @unique
+  order                   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  pickupStationAddress    String?
+  openingHours            String?
+  deliveryPartner         String?
+  estimatedDeliveryStart  DateTime?
+  estimatedDeliveryEnd    DateTime?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 }
 
 model Payment {

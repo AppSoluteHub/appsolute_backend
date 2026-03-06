@@ -152,3 +152,29 @@ export const deleteProduct = async (
     next(error);
   }
 };
+
+export const getPopularProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+    if (limit < 1 || limit > 50) {
+      return res.status(400).json({
+        success: false,
+        message: "Limit must be between 1 and 50"
+      });
+    }
+
+    const products = await productService.getPopularProducts(limit);
+    res.status(200).json({
+      success: true,
+      data: products,
+      count: products.length
+    });
+  } catch (error) {
+    next(error);
+  }
+};

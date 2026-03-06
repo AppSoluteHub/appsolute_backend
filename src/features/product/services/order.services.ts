@@ -29,6 +29,7 @@ export const getUsersOrders = async (userId: string) => {
         },
       },
       billingAddress: true,
+      shippingDetails: true,
     },
     orderBy: {
       createdAt: "desc",
@@ -51,6 +52,7 @@ export const getOrderById = async (userId: string, orderId: string) => {
         },
       },
       billingAddress: true,
+      shippingDetails: true,
     },
   });
 
@@ -85,7 +87,8 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
     0
   );
 
-  const totalBeforeVat = subtotal - discount;
+  const deliveryFees = 0; // Default delivery fees
+  const totalBeforeVat = subtotal - discount + deliveryFees;
   const vat = totalBeforeVat * 0.075;
   const total = totalBeforeVat + vat;
 
@@ -97,6 +100,9 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
       total,
       vat,
       discount,
+      deliveryFees,
+      paymentMethod: "Cards",
+      deliveryMethod: "Pick-up Station",
       status: "PROCESSING",
       items: {
         create: cart.items.map((item) => ({
@@ -113,10 +119,20 @@ export const createOrder = async (userId: string, billingAddress: BillingAddress
           },
         },
       },
+      shippingDetails: {
+        create: {
+          pickupStationAddress: billingData.address,
+          openingHours: "Mon–Fri 8 AM – 6PM; SAT 9 AM – 6PM",
+          deliveryPartner: "RunWay",
+          estimatedDeliveryStart: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+          estimatedDeliveryEnd: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
+        },
+      },
     },
     include: {
       items: { include: { product: true } },
       billingAddress: true,
+      shippingDetails: true,
     },
   });
 
@@ -159,6 +175,8 @@ export const getOrderByShareToken = async (token: string) => {
     where: { shareToken: token },
     include: {
       items: { include: { product: true } },
+      billingAddress: true,
+      shippingDetails: true,
     },
   });
 

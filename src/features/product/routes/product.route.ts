@@ -27,5 +27,6 @@ router.patch(
 );
 router.delete('/:id', authenticate, productController.deleteProduct);
 router.post('/:id/rate', authenticate,ratingController.rateProduct);
+router.get('/popular', productController.getPopularProducts);
 
 export default router;
