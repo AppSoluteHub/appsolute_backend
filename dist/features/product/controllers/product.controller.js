@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
+exports.getPopularProducts = exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
 const productService = __importStar(require("../services/product.service"));
 const createProduct = async (req, res, next) => {
     try {
@@ -154,3 +154,25 @@ const deleteProduct = async (req, res, next) => {
     }
 };
 exports.deleteProduct = deleteProduct;
+const getPopularProducts = async (req, res, next) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+        if (limit < 1 || limit > 50) {
+            res.status(400).json({
+                success: false,
+                message: "Limit must be between 1 and 50"
+            });
+            return;
+        }
+        const products = await productService.getPopularProducts(limit);
+        res.status(200).json({
+            success: true,
+            data: products,
+            count: products.length
+        });
+    }
+    catch (error) {
+        next(error);
+    }
+};
+exports.getPopularProducts = getPopularProducts;

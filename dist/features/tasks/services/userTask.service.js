@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.answerTask = void 0;
 const appError_1 = require("../../../lib/appError");
 const prisma_1 = require("../../../utils/prisma");
+const service_1 = require("../../notification/service");
+const notificationService = new service_1.NotificationService();
 const answerTask = async (userId, taskId, answers) => {
     try {
         const existingAttempt = await prisma_1.prisma.userTask.findFirst({
@@ -53,6 +55,21 @@ const answerTask = async (userId, taskId, answers) => {
             where: { id: userId },
             data: { answered: { increment: answers.length } },
         });
+        // Send notification about task submission
+        try {
+            const isCorrect = correctAnswersCount === totalQuestions;
+            const score = `${correctAnswersCount}/${totalQuestions}`;
+            if (isCorrect) {
+                await notificationService.createNotification(userId, "TASK_CORRECT", "Task Completed Successfully! 🎉", `You answered all questions correctly in "${task.title}" and earned ${totalScoreEarned} points!`, taskId, "TASK");
+            }
+            else {
+                await notificationService.createNotification(userId, "TASK_INCORRECT", "Task Submitted", `You answered ${score} questions correctly in "${task.title}" and earned ${totalScoreEarned} points. Keep learning!`, taskId, "TASK");
+            }
+        }
+        catch (notificationError) {
+            console.error("Error creating task submission notification:", notificationError);
+            // Don't fail the task submission if notification fails
+        }
         return { message: "Answers submitted successfully", totalScoreEarned };
     }
     catch (error) {

@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -10,6 +33,7 @@ exports.updateTaskHandler = updateTaskHandler;
 const task_service_1 = require("../services/task.service");
 const appError_1 = require("../../../lib/appError");
 const cloudinary_1 = __importDefault(require("../../../config/cloudinary"));
+const service_1 = require("../../notification/service");
 async function createTaskHandler(req, res, next) {
     try {
         Object.keys(req.body).forEach((key) => {
@@ -87,6 +111,22 @@ async function createTaskHandler(req, res, next) {
             }
         }
         const task = await (0, task_service_1.createTaskWithQuestions)(title, parsedCategories, parsedTags, url, Number(points), imageUrl, description, parsedQuestions);
+        // Notify all users about the new task
+        try {
+            const notificationService = new service_1.NotificationService();
+            const { prisma } = await Promise.resolve().then(() => __importStar(require("../../../utils/prisma")));
+            const allUsers = await prisma.user.findMany({
+                select: { id: true },
+            });
+            const userIds = allUsers.map((user) => user.id);
+            if (userIds.length > 0) {
+                await notificationService.bulkCreateNotifications(userIds, "TASK_CREATED", "New Task Available", `A new task "${title}" has been created. Earn ${points} points by completing it!`, task.id, "TASK");
+            }
+        }
+        catch (notificationError) {
+            console.error("Error creating notifications:", notificationError);
+            // Don't fail the task creation if notification fails
+        }
         res.status(201).json({
             success: true,
             message: "Task created successfully",

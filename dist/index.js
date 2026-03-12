@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const express_2 = require("express");
+const limiter_1 = require("./utils/limiter");
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const appRoute_1 = __importDefault(require("./features/appRoute"));
@@ -22,9 +23,9 @@ const server = http_1.default.createServer(app);
 app.use(express_1.default.json({ limit: "50mb" }));
 app.use(express_1.default.urlencoded({ extended: true, limit: "50mb" }));
 const allowedOrigins = [
-    "http://localhost:3000",
+    // "http://localhost:3000",
     "http://localhost:3001",
-    // "http://localhost:3002",
+    // // "http://localhost:3002",
     "https://appsolutehub.com",
     "https://appsolute.vercel.app",
     "https://appsolutehub.vercel.app",
@@ -44,7 +45,7 @@ app.use((0, cors_1.default)({
     credentials: true,
 }));
 app.use((0, cookie_parser_1.default)());
-const limiter_1 = require("./utils/limiter");
+app.set('trust proxy', 1);
 app.use(limiter_1.globalRateLimiter);
 app.use((0, express_session_1.default)({
     secret: process.env.SESSION_SECRET,
@@ -59,5 +60,5 @@ const rootRouter = (0, appRoute_1.default)(router);
 app.use("/api/v1", rootRouter);
 app.use(error_middleware_1.errorHandler);
 (0, swagger_1.default)(app);
-server.listen(port, () => console.log(`🚀 Server is running on port ${port}`));
+server.listen(port, () => console.log(`Server is running on port ${port}`));
 exports.default = app;

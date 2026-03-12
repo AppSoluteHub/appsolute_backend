@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteReview = exports.updateReview = exports.getReviewById = exports.getAllReviews = exports.createReview = void 0;
 const appError_1 = require("../../../lib/appError");
 const prisma_1 = require("../../../utils/prisma");
+const product_utils_1 = require("../../product/services/product.utils");
 const createReview = async (data) => {
     const product = await prisma_1.prisma.product.findUnique({ where: { id: data.productId } });
     if (!product) {
@@ -21,7 +22,9 @@ const createReview = async (data) => {
     if (existingReview) {
         throw new appError_1.BadRequestError('You have already reviewed this product. You can update your existing review instead.', 409);
     }
-    return await prisma_1.prisma.review.create({ data });
+    const review = await prisma_1.prisma.review.create({ data });
+    await (0, product_utils_1.updateProductRatingStats)(data.productId);
+    return review;
 };
 exports.createReview = createReview;
 const getAllReviews = async (options) => {
@@ -93,15 +96,19 @@ const getReviewById = async (id) => {
 };
 exports.getReviewById = getReviewById;
 const updateReview = async (id, data) => {
-    return await prisma_1.prisma.review.update({
+    const review = await prisma_1.prisma.review.update({
         where: { id },
         data,
     });
+    await (0, product_utils_1.updateProductRatingStats)(review.productId);
+    return review;
 };
 exports.updateReview = updateReview;
 const deleteReview = async (id) => {
-    return await prisma_1.prisma.review.delete({
+    const review = await prisma_1.prisma.review.delete({
         where: { id },
     });
+    await (0, product_utils_1.updateProductRatingStats)(review.productId);
+    return review;
 };
 exports.deleteReview = deleteReview;

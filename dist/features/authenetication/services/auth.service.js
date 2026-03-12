@@ -17,7 +17,6 @@ class AuthService {
                 where: { email: lowercaseEmail },
             });
             if (existingUser && existingUser.verified) {
-                // Case 1: Already exists and verified
                 throw new appError_1.DuplicateError("User with this email already exists and is verified.");
             }
             const hashedPassword = await bcryptjs_1.default.hash(password, 10);
@@ -39,7 +38,7 @@ class AuthService {
                 });
             }
             else {
-                // New user 
+                // New user
                 user = await prisma_1.prisma.user.create({
                     data: {
                         fullName,
@@ -140,7 +139,9 @@ class AuthService {
             if (error.code === "P2025") {
                 throw new appError_1.NotFoundError("User not found.");
             }
-            if (error instanceof appError_1.BadRequestError || error instanceof appError_1.InvalidError || error instanceof appError_1.NotFoundError) {
+            if (error instanceof appError_1.BadRequestError ||
+                error instanceof appError_1.InvalidError ||
+                error instanceof appError_1.NotFoundError) {
                 throw error;
             }
             console.error("Error in verifyEmail:", error);
@@ -205,6 +206,9 @@ class AuthService {
                 throw new appError_1.UnAuthorizedError("Invalid credentials");
             if (!user.verified)
                 throw new appError_1.UnAuthorizedError("Email not verified. Please check your email.");
+            if (!user.password) {
+                throw new appError_1.AppError("User has no password set", 400);
+            }
             const passwordMatch = await bcryptjs_1.default.compare(password, user.password);
             if (!passwordMatch)
                 throw new appError_1.UnAuthorizedError("Invalid credentials");
@@ -275,7 +279,6 @@ class AuthService {
             return { message: "Logout successful" };
         }
         catch (error) {
-            console.error("Error in AuthService.logout:", error);
             throw error instanceof appError_1.AppError
                 ? error
                 : new appError_1.InternalServerError("Something went wrong.");

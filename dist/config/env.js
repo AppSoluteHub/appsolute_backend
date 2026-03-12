@@ -16,4 +16,5 @@ exports.default = {
     node_mailer_user_appsolute: process.env.EMAIL_USER_APPSOLUTE,
     node_mailer_pass: process.env.EMAIL_PASS,
     otpKey: process.env.OTP_KEY,
+    openai_api_key: process.env.OPENAI_API_KEY,
 };

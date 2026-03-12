@@ -20,6 +20,7 @@ const getUsersOrders = async (userId) => {
                 },
             },
             billingAddress: true,
+            shippingDetails: true,
         },
         orderBy: {
             createdAt: "desc",
@@ -41,6 +42,7 @@ const getOrderById = async (userId, orderId) => {
                 },
             },
             billingAddress: true,
+            shippingDetails: true,
         },
     });
     if (!order) {
@@ -62,7 +64,8 @@ const createOrder = async (userId, billingAddress) => {
         }
         const subtotal = cart.items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
         const discount = cart.items.reduce((acc, item) => acc + (item.product.price * (item.product.discount || 0) / 100 * item.quantity), 0);
-        const totalBeforeVat = subtotal - discount;
+        const deliveryFees = 0; // Default delivery fees
+        const totalBeforeVat = subtotal - discount + deliveryFees;
         const vat = totalBeforeVat * 0.075;
         const total = totalBeforeVat + vat;
         const { userId: _ignore, ...billingData } = billingAddress;
@@ -72,6 +75,9 @@ const createOrder = async (userId, billingAddress) => {
                 total,
                 vat,
                 discount,
+                deliveryFees,
+                paymentMethod: "Cards",
+                deliveryMethod: "Pick-up Station",
                 status: "PROCESSING",
                 items: {
                     create: cart.items.map((item) => ({
@@ -88,10 +94,20 @@ const createOrder = async (userId, billingAddress) => {
                         },
                     },
                 },
+                shippingDetails: {
+                    create: {
+                        pickupStationAddress: billingData.address,
+                        openingHours: "Mon–Fri 8 AM – 6PM; SAT 9 AM – 6PM",
+                        deliveryPartner: "RunWay",
+                        estimatedDeliveryStart: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+                        estimatedDeliveryEnd: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
+                    },
+                },
             },
             include: {
                 items: { include: { product: true } },
                 billingAddress: true,
+                shippingDetails: true,
             },
         });
         // await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
@@ -127,6 +143,8 @@ const getOrderByShareToken = async (token) => {
         where: { shareToken: token },
         include: {
             items: { include: { product: true } },
+            billingAddress: true,
+            shippingDetails: true,
         },
     });
     if (!order) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
+exports.getPopularProducts = exports.deleteProduct = exports.updateProduct = exports.getProductById = exports.getAllProducts = exports.createProduct = void 0;
 const appError_1 = require("../../../lib/appError");
 const prisma_1 = require("../../../utils/prisma");
 const createProduct = async (data) => {
@@ -90,3 +90,65 @@ const deleteProduct = async (id) => {
     });
 };
 exports.deleteProduct = deleteProduct;
+const getPopularProducts = async (limit = 10) => {
+    try {
+        // Get products with their rating and sales data
+        const products = await prisma_1.prisma.product.findMany({
+            where: {
+                isActive: true,
+            },
+            include: {
+                reviews: true,
+                ratings: true,
+                orderItems: {
+                    include: {
+                        order: true,
+                    },
+                },
+            },
+        });
+        // Calculate popularity score for each product
+        const productsWithPopularity = products.map((product) => {
+            const reviewCount = product.reviews.length;
+            const ratingCount = product.ratings.length;
+            const averageRating = product.averageRating || 0;
+            // Calculate total sales (sum of quantities from completed orders)
+            const totalSales = product.orderItems
+                .filter((item) => item.order.status === 'COMPLETED')
+                .reduce((sum, item) => sum + item.quantity, 0);
+            // Popularity score formula:
+            // - Rating weight: 40%
+            // - Review count weight: 30%
+            // - Sales weight: 30%
+            const popularityScore = (averageRating * 0.4) +
+                (Math.min(reviewCount / 10, 5) * 0.3) + // Cap review influence at 5
+                (Math.min(totalSales / 5, 5) * 0.3); // Cap sales influence at 5
+            return {
+                ...product,
+                popularityScore,
+                reviewCount,
+                ratingCount,
+                totalSales,
+            };
+        });
+        // Sort by popularity score (descending) and return top products
+        const popularProducts = productsWithPopularity
+            .sort((a, b) => b.popularityScore - a.popularityScore)
+            .slice(0, limit)
+            .map(({ popularityScore, reviewCount, ratingCount, totalSales, ...product }) => ({
+            ...product,
+            stats: {
+                reviewCount,
+                ratingCount,
+                totalSales,
+                averageRating: product.averageRating,
+            },
+        }));
+        return popularProducts;
+    }
+    catch (error) {
+        console.error('Error fetching popular products:', error);
+        throw new appError_1.AppError('Failed to fetch popular products', 500);
+    }
+};
+exports.getPopularProducts = getPopularProducts;

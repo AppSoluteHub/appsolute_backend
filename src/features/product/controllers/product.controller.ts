@@ -162,10 +162,11 @@ export const getPopularProducts = async (
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
 
     if (limit < 1 || limit > 50) {
-      return res.status(400).json({
+       res.status(400).json({
         success: false,
         message: "Limit must be between 1 and 50"
       });
+      return;
     }
 
     const products = await productService.getPopularProducts(limit);

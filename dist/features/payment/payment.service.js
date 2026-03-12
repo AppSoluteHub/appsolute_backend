@@ -21,7 +21,7 @@ class PayStackService {
             const response = await axios_1.default.post("https://api.paystack.co/transaction/initialize", {
                 amount: amountInKobo,
                 email,
-                callback_url: "http://localhost:3000/order-successful",
+                callback_url: "https://appsolutehub.com/order-successful",
             }, {
                 headers: {
                     Authorization: `Bearer ${this.paystackSecretKey}`,

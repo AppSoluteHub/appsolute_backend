@@ -97,5 +97,28 @@ class CommentService {
         });
         return deletedComment;
     }
+    async getPostAuthorInfo(postId) {
+        try {
+            const post = await prisma_1.prisma.post.findUnique({
+                where: { id: postId },
+                select: {
+                    id: true,
+                    title: true,
+                    authorId: true,
+                    author: {
+                        select: {
+                            id: true,
+                            fullName: true,
+                        },
+                    },
+                },
+            });
+            return post;
+        }
+        catch (error) {
+            console.error("Error fetching post author info:", error);
+            return null;
+        }
+    }
 }
 exports.CommentService = CommentService;
