@@ -1,0 +1,107 @@
+name: Emergency AppSolute VPS Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type BACKUP APPSOLUTE to authorize the read-mostly emergency backup
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appsolute-emergency-vps-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Back up and verify AppSolute VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: emergency-backup
+    steps:
+      - name: Validate authorization and required secrets
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = "BACKUP APPSOLUTE"
+          for name in VPS_HOST VPS_USER VPS_PASSWORD VPS_KNOWN_HOSTS BACKUP_PASSPHRASE; do
+            test -n "${!name:-}" || { echo "Required secret $name is missing" >&2; exit 1; }
+          done
+          test "${#BACKUP_PASSPHRASE}" -ge 32 || { echo "BACKUP_PASSPHRASE must contain at least 32 characters" >&2; exit 1; }
+
+      - name: Check out the audited backup script
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Install SSH password transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq sshpass
+
+      - name: Configure verified VPS host identity
+        shell: bash
+        env:
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Upload and execute the audited backup script
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(-o BatchMode=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15)
+          sshpass -e scp "${SSH_OPTS[@]}" ops/appsolute_emergency_backup.sh "$VPS_USER@$VPS_HOST:/root/appsolute_emergency_backup.sh"
+          printf '%s\n' "$BACKUP_PASSPHRASE" | sshpass -e ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_HOST" \
+            'set -euo pipefail; IFS= read -r BACKUP_PASSPHRASE; export BACKUP_PASSPHRASE; chmod 700 /root/appsolute_emergency_backup.sh; bash /root/appsolute_emergency_backup.sh'
+
+      - name: Retrieve encrypted backup and verify checksum
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          SSHPASS: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          SSH_OPTS=(-o BatchMode=no -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -o ConnectTimeout=15)
+          mkdir -p backup-artifact
+          sshpass -e ssh "${SSH_OPTS[@]}" "$VPS_USER@$VPS_HOST" \
+            'set -euo pipefail; base="$(readlink -f /root/appsolute-emergency-backups/latest)"; cd "$base"; tar -cf - -- appsolute-backup-*.tar.gz.enc appsolute-backup-*.tar.gz.enc.sha256' \
+            | tar -C backup-artifact -xf -
+          cd backup-artifact
+          sha256sum -c ./*.sha256
+          test "$(find . -maxdepth 1 -type f -name '*.tar.gz.enc' | wc -l)" -eq 1
+
+      - name: Upload encrypted backup artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: appsolute-encrypted-vps-backup
+          path: backup-artifact/
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+      - name: Remove runner-local backup copy
+        if: always()
+        shell: bash
+        run: rm -rf backup-artifact
